@@ -34,6 +34,7 @@ const baseRow = {
   sdgs: "sdg1",
   pubished: false,
 };
+type OpportunityRow = typeof baseRow;
 
 describe("opportunities service RBAC", () => {
   beforeEach(() => {
@@ -56,7 +57,7 @@ describe("opportunities service RBAC", () => {
   });
 
   it("prevents chapter head updates outside assigned chapter", async () => {
-    vi.mocked(getRow).mockResolvedValueOnce({ ...baseRow, chapterId: "other" });
+    vi.mocked(getRow).mockResolvedValueOnce({ ...baseRow, chapterId: "other" } as OpportunityRow);
 
     await expect(updateOpportunity("opp1", { title: "new" })).rejects.toBeInstanceOf(
       ForbiddenError
@@ -64,7 +65,7 @@ describe("opportunities service RBAC", () => {
   });
 
   it("prevents chapter head deletes outside assigned chapter", async () => {
-    vi.mocked(getRow).mockResolvedValueOnce({ ...baseRow, chapterId: "other" });
+    vi.mocked(getRow).mockResolvedValueOnce({ ...baseRow, chapterId: "other" } as OpportunityRow);
 
     await expect(deleteOpportunity("opp1")).rejects.toBeInstanceOf(ForbiddenError);
   });
@@ -74,7 +75,7 @@ describe("opportunities service RBAC", () => {
       ...baseRow,
       chapterId: "chapter-1",
       pubished: false,
-    });
+    } as OpportunityRow);
 
     await expect(
       createMyChapterOpportunity({
