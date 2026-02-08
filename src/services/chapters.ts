@@ -72,6 +72,10 @@ export async function listChapters(): Promise<Chapter[]> {
   return rows.map(mapChapter);
 }
 
+export async function listPublicChapters(): Promise<Chapter[]> {
+  return listChapters();
+}
+
 export async function createChapter(input: {
   name: string;
   slug?: string;

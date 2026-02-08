@@ -79,6 +79,10 @@ export async function listPublishedPrograms(): Promise<Program[]> {
   return rows.map(mapProgram);
 }
 
+export async function listPublicPrograms(): Promise<Program[]> {
+  return listPublishedPrograms();
+}
+
 export async function getProgramBySlug(slug: string): Promise<Program> {
   const rows = await listRows<ProgramRow>(TABLE_ID, [
     buildEqualQuery("slug", slug),
@@ -89,6 +93,10 @@ export async function getProgramBySlug(slug: string): Promise<Program> {
     throw new NotFoundError("Program not found");
   }
   return mapProgram(row);
+}
+
+export async function getPublicProgramBySlug(slug: string): Promise<Program> {
+  return getProgramBySlug(slug);
 }
 
 export async function adminListPrograms(params?: { includeDrafts?: boolean }): Promise<Program[]> {

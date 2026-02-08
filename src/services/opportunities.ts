@@ -111,6 +111,15 @@ export async function listPublishedOpportunities(params?: {
   return rows.map(mapOpportunity);
 }
 
+export async function listPublicOpportunities(params?: {
+  chapterId?: string;
+  fromDate?: Date;
+  toDate?: Date;
+  sdg?: string;
+}): Promise<VolunteerOpportunity[]> {
+  return listPublishedOpportunities(params);
+}
+
 export async function adminListOpportunities(params?: {
   chapterId?: string;
   includeDrafts?: boolean;
