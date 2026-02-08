@@ -8,10 +8,9 @@ export default defineConfig({
     },
   },
   test: {
-    environment: "node",
+    environment: "happy-dom",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     setupFiles: ["./src/test/setup.ts"],
-    environmentMatchGlobs: [["src/**/*.test.tsx", "happy-dom"]],
     clearMocks: true,
     restoreMocks: true,
   },
