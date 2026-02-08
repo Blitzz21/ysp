@@ -1,3 +1,5 @@
-﻿export default function HomePage() {
-  return <main>TODO: Home page</main>;
+import LandingPage from "@/components/landing/LandingPage";
+
+export default function HomePage() {
+  return <LandingPage />;
 }
