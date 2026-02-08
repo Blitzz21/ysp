@@ -8,3 +8,19 @@ test("home page renders", async ({ page }) => {
     })
   ).toBeVisible();
 });
+
+test("programs list page renders", async ({ page }) => {
+  await page.goto("/programs");
+  await expect(
+    page.getByRole("heading", { name: "Programs built to scale youth action." })
+  ).toBeVisible();
+});
+
+test("chapters page renders", async ({ page }) => {
+  await page.goto("/chapters");
+  await expect(
+    page.getByRole("heading", {
+      name: "Chapters across the Philippines",
+    })
+  ).toBeVisible();
+});
