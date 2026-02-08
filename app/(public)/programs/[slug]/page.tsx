@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 
@@ -70,12 +72,12 @@ export default function ProgramDetailPage({
             This program is not available yet. Explore the full list of
             programs.
           </p>
-          <a
+          <Link
             className="mt-6 inline-flex rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-glow"
             href="/programs"
           >
             Back to programs
-          </a>
+          </Link>
         </main>
         <LandingFooter />
       </div>
@@ -107,18 +109,18 @@ export default function ProgramDetailPage({
               </p>
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
-              <a
+              <Link
                 className="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-glow"
                 href="/membership"
               >
                 Start a chapter
-              </a>
-              <a
+              </Link>
+              <Link
                 className="rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-ink"
                 href="/programs"
               >
                 Browse programs
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -146,13 +148,13 @@ export default function ProgramDetailPage({
           </h2>
           <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {RELATED.filter((slug) => slug !== params.slug).map((slug) => (
-              <a
+              <Link
                 key={slug}
                 className="rounded-3xl border border-gray-200 bg-white p-5 text-sm text-ink shadow-soft transition hover:-translate-y-1 hover:text-orange-600"
                 href={`/programs/${slug}`}
               >
                 {PROGRAMS[slug as keyof typeof PROGRAMS].title}
-              </a>
+              </Link>
             ))}
           </div>
         </section>
