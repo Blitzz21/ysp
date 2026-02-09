@@ -18,21 +18,21 @@ export function LandingHeader() {
           <Link className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="/">
             Home
           </Link>
-          <a className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="#programs">
+          <Link className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="/programs">
             Programs
-          </a>
-          <a className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="#opportunities">
+          </Link>
+          <Link className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="/volunteer-opportunities">
             Opportunities
-          </a>
-          <a className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="#membership">
+          </Link>
+          <Link className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="/membership">
             Membership
-          </a>
-          <a className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="#chapters">
+          </Link>
+          <Link className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="/chapters">
             Chapters
-          </a>
-          <a className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="#contact">
+          </Link>
+          <Link className="rounded-full px-3 py-1.5 transition hover:text-orange-600" href="/contact">
             Contact
-          </a>
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2 text-xs font-semibold sm:text-sm">
