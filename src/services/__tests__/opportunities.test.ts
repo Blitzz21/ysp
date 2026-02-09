@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { setSessionForTesting } from "../auth";
-import { ForbiddenError } from "../errors";
+import { ForbiddenError, ValidationError } from "../errors";
 
 vi.mock("../appwriteClient", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../appwriteClient")>();
@@ -18,10 +18,19 @@ vi.mock("../appwriteClient", async (importOriginal) => {
 import {
   createMyChapterOpportunity,
   deleteOpportunity,
+  listPublicOpportunities,
   listPublishedOpportunities,
   updateOpportunity,
 } from "../opportunities";
-import { listRows, buildEqualQuery, getRow, createRow } from "../appwriteClient";
+import {
+  listRows,
+  buildEqualQuery,
+  buildGreaterThanEqualQuery,
+  buildLessThanEqualQuery,
+  buildOrderAsc,
+  getRow,
+  createRow,
+} from "../appwriteClient";
 
 const baseRow = {
   $id: "opp1",
@@ -53,7 +62,71 @@ describe("opportunities service RBAC", () => {
 
     expect(listRows).toHaveBeenCalledWith("volunteer_opportunities", [
       buildEqualQuery("pubished", true),
+      buildOrderAsc("eventData"),
+      buildOrderAsc("$createdAt"),
     ]);
+  });
+
+  it("rejects invalid public date ranges", async () => {
+    await expect(
+      listPublicOpportunities({
+        fromDate: new Date("2026-02-11T00:00:00.000Z"),
+        toDate: new Date("2026-02-10T00:00:00.000Z"),
+      })
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("applies status=upcoming at query level", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-10T00:00:00.000Z"));
+    vi.mocked(listRows).mockResolvedValueOnce([]);
+
+    await listPublicOpportunities({ status: "upcoming" });
+
+    expect(listRows).toHaveBeenCalledWith("volunteer_opportunities", [
+      buildEqualQuery("pubished", true),
+      buildGreaterThanEqualQuery("eventData", "2026-02-10T00:00:00.000Z"),
+      buildOrderAsc("eventData"),
+      buildOrderAsc("$createdAt"),
+    ]);
+    vi.useRealTimers();
+  });
+
+  it("applies status=past at query level", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-10T00:00:00.000Z"));
+    vi.mocked(listRows).mockResolvedValueOnce([]);
+
+    await listPublicOpportunities({ status: "past" });
+
+    expect(listRows).toHaveBeenCalledWith("volunteer_opportunities", [
+      buildEqualQuery("pubished", true),
+      buildLessThanEqualQuery("eventData", "2026-02-10T00:00:00.000Z"),
+      buildOrderAsc("eventData"),
+      buildOrderAsc("$createdAt"),
+    ]);
+    vi.useRealTimers();
+  });
+
+  it("sorts opportunities deterministically by event date then creation", async () => {
+    vi.mocked(listRows).mockResolvedValueOnce([
+      {
+        ...baseRow,
+        $id: "b",
+        eventData: "2026-02-11T00:00:00.000Z",
+        $createdAt: "2026-02-09T00:00:00.000Z",
+      } as OpportunityRow,
+      {
+        ...baseRow,
+        $id: "a",
+        eventData: "2026-02-10T00:00:00.000Z",
+        $createdAt: "2026-02-10T00:00:00.000Z",
+      } as OpportunityRow,
+    ]);
+
+    const items = await listPublicOpportunities();
+
+    expect(items.map((item) => item.id)).toEqual(["a", "b"]);
   });
 
   it("prevents chapter head updates outside assigned chapter", async () => {

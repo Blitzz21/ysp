@@ -7,6 +7,7 @@ import {
   buildEqualQuery,
   buildGreaterThanEqualQuery,
   buildLessThanEqualQuery,
+  buildOrderAsc,
   buildSearchQuery,
   createRow,
   deleteRow,
@@ -35,6 +36,21 @@ const createSchema = z.object({
 });
 
 const updateSchema = createSchema.partial();
+const publicListSchema = z
+  .object({
+    chapterId: z.string().min(1).optional(),
+    fromDate: z.date().optional(),
+    toDate: z.date().optional(),
+    sdg: z.string().min(1).optional(),
+    status: z.enum(["all", "upcoming", "past"]).optional(),
+  })
+  .refine(
+    (value) => {
+      if (!value.fromDate || !value.toDate) return true;
+      return value.fromDate.getTime() <= value.toDate.getTime();
+    },
+    { message: "fromDate must be before or equal to toDate" }
+  );
 
 type OpportunityRow = {
   title: string;
@@ -87,28 +103,68 @@ function buildOpportunityPermissions(published: boolean, userId?: string): strin
   return addReadPermissions(base, ["read(\"any\")"]);
 }
 
+function sortDeterministically(values: VolunteerOpportunity[]): VolunteerOpportunity[] {
+  return values.sort((a, b) => {
+    const eventA = new Date(a.eventDate).getTime();
+    const eventB = new Date(b.eventDate).getTime();
+    if (eventA !== eventB) {
+      return eventA - eventB;
+    }
+    const createdA = new Date(a.createdAt).getTime();
+    const createdB = new Date(b.createdAt).getTime();
+    if (createdA !== createdB) {
+      return createdA - createdB;
+    }
+    return a.id.localeCompare(b.id);
+  });
+}
+
 export async function listPublishedOpportunities(params?: {
   chapterId?: string;
   fromDate?: Date;
   toDate?: Date;
   sdg?: string;
+  status?: "all" | "upcoming" | "past";
 }): Promise<VolunteerOpportunity[]> {
-  const queries = [buildEqualQuery(PUBLISHED_FIELD, true)];
-  if (params?.chapterId) {
-    queries.push(buildEqualQuery("chapterId", params.chapterId));
-  }
-  if (params?.fromDate) {
-    queries.push(buildGreaterThanEqualQuery("eventData", params.fromDate.toISOString()));
-  }
-  if (params?.toDate) {
-    queries.push(buildLessThanEqualQuery("eventData", params.toDate.toISOString()));
-  }
-  if (params?.sdg) {
-    queries.push(buildSearchQuery("sdgs", params.sdg));
+  const parsed = publicListSchema.safeParse(params ?? {});
+  if (!parsed.success) {
+    throw new ValidationError("Invalid opportunity query");
   }
 
+  const now = new Date();
+  const status = parsed.data.status ?? "all";
+  let fromDate = parsed.data.fromDate;
+  let toDate = parsed.data.toDate;
+
+  if (status === "upcoming") {
+    fromDate =
+      fromDate && fromDate.getTime() > now.getTime() ? fromDate : now;
+  } else if (status === "past") {
+    toDate = toDate && toDate.getTime() < now.getTime() ? toDate : now;
+  }
+
+  if (fromDate && toDate && fromDate.getTime() > toDate.getTime()) {
+    return [];
+  }
+
+  const queries = [buildEqualQuery(PUBLISHED_FIELD, true)];
+  if (parsed.data.chapterId) {
+    queries.push(buildEqualQuery("chapterId", parsed.data.chapterId));
+  }
+  if (fromDate) {
+    queries.push(buildGreaterThanEqualQuery("eventData", fromDate.toISOString()));
+  }
+  if (toDate) {
+    queries.push(buildLessThanEqualQuery("eventData", toDate.toISOString()));
+  }
+  if (parsed.data.sdg) {
+    queries.push(buildSearchQuery("sdgs", parsed.data.sdg));
+  }
+  queries.push(buildOrderAsc("eventData"));
+  queries.push(buildOrderAsc("$createdAt"));
+
   const rows = await listRows<OpportunityRow>(TABLE_ID, queries);
-  return rows.map(mapOpportunity);
+  return sortDeterministically(rows.map(mapOpportunity));
 }
 
 export async function listPublicOpportunities(params?: {
@@ -116,6 +172,7 @@ export async function listPublicOpportunities(params?: {
   fromDate?: Date;
   toDate?: Date;
   sdg?: string;
+  status?: "all" | "upcoming" | "past";
 }): Promise<VolunteerOpportunity[]> {
   return listPublishedOpportunities(params);
 }
