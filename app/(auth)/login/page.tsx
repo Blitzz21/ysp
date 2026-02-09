@@ -1,4 +1,4 @@
-"use client";
+ï»¿"use client";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -147,7 +147,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? "•" : "?"}
+                  {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
             </label>
