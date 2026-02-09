@@ -1,0 +1,59 @@
+﻿import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+
+const SESSION_COOKIE = "ysp_session";
+
+type LoginPayload = { email?: string; password?: string };
+
+type AppwriteSession = {
+  $id?: string;
+  secret?: string;
+};
+
+export async function POST(request: Request) {
+  const body = (await request.json().catch(() => ({}))) as LoginPayload;
+  const email = body.email?.trim();
+  const password = body.password;
+  if (!email || !password) {
+    return NextResponse.json({ error: "Email and password required" }, { status: 400 });
+  }
+
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+  if (!endpoint || !projectId) {
+    return NextResponse.json({ error: "Appwrite is not configured" }, { status: 500 });
+  }
+
+  const response = await fetch(`${endpoint.replace(/\/$/, "")}/account/sessions/email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Appwrite-Project": projectId,
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    return NextResponse.json(
+      { error: payload?.message ?? "Login failed" },
+      { status: response.status }
+    );
+  }
+
+  const session = (await response.json()) as AppwriteSession;
+  const token = session.secret ?? session.$id;
+  if (!token) {
+    return NextResponse.json({ error: "Session token missing" }, { status: 500 });
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+
+  return NextResponse.json({ ok: true });
+}

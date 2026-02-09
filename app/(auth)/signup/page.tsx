@@ -20,100 +20,23 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
-  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
-
-  async function exchangeJwt(): Promise<boolean> {
-    if (!endpoint || !projectId) {
-      setError("Appwrite is not configured. Check environment variables.");
-      return false;
-    }
-    const base = endpoint.replace(/\/$/, "");
-    const jwtResponse = await fetch(`${base}/account/jwt`, {
-      method: "POST",
-      headers: {
-        "X-Appwrite-Project": projectId,
-      },
-      credentials: "include",
-    });
-
-    if (!jwtResponse.ok) {
-      setError("Account created but session sync failed.");
-      return false;
-    }
-
-    const payload = (await jwtResponse.json()) as { jwt?: string };
-    if (!payload.jwt) {
-      setError("Session token missing. Please sign in.");
-      return false;
-    }
-
-    const cookieResponse = await fetch("/api/auth/session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ jwt: payload.jwt }),
-    });
-
-    if (!cookieResponse.ok) {
-      setError("Unable to store session locally.");
-      return false;
-    }
-
-    return true;
-  }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    if (!endpoint || !projectId) {
-      setError("Appwrite is not configured. Check environment variables.");
-      return;
-    }
 
     setLoading(true);
     try {
-      const base = endpoint.replace(/\/$/, "");
-      const accountResponse = await fetch(`${base}/account`, {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Appwrite-Project": projectId,
         },
-        credentials: "include",
-        body: JSON.stringify({
-          userId: "unique()",
-          email,
-          password,
-          name,
-        }),
+        body: JSON.stringify({ email, password, name }),
       });
 
-      if (!accountResponse.ok) {
-        const payload = await accountResponse.json().catch(() => null);
-        setError(payload?.message ?? "Signup failed. Please try again.");
-        return;
-      }
-
-      const sessionResponse = await fetch(`${base}/account/sessions/email`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Appwrite-Project": projectId,
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!sessionResponse.ok) {
-        setError("Account created, but login failed. Please sign in.");
-        router.push("/login?created=1");
-        return;
-      }
-
-      const ok = await exchangeJwt();
-      if (!ok) {
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        setError(payload?.error ?? "Signup failed. Please try again.");
         return;
       }
 

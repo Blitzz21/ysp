@@ -8,6 +8,10 @@ import type { Role } from "./types";
 
 const SESSION_COOKIE = "ysp_session";
 
+function isJwt(value: string): boolean {
+  return value.split(".").length === 3;
+}
+
 export type SessionInfo = {
   userId: string;
   role: Role;
@@ -53,7 +57,7 @@ async function getCookieHeader(): Promise<string | null> {
   return cookieList.map(({ name, value }) => `${name}=${value}`).join("; ");
 }
 
-async function getSessionJwt(): Promise<string | null> {
+async function getSessionToken(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get(SESSION_COOKIE)?.value ?? null;
 }
@@ -67,12 +71,12 @@ async function fetchAccount(): Promise<AccountResponse | null> {
     "NEXT_PUBLIC_APPWRITE_PROJECT_ID",
     process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID
   );
-  const jwt = await getSessionJwt();
+  const token = await getSessionToken();
   const headersInit: Record<string, string> = {
     "X-Appwrite-Project": projectId,
   };
-  if (jwt) {
-    headersInit["X-Appwrite-JWT"] = jwt;
+  if (token) {
+    headersInit[isJwt(token) ? "X-Appwrite-JWT" : "X-Appwrite-Session"] = token;
   } else {
     const cookieHeader = await getCookieHeader();
     if (!cookieHeader) {
@@ -119,12 +123,12 @@ export async function signOut(): Promise<void> {
     "NEXT_PUBLIC_APPWRITE_PROJECT_ID",
     process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID
   );
-  const jwt = await getSessionJwt();
+  const token = await getSessionToken();
   const headersInit: Record<string, string> = {
     "X-Appwrite-Project": projectId,
   };
-  if (jwt) {
-    headersInit["X-Appwrite-JWT"] = jwt;
+  if (token) {
+    headersInit[isJwt(token) ? "X-Appwrite-JWT" : "X-Appwrite-Session"] = token;
   } else {
     const cookieHeader = await getCookieHeader();
     if (cookieHeader) {

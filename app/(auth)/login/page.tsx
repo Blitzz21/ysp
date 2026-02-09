@@ -107,31 +107,20 @@ export default function LoginPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    if (!endpoint || !projectId) {
-      setError("Appwrite is not configured. Check environment variables.");
-      return;
-    }
 
     setLoading(true);
     try {
-      const response = await fetch(`${endpoint.replace(/\/$/, "")}/account/sessions/email`, {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Appwrite-Project": projectId,
         },
-        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        setError(payload?.message ?? "Login failed. Check your credentials.");
-        return;
-      }
-
-      const ok = await exchangeJwt();
-      if (!ok) {
+        setError(payload?.error ?? "Login failed. Check your credentials.");
         return;
       }
 
