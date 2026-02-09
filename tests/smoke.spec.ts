@@ -50,3 +50,28 @@ test("contact page renders", async ({ page }) => {
   await page.goto("/contact");
   await expect(page.getByRole("heading", { name: "Reach the YSP team" })).toBeVisible();
 });
+
+test("volunteer opportunities page renders", async ({ page }) => {
+  await page.goto("/volunteer-opportunities");
+  await expect(
+    page.getByRole("heading", { name: "Volunteer opportunities you can join" })
+  ).toBeVisible();
+
+  const emptyState = page.getByText("No opportunities match your current filters.");
+  const loadError = page.getByText(
+    "Opportunities are temporarily unavailable. Please try again in a few minutes."
+  );
+  const cardCount = await page.locator("article").count();
+  const variantCounts = await Promise.all([emptyState.count(), loadError.count()]);
+  expect(cardCount > 0 || variantCounts.some((count) => count > 0)).toBeTruthy();
+});
+
+test("volunteer opportunities status filter syncs to URL", async ({ page }) => {
+  await page.goto("/volunteer-opportunities");
+  await page.selectOption('select[name=\"status\"]', "upcoming");
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  await expect(page).toHaveURL(/status=upcoming/);
+  await expect(
+    page.getByRole("heading", { name: "Volunteer opportunities you can join" })
+  ).toBeVisible();
+});
