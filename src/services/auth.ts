@@ -1,6 +1,6 @@
 import "server-only";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import { buildEqualQuery, listRows } from "./appwriteClient";
 import { UnexpectedError } from "./errors";
@@ -37,8 +37,18 @@ function normalizeEndpoint(endpoint: string): string {
   return endpoint.replace(/\/$/, "");
 }
 
-function getCookieHeader(): string | null {
-  return headers().get("cookie");
+async function getCookieHeader(): Promise<string | null> {
+  const headerStore = await headers();
+  const cookieHeader = headerStore.get("cookie");
+  if (cookieHeader) {
+    return cookieHeader;
+  }
+  const cookieStore = await cookies();
+  const cookieList = cookieStore.getAll();
+  if (!cookieList.length) {
+    return null;
+  }
+  return cookieList.map(({ name, value }) => `${name}=${value}`).join("; ");
 }
 
 async function fetchAccount(): Promise<AccountResponse | null> {
@@ -50,7 +60,7 @@ async function fetchAccount(): Promise<AccountResponse | null> {
     "NEXT_PUBLIC_APPWRITE_PROJECT_ID",
     process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID
   );
-  const cookieHeader = getCookieHeader();
+  const cookieHeader = await getCookieHeader();
   if (!cookieHeader) {
     return null;
   }
@@ -93,7 +103,7 @@ export async function signOut(): Promise<void> {
     "NEXT_PUBLIC_APPWRITE_PROJECT_ID",
     process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID
   );
-  const cookieHeader = getCookieHeader();
+  const cookieHeader = await getCookieHeader();
   if (!cookieHeader) return;
 
   await fetch(`${normalizeEndpoint(endpoint)}/account/sessions/current`, {
