@@ -1,6 +1,6 @@
 import "server-only";
 
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 
 import { buildEqualQuery, listRows } from "./appwriteClient";
 import { UnexpectedError } from "./errors";
@@ -38,9 +38,7 @@ function normalizeEndpoint(endpoint: string): string {
 }
 
 function getCookieHeader(): string | null {
-  const store = cookies();
-  const pairs = store.getAll().map(({ name, value }) => `${name}=${value}`);
-  return pairs.length ? pairs.join("; ") : null;
+  return headers().get("cookie");
 }
 
 async function fetchAccount(): Promise<AccountResponse | null> {
