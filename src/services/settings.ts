@@ -16,6 +16,7 @@ const TABLE_ID = "site_settings";
 
 const updateSchema = z.object({
   email: z.string().email().optional(),
+  mobile: z.string().min(3).optional(),
   facebookUrl: z.string().url().optional(),
   membershipFormUrl: z.string().url().optional(),
   createChapterFormUrl: z.string().url().optional(),
@@ -23,6 +24,7 @@ const updateSchema = z.object({
 
 type SettingsRow = {
   email?: string;
+  mobile?: string;
   facebookUrl?: string;
   membershipFormUrl?: string;
   createChapterFormUrl?: string;
@@ -31,6 +33,7 @@ type SettingsRow = {
 function mapSettings(row?: SettingsRow): SiteSettings {
   return {
     email: row?.email,
+    mobile: row?.mobile,
     facebookUrl: row?.facebookUrl,
     membershipFormUrl: row?.membershipFormUrl,
     createChapterFormUrl: row?.createChapterFormUrl,
