@@ -33,6 +33,7 @@ async function createChapterAction(formData: FormData): Promise<void> {
     const contactPhone = String(formData.get("contactPhone") ?? "").trim();
     const facebookUrl = String(formData.get("facebookUrl") ?? "").trim();
     const chapterHeadUserId = String(formData.get("chapterHeadUserId") ?? "").trim();
+    const published = String(formData.get("published") ?? "false") === "true";
 
     await createChapter({
       name,
@@ -42,6 +43,7 @@ async function createChapterAction(formData: FormData): Promise<void> {
       contactPhone: contactPhone.length ? contactPhone : undefined,
       facebookUrl: facebookUrl.length ? facebookUrl : undefined,
       chapterHeadUserId: chapterHeadUserId.length ? chapterHeadUserId : undefined,
+      published,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create chapter";
@@ -64,6 +66,7 @@ async function updateChapterAction(formData: FormData): Promise<void> {
     const facebookUrl = String(formData.get("facebookUrl") ?? "").trim();
     const chapterHeadUserId = String(formData.get("chapterHeadUserId") ?? "").trim();
     const removeChapterHead = formData.get("removeChapterHead") === "on";
+    const published = String(formData.get("published") ?? "false") === "true";
 
     await updateChapter(id, {
       name: name.length ? name : undefined,
@@ -77,6 +80,7 @@ async function updateChapterAction(formData: FormData): Promise<void> {
         : chapterHeadUserId.length
           ? chapterHeadUserId
           : undefined,
+      published,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update chapter";
@@ -117,6 +121,7 @@ function StatusBanner({ status, message }: { status?: string; message?: string }
 }
 
 function ChapterCard({ chapter }: { chapter: Chapter }) {
+  const isPublished = chapter.published ?? false;
   return (
     <details className="group rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
       <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3">
@@ -127,6 +132,13 @@ function ChapterCard({ chapter }: { chapter: Chapter }) {
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted">
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              isPublished ? "bg-green-100 text-green-700" : "bg-gray-100 text-muted"
+            }`}
+          >
+            {isPublished ? "Published" : "Draft"}
+          </span>
           <span>Head: {chapter.chapterHeadUserId ?? "Unassigned"}</span>
           <span className="rounded-full border border-gray-200 px-3 py-1 font-semibold text-ink transition group-open:border-orange-300 group-open:text-orange-600">
             Edit
@@ -212,6 +224,17 @@ function ChapterCard({ chapter }: { chapter: Chapter }) {
                 />
               </label>
             </div>
+            <label className="text-xs font-semibold text-ink">
+              Status
+              <select
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                name="published"
+                defaultValue={isPublished ? "true" : "false"}
+              >
+                <option value="false">Draft</option>
+                <option value="true">Published</option>
+              </select>
+            </label>
             <label className="flex items-center gap-2 text-xs font-semibold text-ink">
               <input className="h-4 w-4" type="checkbox" name="removeChapterHead" />
               Clear chapter head assignment
@@ -370,6 +393,17 @@ export default async function AdminChaptersPage({
             />
           </label>
         </div>
+        <label className="mt-3 block text-xs font-semibold text-ink">
+          Status
+          <select
+            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            name="published"
+            defaultValue="false"
+          >
+            <option value="false">Draft</option>
+            <option value="true">Published</option>
+          </select>
+        </label>
         <button
           className="mt-4 rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-glow"
           type="submit"
