@@ -6,6 +6,8 @@ import { buildEqualQuery, listRows } from "./appwriteClient";
 import { UnexpectedError } from "./errors";
 import type { Role } from "./types";
 
+const SESSION_COOKIE = "ysp_session";
+
 export type SessionInfo = {
   userId: string;
   role: Role;
@@ -51,6 +53,11 @@ async function getCookieHeader(): Promise<string | null> {
   return cookieList.map(({ name, value }) => `${name}=${value}`).join("; ");
 }
 
+async function getSessionJwt(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(SESSION_COOKIE)?.value ?? null;
+}
+
 async function fetchAccount(): Promise<AccountResponse | null> {
   const endpoint = requirePublicEnv(
     "NEXT_PUBLIC_APPWRITE_ENDPOINT",
@@ -60,16 +67,22 @@ async function fetchAccount(): Promise<AccountResponse | null> {
     "NEXT_PUBLIC_APPWRITE_PROJECT_ID",
     process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID
   );
-  const cookieHeader = await getCookieHeader();
-  if (!cookieHeader) {
-    return null;
+  const jwt = await getSessionJwt();
+  const headersInit: Record<string, string> = {
+    "X-Appwrite-Project": projectId,
+  };
+  if (jwt) {
+    headersInit["X-Appwrite-JWT"] = jwt;
+  } else {
+    const cookieHeader = await getCookieHeader();
+    if (!cookieHeader) {
+      return null;
+    }
+    headersInit.cookie = cookieHeader;
   }
 
   const response = await fetch(`${normalizeEndpoint(endpoint)}/account`, {
-    headers: {
-      "X-Appwrite-Project": projectId,
-      cookie: cookieHeader,
-    },
+    headers: headersInit,
     cache: "no-store",
   });
 
@@ -95,6 +108,9 @@ export async function signIn(email: string, password: string): Promise<void> {
 }
 
 export async function signOut(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE);
+
   const endpoint = requirePublicEnv(
     "NEXT_PUBLIC_APPWRITE_ENDPOINT",
     process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT
@@ -103,15 +119,24 @@ export async function signOut(): Promise<void> {
     "NEXT_PUBLIC_APPWRITE_PROJECT_ID",
     process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID
   );
-  const cookieHeader = await getCookieHeader();
-  if (!cookieHeader) return;
+  const jwt = await getSessionJwt();
+  const headersInit: Record<string, string> = {
+    "X-Appwrite-Project": projectId,
+  };
+  if (jwt) {
+    headersInit["X-Appwrite-JWT"] = jwt;
+  } else {
+    const cookieHeader = await getCookieHeader();
+    if (cookieHeader) {
+      headersInit.cookie = cookieHeader;
+    } else {
+      return;
+    }
+  }
 
   await fetch(`${normalizeEndpoint(endpoint)}/account/sessions/current`, {
     method: "DELETE",
-    headers: {
-      "X-Appwrite-Project": projectId,
-      cookie: cookieHeader,
-    },
+    headers: headersInit,
     cache: "no-store",
   });
 }
