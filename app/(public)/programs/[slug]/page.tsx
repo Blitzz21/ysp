@@ -1,8 +1,5 @@
 import Link from "next/link";
 
-import { LandingFooter } from "@/components/landing/LandingFooter";
-import { LandingHeader } from "@/components/landing/LandingHeader";
-
 const PROGRAMS = {
   "youth-action-labs": {
     title: "Youth Action Labs",
@@ -62,33 +59,23 @@ export default function ProgramDetailPage({
 
   if (!program) {
     return (
-      <div className="text-ink">
-        <LandingHeader />
-        <main className="mx-auto w-[92%] max-w-4xl py-20 text-center">
-          <h1 className="font-manrope text-3xl font-semibold">
-            Program not found
-          </h1>
-          <p className="mt-3 text-muted">
-            This program is not available yet. Explore the full list of
-            programs.
-          </p>
-          <Link
-            className="mt-6 inline-flex rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-glow"
-            href="/programs"
-          >
-            Back to programs
-          </Link>
-        </main>
-        <LandingFooter />
-      </div>
+      <main className="mx-auto w-[92%] max-w-4xl py-20 text-center">
+        <h1 className="font-manrope text-3xl font-semibold">Program not found</h1>
+        <p className="mt-3 text-muted">
+          This program is not available yet. Explore the full list of programs.
+        </p>
+        <Link
+          className="mt-6 inline-flex rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-glow"
+          href="/programs"
+        >
+          Back to programs
+        </Link>
+      </main>
     );
   }
 
   return (
-    <div className="text-ink">
-      <LandingHeader />
-
-      <main className="mx-auto w-[92%] max-w-6xl py-16">
+    <main className="mx-auto w-[92%] max-w-6xl py-16">
         <section className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-orange-600 shadow-soft">
@@ -158,9 +145,6 @@ export default function ProgramDetailPage({
             ))}
           </div>
         </section>
-      </main>
-
-      <LandingFooter />
-    </div>
+    </main>
   );
 }

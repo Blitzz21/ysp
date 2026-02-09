@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { LandingFooter } from "@/components/landing/LandingFooter";
-import { LandingHeader } from "@/components/landing/LandingHeader";
 import { getSiteSettings } from "@/services/settings";
 
 export const dynamic = "force-dynamic";
@@ -44,10 +42,7 @@ export default async function MembershipPage() {
   const hasAnyForm = Boolean(membershipFormUrl || createChapterFormUrl);
 
   return (
-    <div className="text-ink">
-      <LandingHeader />
-
-      <main className="pb-20">
+    <main className="pb-20">
         <section className="relative overflow-hidden pb-14 pt-12">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#fff4da_0%,#ffffff_45%,#fdf6ef_100%)]"></div>
           <div className="grid-pattern pointer-events-none absolute inset-0 opacity-40"></div>
@@ -144,9 +139,6 @@ export default async function MembershipPage() {
             </article>
           </aside>
         </section>
-      </main>
-
-      <LandingFooter />
-    </div>
+    </main>
   );
 }

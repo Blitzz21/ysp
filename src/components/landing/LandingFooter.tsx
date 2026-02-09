@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function LandingFooter() {
   return (
     <footer className="border-t border-gray-200 bg-white pt-12">
@@ -12,37 +14,41 @@ export function LandingFooter() {
         </div>
         <div>
           <h4 className="font-manrope text-base font-semibold text-ink">Explore</h4>
-          <a className="mt-2 block hover:text-orange-600" href="#programs">
+          <Link className="mt-2 block hover:text-orange-600" href="/#programs">
             Programs
-          </a>
-          <a className="mt-2 block hover:text-orange-600" href="#opportunities">
+          </Link>
+          <Link className="mt-2 block hover:text-orange-600" href="/#opportunities">
             Opportunities
-          </a>
-          <a className="mt-2 block hover:text-orange-600" href="#membership">
+          </Link>
+          <Link className="mt-2 block hover:text-orange-600" href="/#membership">
             Membership
-          </a>
+          </Link>
         </div>
         <div>
           <h4 className="font-manrope text-base font-semibold text-ink">
             For Chapters
           </h4>
-          <a className="mt-2 block hover:text-orange-600" href="#membership">
+          <Link className="mt-2 block hover:text-orange-600" href="/membership">
             Start a Chapter
-          </a>
-          <a className="mt-2 block hover:text-orange-600" href="#chapters">
+          </Link>
+          <Link className="mt-2 block hover:text-orange-600" href="/chapters">
             Chapter Network
-          </a>
-          <a className="mt-2 block hover:text-orange-600" href="/login">
+          </Link>
+          <Link className="mt-2 block hover:text-orange-600" href="/login">
             Chapter Head Login
-          </a>
+          </Link>
         </div>
         <div>
           <h4 className="font-manrope text-base font-semibold text-ink">Contact</h4>
-          <a className="mt-2 block hover:text-orange-600" href="#contact">Email</a>
-          <a className="mt-2 block hover:text-orange-600" href="#contact">
+          <Link className="mt-2 block hover:text-orange-600" href="/contact">
+            Email
+          </Link>
+          <Link className="mt-2 block hover:text-orange-600" href="/contact">
             Facebook
-          </a>
-          <a className="mt-2 block hover:text-orange-600" href="#contact">Mobile</a>
+          </Link>
+          <Link className="mt-2 block hover:text-orange-600" href="/contact">
+            Mobile
+          </Link>
         </div>
       </div>
       <div className="footer-hero" aria-hidden="true">

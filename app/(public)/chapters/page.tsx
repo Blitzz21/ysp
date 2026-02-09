@@ -1,5 +1,4 @@
-import { LandingFooter } from "@/components/landing/LandingFooter";
-import { LandingHeader } from "@/components/landing/LandingHeader";
+import Link from "next/link";
 
 const CHAPTERS = [
   {
@@ -30,10 +29,7 @@ const CHAPTERS = [
 
 export default function ChaptersPage() {
   return (
-    <div className="text-ink">
-      <LandingHeader />
-
-      <main className="pb-20">
+    <main className="pb-20">
         <section className="relative overflow-hidden pb-14 pt-12">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#fff4da_0%,#ffffff_45%,#fdf6ef_100%)]"></div>
           <div className="grid-pattern pointer-events-none absolute inset-0 opacity-40"></div>
@@ -95,27 +91,24 @@ export default function ChaptersPage() {
                   </h3>
                   <p className="mt-2 text-sm text-muted">{chapter.focus}</p>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <a
+                    <Link
                       className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
                       href="/membership"
                     >
                       Join chapter
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       className="rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-glow"
                       href="/membership"
                     >
                       Start a chapter
-                    </a>
+                    </Link>
                   </div>
                 </article>
               ))}
             </div>
           )}
         </section>
-      </main>
-
-      <LandingFooter />
-    </div>
+    </main>
   );
 }
