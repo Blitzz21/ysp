@@ -251,15 +251,33 @@ export default async function AdminChaptersPage({
 
       <StatusBanner status={status} message={message} />
 
-      <form action={createChapterAction} className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
-        <h3 className="font-manrope text-lg font-semibold">New chapter</h3>
+      <form
+        action={createChapterAction}
+        className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-manrope text-lg font-semibold">New chapter</h3>
+            <p className="mt-1 text-xs text-muted">
+              Use a clear chapter name. Slug will auto-generate if left empty.
+            </p>
+          </div>
+          <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
+            Required fields marked
+          </span>
+        </div>
+
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <label className="text-xs font-semibold text-ink">
-            Name
+            Name{" "}
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
+              Required
+            </span>
             <input
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               name="name"
               required
+              placeholder="YSP Manila Chapter"
             />
           </label>
           <label className="text-xs font-semibold text-ink">
@@ -267,6 +285,7 @@ export default async function AdminChaptersPage({
             <input
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               name="slug"
+              placeholder="ysp-manila"
             />
           </label>
         </div>
@@ -276,6 +295,7 @@ export default async function AdminChaptersPage({
             <input
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               name="location"
+              placeholder="Metro Manila"
             />
           </label>
           <label className="text-xs font-semibold text-ink">
@@ -283,6 +303,7 @@ export default async function AdminChaptersPage({
             <input
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               name="contactEmail"
+              placeholder="chapter@email.org"
             />
           </label>
           <label className="text-xs font-semibold text-ink">
@@ -290,6 +311,7 @@ export default async function AdminChaptersPage({
             <input
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               name="contactPhone"
+              placeholder="+63 9xx xxx xxxx"
             />
           </label>
         </div>
@@ -299,6 +321,7 @@ export default async function AdminChaptersPage({
             <input
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               name="facebookUrl"
+              placeholder="https://facebook.com/..."
             />
           </label>
           <label className="text-xs font-semibold text-ink">
@@ -306,7 +329,11 @@ export default async function AdminChaptersPage({
             <input
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               name="chapterHeadUserId"
+              placeholder="appwrite-user-id"
             />
+            <span className="mt-1 block text-[11px] text-muted">
+              Use the Appwrite user ID for the chapter head.
+            </span>
           </label>
         </div>
         <button

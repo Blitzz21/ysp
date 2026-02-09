@@ -251,14 +251,28 @@ export default async function AdminProgramsPage({
         className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
         encType="multipart/form-data"
       >
-        <h3 className="font-manrope text-lg font-semibold">New program</h3>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-manrope text-lg font-semibold">New program</h3>
+            <p className="mt-1 text-xs text-muted">
+              Slug will auto-generate if you leave it blank.
+            </p>
+          </div>
+          <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
+            Required fields marked
+          </span>
+        </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <label className="text-xs font-semibold text-ink">
-            Title
+            Title{" "}
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
+              Required
+            </span>
             <input
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               name="title"
               required
+              placeholder="Youth Action Labs"
             />
           </label>
           <label className="text-xs font-semibold text-ink">
@@ -266,16 +280,21 @@ export default async function AdminProgramsPage({
             <input
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               name="slug"
+              placeholder="youth-action-labs"
             />
           </label>
         </div>
         <label className="mt-3 block text-xs font-semibold text-ink">
-          Description
+          Description{" "}
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
+            Required
+          </span>
           <textarea
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
             name="description"
             rows={3}
             required
+            placeholder="Describe the program objectives, cadence, and outcomes."
           />
         </label>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
@@ -298,6 +317,9 @@ export default async function AdminProgramsPage({
               type="file"
               accept="image/*"
             />
+            <span className="mt-1 block text-[11px] text-muted">
+              Allowed: jpg, png, svg, gif. WebP is not enabled yet.
+            </span>
           </label>
         </div>
         <button
