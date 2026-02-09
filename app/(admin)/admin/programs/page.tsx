@@ -1,3 +1,333 @@
-﻿export default function AdminProgramsPage() {
-  return <main>TODO: Admin programs</main>;
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+import {
+  adminListPrograms,
+  createProgram,
+  deleteProgram,
+  updateProgram,
+} from "@/services/programs";
+import type { Program } from "@/services/types";
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function readParam(searchParams: SearchParams, key: string): string | undefined {
+  const value = searchParams[key];
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function buildRedirect(status: "success" | "error", message: string): never {
+  const encoded = encodeURIComponent(message);
+  redirect(`/admin/programs?status=${status}&message=${encoded}`);
+}
+
+function readFile(formData: FormData, key: string): File | undefined {
+  const value = formData.get(key);
+  if (value instanceof File && value.size > 0) {
+    return value;
+  }
+  return undefined;
+}
+
+async function createProgramAction(formData: FormData): Promise<void> {
+  "use server";
+  try {
+    const title = String(formData.get("title") ?? "").trim();
+    const slug = String(formData.get("slug") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const published = String(formData.get("published") ?? "false") === "true";
+    const imageFile = readFile(formData, "imageFile");
+
+    await createProgram({
+      title,
+      slug: slug.length ? slug : undefined,
+      description,
+      published,
+      imageFile,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create program";
+    buildRedirect("error", message);
+  }
+
+  revalidatePath("/admin/programs");
+  buildRedirect("success", "Program created.");
+}
+
+async function updateProgramAction(formData: FormData): Promise<void> {
+  "use server";
+  const id = String(formData.get("id") ?? "").trim();
+  try {
+    const title = String(formData.get("title") ?? "").trim();
+    const slug = String(formData.get("slug") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const published = String(formData.get("published") ?? "false") === "true";
+    const removeImage = formData.get("removeImage") === "on";
+    const imageFile = readFile(formData, "imageFile");
+
+    await updateProgram(id, {
+      title: title.length ? title : undefined,
+      slug: slug.length ? slug : undefined,
+      description: description.length ? description : undefined,
+      published,
+      imageFile: removeImage ? null : imageFile,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update program";
+    buildRedirect("error", message);
+  }
+
+  revalidatePath("/admin/programs");
+  buildRedirect("success", "Program updated.");
+}
+
+async function deleteProgramAction(formData: FormData): Promise<void> {
+  "use server";
+  const id = String(formData.get("id") ?? "").trim();
+  try {
+    await deleteProgram(id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to delete program";
+    buildRedirect("error", message);
+  }
+  revalidatePath("/admin/programs");
+  buildRedirect("success", "Program deleted.");
+}
+
+function StatusBanner({ status, message }: { status?: string; message?: string }) {
+  if (!message) return null;
+  const isError = status === "error";
+  return (
+    <div
+      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
+        isError
+          ? "border-red-200 bg-red-50 text-red-700"
+          : "border-green-200 bg-green-50 text-green-700"
+      }`}
+    >
+      {message}
+    </div>
+  );
+}
+
+function ProgramCard({ program }: { program: Program }) {
+  return (
+    <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-manrope text-lg font-semibold">{program.title}</h3>
+          <p className="text-xs text-muted">Slug: {program.slug}</p>
+        </div>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            program.published ? "bg-green-100 text-green-700" : "bg-gray-100 text-muted"
+          }`}
+        >
+          {program.published ? "Published" : "Draft"}
+        </span>
+      </div>
+      <p className="mt-3 text-sm text-muted">{program.description}</p>
+      <p className="mt-2 text-xs text-muted">
+        Image: {program.imageFileId ? program.imageFileId : "None"}
+      </p>
+
+      <form
+        action={updateProgramAction}
+        className="mt-4 space-y-3"
+        encType="multipart/form-data"
+      >
+        <input type="hidden" name="id" value={program.id} />
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="text-xs font-semibold text-ink">
+            Title
+            <input
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              name="title"
+              defaultValue={program.title}
+            />
+          </label>
+          <label className="text-xs font-semibold text-ink">
+            Slug
+            <input
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              name="slug"
+              defaultValue={program.slug}
+            />
+          </label>
+        </div>
+        <label className="text-xs font-semibold text-ink">
+          Description
+          <textarea
+            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            name="description"
+            rows={3}
+            defaultValue={program.description}
+          />
+        </label>
+        <div className="grid gap-3 md:grid-cols-3">
+          <label className="text-xs font-semibold text-ink">
+            Status
+            <select
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              name="published"
+              defaultValue={program.published ? "true" : "false"}
+            >
+              <option value="false">Draft</option>
+              <option value="true">Published</option>
+            </select>
+          </label>
+          <label className="text-xs font-semibold text-ink">
+            Replace image
+            <input
+              className="mt-1 w-full text-sm"
+              name="imageFile"
+              type="file"
+              accept="image/*"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-ink">
+            <input className="h-4 w-4" type="checkbox" name="removeImage" />
+            Remove image
+          </label>
+        </div>
+        <button
+          className="rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-glow"
+          type="submit"
+        >
+          Save changes
+        </button>
+      </form>
+      <form action={deleteProgramAction} className="mt-3">
+        <input type="hidden" name="id" value={program.id} />
+        <button
+          className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700"
+          type="submit"
+        >
+          Delete
+        </button>
+      </form>
+    </article>
+  );
+}
+
+export default async function AdminProgramsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
+  const message = readParam(params, "message");
+  const status = readParam(params, "status");
+
+  let programs: Program[] = [];
+  let hasLoadError = false;
+
+  try {
+    programs = await adminListPrograms({ includeDrafts: true });
+  } catch {
+    hasLoadError = true;
+  }
+
+  return (
+    <section>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-orange-600">
+            Admin
+          </p>
+          <h2 className="font-manrope text-2xl font-semibold">Programs</h2>
+          <p className="mt-2 text-sm text-muted">
+            Create, publish, and maintain program content. Upload images that
+            will render on public pages.
+          </p>
+        </div>
+      </div>
+
+      <StatusBanner status={status} message={message} />
+
+      <form
+        action={createProgramAction}
+        className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
+        encType="multipart/form-data"
+      >
+        <h3 className="font-manrope text-lg font-semibold">New program</h3>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <label className="text-xs font-semibold text-ink">
+            Title
+            <input
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              name="title"
+              required
+            />
+          </label>
+          <label className="text-xs font-semibold text-ink">
+            Slug (optional)
+            <input
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              name="slug"
+            />
+          </label>
+        </div>
+        <label className="mt-3 block text-xs font-semibold text-ink">
+          Description
+          <textarea
+            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            name="description"
+            rows={3}
+            required
+          />
+        </label>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <label className="text-xs font-semibold text-ink">
+            Status
+            <select
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              name="published"
+              defaultValue="false"
+            >
+              <option value="false">Draft</option>
+              <option value="true">Published</option>
+            </select>
+          </label>
+          <label className="text-xs font-semibold text-ink">
+            Image upload
+            <input
+              className="mt-1 w-full text-sm"
+              name="imageFile"
+              type="file"
+              accept="image/*"
+            />
+          </label>
+        </div>
+        <button
+          className="mt-4 rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-glow"
+          type="submit"
+        >
+          Create program
+        </button>
+      </form>
+
+      {hasLoadError ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+          Programs are unavailable. Please confirm admin access and Appwrite
+          configuration.
+        </div>
+      ) : null}
+
+      {!hasLoadError && programs.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">
+          No programs yet. Create the first program to populate the catalog.
+        </div>
+      ) : null}
+
+      {!hasLoadError && programs.length > 0 ? (
+        <div className="grid gap-6">
+          {programs.map((program) => (
+            <ProgramCard key={program.id} program={program} />
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
 }
