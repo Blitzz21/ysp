@@ -20,6 +20,7 @@ export interface Chapter {
   contactEmail?: string;
   contactPhone?: string;
   facebookUrl?: string;
+  published?: boolean;
   createdAt: string;
   updatedAt: string;
 }

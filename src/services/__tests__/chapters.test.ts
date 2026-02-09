@@ -17,9 +17,10 @@ import {
   createChapter,
   deleteChapter,
   listChapters,
+  listPublicChapters,
   updateChapter,
 } from "../chapters";
-import { deleteRow, listRows } from "../appwriteClient";
+import { buildEqualQuery, deleteRow, listRows } from "../appwriteClient";
 
 describe("chapters service RBAC", () => {
   beforeEach(() => {
@@ -31,6 +32,14 @@ describe("chapters service RBAC", () => {
     vi.mocked(listRows).mockResolvedValueOnce([]);
     await listChapters();
     expect(listRows).toHaveBeenCalledWith("chapters");
+  });
+
+  it("filters public chapters by published flag", async () => {
+    vi.mocked(listRows).mockResolvedValueOnce([]);
+    await listPublicChapters();
+    expect(listRows).toHaveBeenCalledWith("chapters", [
+      buildEqualQuery("published", true),
+    ]);
   });
 
   it("requires admin for adminListChapters", async () => {

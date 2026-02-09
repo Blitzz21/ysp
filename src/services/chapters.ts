@@ -1,7 +1,17 @@
 import { z } from "zod";
 
 import { getSession } from "./auth";
-import { createRow, deleteRow, getRow, listRows, publicReadPermissions, updateRow } from "./appwriteClient";
+import {
+  addReadPermissions,
+  adminOnlyPermissions,
+  buildEqualQuery,
+  createRow,
+  deleteRow,
+  getRow,
+  listRows,
+  publicReadPermissions,
+  updateRow,
+} from "./appwriteClient";
 import { NotFoundError, ValidationError } from "./errors";
 import { requireAdmin, requireAssignedChapter } from "./rbac";
 import type { Chapter } from "./types";
@@ -16,6 +26,7 @@ const createSchema = z.object({
   contactPhone: z.string().min(3).optional(),
   facebookUrl: z.string().url().optional(),
   chapterHeadUserId: z.string().min(1).optional(),
+  published: z.boolean().optional(),
 });
 
 const updateSchema = z.object({
@@ -26,6 +37,7 @@ const updateSchema = z.object({
   contactPhone: z.string().min(3).optional(),
   facebookUrl: z.string().url().optional(),
   chapterHeadUserId: z.string().min(1).nullable().optional(),
+  published: z.boolean().optional(),
 });
 
 const contactSchema = z.object({
@@ -42,6 +54,7 @@ type ChapterRow = {
   contactEmail?: string;
   contactPhone?: string;
   facebookUrl?: string;
+  published?: boolean;
 };
 
 function slugify(value: string): string {
@@ -62,9 +75,18 @@ function mapChapter(row: ChapterRow & { $id: string; $createdAt: string; $update
     contactEmail: row.contactEmail ?? undefined,
     contactPhone: row.contactPhone ?? undefined,
     facebookUrl: row.facebookUrl ?? undefined,
+    published: row.published ?? undefined,
     createdAt: row.$createdAt,
     updatedAt: row.$updatedAt,
   };
+}
+
+function buildChapterPermissions(published: boolean): string[] {
+  const base = adminOnlyPermissions();
+  if (!published) {
+    return base;
+  }
+  return addReadPermissions(base, ["read(\"any\")"]);
 }
 
 export async function listChapters(): Promise<Chapter[]> {
@@ -80,7 +102,10 @@ export async function adminListChapters(): Promise<Chapter[]> {
 }
 
 export async function listPublicChapters(): Promise<Chapter[]> {
-  return listChapters();
+  const rows = await listRows<ChapterRow>(TABLE_ID, [
+    buildEqualQuery("published", true),
+  ]);
+  return rows.map(mapChapter);
 }
 
 export async function createChapter(input: {
@@ -91,6 +116,7 @@ export async function createChapter(input: {
   contactPhone?: string;
   facebookUrl?: string;
   chapterHeadUserId?: string;
+  published?: boolean;
 }): Promise<Chapter> {
   const session = await getSession();
   requireAdmin(session);
@@ -102,6 +128,7 @@ export async function createChapter(input: {
 
   const slug = parsed.data.slug?.trim() || slugify(parsed.data.name);
 
+  const published = parsed.data.published ?? false;
   const row = await createRow<ChapterRow>(
     TABLE_ID,
     {
@@ -112,8 +139,9 @@ export async function createChapter(input: {
       contactPhone: parsed.data.contactPhone,
       facebookUrl: parsed.data.facebookUrl,
       chapterHeadUserId: parsed.data.chapterHeadUserId,
+      published,
     },
-    publicReadPermissions()
+    buildChapterPermissions(published)
   );
 
   return mapChapter(row);
@@ -129,6 +157,7 @@ export async function updateChapter(
     contactPhone: string;
     facebookUrl: string;
     chapterHeadUserId: string | null;
+    published: boolean;
   }>
 ): Promise<Chapter> {
   const session = await getSession();
@@ -139,7 +168,14 @@ export async function updateChapter(
     throw new ValidationError("Invalid chapter update");
   }
 
-  const row = await updateRow<ChapterRow>(TABLE_ID, id, parsed.data, publicReadPermissions());
+  const current = await getRow<ChapterRow>(TABLE_ID, id);
+  const nextPublished = parsed.data.published ?? current.published ?? false;
+  const row = await updateRow<ChapterRow>(
+    TABLE_ID,
+    id,
+    parsed.data,
+    buildChapterPermissions(nextPublished)
+  );
   return mapChapter(row);
 }
 
