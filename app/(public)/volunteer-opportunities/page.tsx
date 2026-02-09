@@ -45,20 +45,6 @@ function getStatusFilter(searchParams: SearchParams): StatusFilter {
   return "all";
 }
 
-function filterByStatus(
-  opportunities: VolunteerOpportunity[],
-  status: StatusFilter
-): VolunteerOpportunity[] {
-  if (status === "all") return opportunities;
-  const now = Date.now();
-  return opportunities.filter((opportunity) => {
-    const eventTime = new Date(opportunity.eventDate).getTime();
-    if (Number.isNaN(eventTime)) return false;
-    if (status === "upcoming") return eventTime >= now;
-    return eventTime < now;
-  });
-}
-
 function getSdgColor(tag: string): string {
   const normalized = tag.toLowerCase();
   if (normalized.includes("health")) return "bg-[#4C9F38]";
@@ -98,11 +84,12 @@ export default async function VolunteerOpportunitiesPage(props: {
         sdg,
         fromDate,
         toDate,
+        status,
       }),
       listPublicChapters(),
       listPublicOpportunities(),
     ]);
-    opportunities = filterByStatus(result, status);
+    opportunities = result;
     chapters = chapterList;
     sdgOptions = [...new Set(allOpportunities.flatMap((item) => item.sdgs))].sort();
   } catch {
