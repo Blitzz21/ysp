@@ -129,6 +129,57 @@ describe("opportunities service RBAC", () => {
     expect(items.map((item) => item.id)).toEqual(["a", "b"]);
   });
 
+  it("falls back to in-memory filtering when Appwrite rejects query syntax", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-10T00:00:00.000Z"));
+
+    vi.mocked(listRows)
+      .mockRejectedValueOnce(new ValidationError("Invalid query"))
+      .mockResolvedValueOnce([
+        {
+          ...baseRow,
+          $id: "p1",
+          pubished: true,
+          chapterId: "chapter-1",
+          eventData: "2026-02-11T00:00:00.000Z",
+          sdgs: "Climate Action,Life Below Water",
+          $createdAt: "2026-02-09T00:00:00.000Z",
+        } as OpportunityRow,
+        {
+          ...baseRow,
+          $id: "d1",
+          pubished: false,
+          chapterId: "chapter-1",
+          eventData: "2026-02-12T00:00:00.000Z",
+          sdgs: "Climate Action",
+        } as OpportunityRow,
+        {
+          ...baseRow,
+          $id: "p2",
+          pubished: true,
+          chapterId: "chapter-2",
+          eventData: "2026-02-13T00:00:00.000Z",
+          sdgs: "Quality Education",
+        } as OpportunityRow,
+      ]);
+
+    const items = await listPublicOpportunities({
+      chapterId: "chapter-1",
+      status: "upcoming",
+      sdg: "Climate",
+    });
+
+    expect(listRows).toHaveBeenNthCalledWith(
+      1,
+      "volunteer_opportunities",
+      expect.any(Array)
+    );
+    expect(listRows).toHaveBeenNthCalledWith(2, "volunteer_opportunities");
+    expect(items.map((item) => item.id)).toEqual(["p1"]);
+
+    vi.useRealTimers();
+  });
+
   it("prevents chapter head updates outside assigned chapter", async () => {
     vi.mocked(getRow).mockResolvedValueOnce({ ...baseRow, chapterId: "other" } as OpportunityRow);
 
