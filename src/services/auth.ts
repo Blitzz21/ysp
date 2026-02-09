@@ -37,6 +37,12 @@ function normalizeEndpoint(endpoint: string): string {
   return endpoint.replace(/\/$/, "");
 }
 
+function getCookieHeader(): string | null {
+  const store = cookies();
+  const pairs = store.getAll().map(({ name, value }) => `${name}=${value}`);
+  return pairs.length ? pairs.join("; ") : null;
+}
+
 async function fetchAccount(): Promise<AccountResponse | null> {
   const endpoint = requirePublicEnv(
     "NEXT_PUBLIC_APPWRITE_ENDPOINT",
@@ -46,7 +52,7 @@ async function fetchAccount(): Promise<AccountResponse | null> {
     "NEXT_PUBLIC_APPWRITE_PROJECT_ID",
     process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID
   );
-  const cookieHeader = cookies().toString();
+  const cookieHeader = getCookieHeader();
   if (!cookieHeader) {
     return null;
   }
@@ -89,7 +95,7 @@ export async function signOut(): Promise<void> {
     "NEXT_PUBLIC_APPWRITE_PROJECT_ID",
     process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID
   );
-  const cookieHeader = cookies().toString();
+  const cookieHeader = getCookieHeader();
   if (!cookieHeader) return;
 
   await fetch(`${normalizeEndpoint(endpoint)}/account/sessions/current`, {
