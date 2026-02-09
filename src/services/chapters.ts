@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { getSession } from "./auth";
-import { createRow, getRow, listRows, publicReadPermissions, updateRow } from "./appwriteClient";
+import { createRow, deleteRow, getRow, listRows, publicReadPermissions, updateRow } from "./appwriteClient";
 import { NotFoundError, ValidationError } from "./errors";
 import { requireAdmin, requireAssignedChapter } from "./rbac";
 import type { Chapter } from "./types";
@@ -72,6 +72,13 @@ export async function listChapters(): Promise<Chapter[]> {
   return rows.map(mapChapter);
 }
 
+export async function adminListChapters(): Promise<Chapter[]> {
+  const session = await getSession();
+  requireAdmin(session);
+  const rows = await listRows<ChapterRow>(TABLE_ID);
+  return rows.map(mapChapter);
+}
+
 export async function listPublicChapters(): Promise<Chapter[]> {
   return listChapters();
 }
@@ -134,6 +141,12 @@ export async function updateChapter(
 
   const row = await updateRow<ChapterRow>(TABLE_ID, id, parsed.data, publicReadPermissions());
   return mapChapter(row);
+}
+
+export async function deleteChapter(id: string): Promise<void> {
+  const session = await getSession();
+  requireAdmin(session);
+  await deleteRow(TABLE_ID, id);
 }
 
 export async function getMyChapter(): Promise<Chapter> {
