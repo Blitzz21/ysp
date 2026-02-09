@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { CountedInput } from "@/components/admin/CountedField";
 import {
   adminListChapters,
   createChapter,
@@ -117,105 +118,132 @@ function StatusBanner({ status, message }: { status?: string; message?: string }
 
 function ChapterCard({ chapter }: { chapter: Chapter }) {
   return (
-    <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <details className="group rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
+      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-manrope text-lg font-semibold">{chapter.name}</h3>
-          <p className="text-xs text-muted">Slug: {chapter.slug}</p>
+          <p className="text-xs text-muted">
+            {chapter.location ?? "Location not set"}
+          </p>
         </div>
-      </div>
-      <p className="mt-2 text-sm text-muted">
-        Location: {chapter.location ?? "Not set"}
-      </p>
-      <p className="mt-1 text-xs text-muted">
-        Chapter head: {chapter.chapterHeadUserId ?? "Unassigned"}
-      </p>
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <span>Head: {chapter.chapterHeadUserId ?? "Unassigned"}</span>
+          <span className="rounded-full border border-gray-200 px-3 py-1 font-semibold text-ink transition group-open:border-orange-300 group-open:text-orange-600">
+            Edit
+          </span>
+        </div>
+      </summary>
 
-      <form action={updateChapterAction} className="mt-4 space-y-3">
-        <input type="hidden" name="id" value={chapter.id} />
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-ink">
-            Name
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="name"
-              defaultValue={chapter.name}
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Slug
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="slug"
-              defaultValue={chapter.slug}
-            />
-          </label>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+            Chapter profile
+          </h4>
+          <form action={updateChapterAction} className="space-y-3">
+            <input type="hidden" name="id" value={chapter.id} />
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="text-xs font-semibold text-ink">
+                Name
+                <CountedInput
+                  name="name"
+                  defaultValue={chapter.name}
+                  maxLength={256}
+                  hint="Max 256 characters."
+                />
+              </label>
+              <label className="text-xs font-semibold text-ink">
+                Slug
+                <CountedInput
+                  name="slug"
+                  defaultValue={chapter.slug}
+                  maxLength={128}
+                  hint="Lowercase, numbers, hyphens."
+                />
+              </label>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <label className="text-xs font-semibold text-ink">
+                Location
+                <CountedInput
+                  name="location"
+                  defaultValue={chapter.location}
+                  maxLength={256}
+                  hint="City or region."
+                />
+              </label>
+              <label className="text-xs font-semibold text-ink">
+                Contact email
+                <CountedInput
+                  name="contactEmail"
+                  defaultValue={chapter.contactEmail}
+                  maxLength={256}
+                  type="email"
+                  hint="Public email for inquiries."
+                />
+              </label>
+              <label className="text-xs font-semibold text-ink">
+                Contact phone
+                <CountedInput
+                  name="contactPhone"
+                  defaultValue={chapter.contactPhone}
+                  maxLength={64}
+                  hint="Include country code."
+                />
+              </label>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="text-xs font-semibold text-ink">
+                Facebook URL
+                <CountedInput
+                  name="facebookUrl"
+                  defaultValue={chapter.facebookUrl}
+                  maxLength={256}
+                  type="url"
+                  hint="Paste full URL."
+                />
+              </label>
+              <label className="text-xs font-semibold text-ink">
+                Chapter head user ID
+                <CountedInput
+                  name="chapterHeadUserId"
+                  defaultValue={chapter.chapterHeadUserId}
+                  maxLength={128}
+                  hint="Appwrite user ID."
+                />
+              </label>
+            </div>
+            <label className="flex items-center gap-2 text-xs font-semibold text-ink">
+              <input className="h-4 w-4" type="checkbox" name="removeChapterHead" />
+              Clear chapter head assignment
+            </label>
+            <button
+              className="rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-glow"
+              type="submit"
+            >
+              Save changes
+            </button>
+          </form>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          <label className="text-xs font-semibold text-ink">
-            Location
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="location"
-              defaultValue={chapter.location}
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Contact email
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="contactEmail"
-              defaultValue={chapter.contactEmail}
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Contact phone
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="contactPhone"
-              defaultValue={chapter.contactPhone}
-            />
-          </label>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-ink">
-            Facebook URL
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="facebookUrl"
-              defaultValue={chapter.facebookUrl}
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Chapter head user ID
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="chapterHeadUserId"
-              defaultValue={chapter.chapterHeadUserId}
-            />
-          </label>
-        </div>
-        <label className="flex items-center gap-2 text-xs font-semibold text-ink">
-          <input className="h-4 w-4" type="checkbox" name="removeChapterHead" />
-          Clear chapter head assignment
-        </label>
-        <button
-          className="rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-glow"
-          type="submit"
-        >
-          Save changes
-        </button>
-      </form>
-      <form action={deleteChapterAction} className="mt-3">
-        <input type="hidden" name="id" value={chapter.id} />
-        <button
-          className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700"
-          type="submit"
-        >
-          Delete
-        </button>
-      </form>
-    </article>
+
+        <aside className="rounded-2xl border border-dashed border-gray-200 bg-[#fff7ea] p-4 text-xs text-muted">
+          <p className="font-semibold text-ink">Quick guidance</p>
+          <ul className="mt-2 space-y-2">
+            <li>Keep chapter names consistent with location.</li>
+            <li>Only assign a chapter head if verified.</li>
+            <li>Contacts appear on public pages.</li>
+          </ul>
+          <form action={deleteChapterAction} className="mt-4">
+            <input type="hidden" name="id" value={chapter.id} />
+            <button
+              className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700"
+              type="submit"
+            >
+              Delete chapter
+            </button>
+          </form>
+        </aside>
+      </div>
+    </details>
   );
 }
 
@@ -273,67 +301,73 @@ export default async function AdminChaptersPage({
             <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
               Required
             </span>
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            <CountedInput
               name="name"
               required
               placeholder="YSP Manila Chapter"
+              maxLength={256}
+              hint="Max 256 characters."
             />
           </label>
           <label className="text-xs font-semibold text-ink">
             Slug (optional)
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            <CountedInput
               name="slug"
               placeholder="ysp-manila"
+              maxLength={128}
+              hint="Leave empty to auto-generate."
             />
           </label>
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           <label className="text-xs font-semibold text-ink">
             Location
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            <CountedInput
               name="location"
               placeholder="Metro Manila"
+              maxLength={256}
+              hint="City or region."
             />
           </label>
           <label className="text-xs font-semibold text-ink">
             Contact email
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            <CountedInput
               name="contactEmail"
               placeholder="chapter@email.org"
+              type="email"
+              maxLength={256}
+              hint="Public email."
             />
           </label>
           <label className="text-xs font-semibold text-ink">
             Contact phone
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            <CountedInput
               name="contactPhone"
               placeholder="+63 9xx xxx xxxx"
+              maxLength={64}
+              hint="Include country code."
             />
           </label>
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <label className="text-xs font-semibold text-ink">
             Facebook URL
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            <CountedInput
               name="facebookUrl"
               placeholder="https://facebook.com/..."
+              type="url"
+              maxLength={256}
+              hint="Paste full URL."
             />
           </label>
           <label className="text-xs font-semibold text-ink">
             Chapter head user ID
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            <CountedInput
               name="chapterHeadUserId"
               placeholder="appwrite-user-id"
+              maxLength={128}
+              hint="Appwrite user ID."
             />
-            <span className="mt-1 block text-[11px] text-muted">
-              Use the Appwrite user ID for the chapter head.
-            </span>
           </label>
         </div>
         <button
@@ -353,7 +387,24 @@ export default async function AdminChaptersPage({
 
       {!hasLoadError && chapters.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">
-          No chapters yet. Create the first chapter to get started.
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff2e1] text-2xl">
+            *
+          </div>
+          <p className="text-sm text-ink">No chapters yet.</p>
+          <p className="mt-1 text-xs text-muted">
+            Add a chapter to start publishing local opportunities.
+          </p>
+          <div className="mt-4 grid gap-2 text-xs text-muted md:grid-cols-3">
+            <div className="rounded-2xl border border-gray-200 bg-white p-3">
+              Use a city-based name.
+            </div>
+            <div className="rounded-2xl border border-gray-200 bg-white p-3">
+              Add contact info for public pages.
+            </div>
+            <div className="rounded-2xl border border-gray-200 bg-white p-3">
+              Assign a chapter head when ready.
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -367,3 +418,5 @@ export default async function AdminChaptersPage({
     </section>
   );
 }
+
+
