@@ -12,7 +12,13 @@ vi.mock("../appwriteClient", async (importOriginal) => {
   };
 });
 
-import { adminListChapters, deleteChapter, listChapters } from "../chapters";
+import {
+  adminListChapters,
+  createChapter,
+  deleteChapter,
+  listChapters,
+  updateChapter,
+} from "../chapters";
 import { deleteRow, listRows } from "../appwriteClient";
 
 describe("chapters service RBAC", () => {
@@ -46,5 +52,25 @@ describe("chapters service RBAC", () => {
     vi.mocked(deleteRow).mockResolvedValueOnce(undefined);
     await deleteChapter("c1");
     expect(deleteRow).toHaveBeenCalledWith("chapters", "c1");
+  });
+
+  it("requires admin for createChapter", async () => {
+    setSessionForTesting({ userId: "u1", role: "chapter_head", assignedChapterId: "c1" });
+    await expect(createChapter({ name: "Manila" })).rejects.toBeInstanceOf(ForbiddenError);
+
+    setSessionForTesting(null);
+    await expect(createChapter({ name: "Manila" })).rejects.toBeInstanceOf(UnauthorizedError);
+  });
+
+  it("requires admin for updateChapter", async () => {
+    setSessionForTesting({ userId: "u1", role: "chapter_head", assignedChapterId: "c1" });
+    await expect(updateChapter("c1", { name: "New" })).rejects.toBeInstanceOf(
+      ForbiddenError
+    );
+
+    setSessionForTesting(null);
+    await expect(updateChapter("c1", { name: "New" })).rejects.toBeInstanceOf(
+      UnauthorizedError
+    );
   });
 });

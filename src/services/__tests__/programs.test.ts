@@ -11,7 +11,13 @@ vi.mock("../appwriteClient", async (importOriginal) => {
   };
 });
 
-import { listPublishedPrograms, adminListPrograms } from "../programs";
+import {
+  adminListPrograms,
+  createProgram,
+  deleteProgram,
+  listPublishedPrograms,
+  updateProgram,
+} from "../programs";
 import { listRows, buildEqualQuery } from "../appwriteClient";
 
 describe("programs service RBAC", () => {
@@ -36,5 +42,37 @@ describe("programs service RBAC", () => {
 
     setSessionForTesting(null);
     await expect(adminListPrograms()).rejects.toBeInstanceOf(UnauthorizedError);
+  });
+
+  it("requires admin for createProgram", async () => {
+    setSessionForTesting({ userId: "u1", role: "chapter_head", assignedChapterId: "c1" });
+    await expect(
+      createProgram({ title: "Program", description: "Desc" })
+    ).rejects.toBeInstanceOf(ForbiddenError);
+
+    setSessionForTesting(null);
+    await expect(
+      createProgram({ title: "Program", description: "Desc" })
+    ).rejects.toBeInstanceOf(UnauthorizedError);
+  });
+
+  it("requires admin for updateProgram", async () => {
+    setSessionForTesting({ userId: "u1", role: "chapter_head", assignedChapterId: "c1" });
+    await expect(updateProgram("p1", { title: "New" })).rejects.toBeInstanceOf(
+      ForbiddenError
+    );
+
+    setSessionForTesting(null);
+    await expect(updateProgram("p1", { title: "New" })).rejects.toBeInstanceOf(
+      UnauthorizedError
+    );
+  });
+
+  it("requires admin for deleteProgram", async () => {
+    setSessionForTesting({ userId: "u1", role: "chapter_head", assignedChapterId: "c1" });
+    await expect(deleteProgram("p1")).rejects.toBeInstanceOf(ForbiddenError);
+
+    setSessionForTesting(null);
+    await expect(deleteProgram("p1")).rejects.toBeInstanceOf(UnauthorizedError);
   });
 });
