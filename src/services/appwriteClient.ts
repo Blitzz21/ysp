@@ -196,7 +196,8 @@ export async function getRow<T>(tableId: string, rowId: string): Promise<Appwrit
 export async function createRow<T>(
   tableId: string,
   data: Record<string, unknown>,
-  permissions?: string[]
+  permissions?: string[],
+  rowId: string = "unique()"
 ): Promise<AppwriteRow<T>> {
   const config = getAppwriteConfig();
   return appwriteRequest<AppwriteRow<T>>(
@@ -204,7 +205,7 @@ export async function createRow<T>(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data, permissions }),
+      body: JSON.stringify({ rowId, data, permissions }),
     }
   );
 }
