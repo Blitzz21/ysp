@@ -181,7 +181,7 @@ export async function listRows<T>(
   const config = getAppwriteConfig();
   const queryString = buildQueryString(queries, options);
   const data = await appwriteRequest<AppwriteListResponse<AppwriteRow<T>>>(
-    `/databases/${config.databaseId}/tables/${tableId}/rows${queryString}`
+    `/tablesdb/${config.databaseId}/tables/${tableId}/rows${queryString}`
   );
   return data.rows;
 }
@@ -189,7 +189,7 @@ export async function listRows<T>(
 export async function getRow<T>(tableId: string, rowId: string): Promise<AppwriteRow<T>> {
   const config = getAppwriteConfig();
   return appwriteRequest<AppwriteRow<T>>(
-    `/databases/${config.databaseId}/tables/${tableId}/rows/${rowId}`
+    `/tablesdb/${config.databaseId}/tables/${tableId}/rows/${rowId}`
   );
 }
 
@@ -200,7 +200,7 @@ export async function createRow<T>(
 ): Promise<AppwriteRow<T>> {
   const config = getAppwriteConfig();
   return appwriteRequest<AppwriteRow<T>>(
-    `/databases/${config.databaseId}/tables/${tableId}/rows`,
+    `/tablesdb/${config.databaseId}/tables/${tableId}/rows`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -221,7 +221,7 @@ export async function updateRow<T>(
     payload.permissions = permissions;
   }
   return appwriteRequest<AppwriteRow<T>>(
-    `/databases/${config.databaseId}/tables/${tableId}/rows/${rowId}`,
+    `/tablesdb/${config.databaseId}/tables/${tableId}/rows/${rowId}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -233,7 +233,7 @@ export async function updateRow<T>(
 export async function deleteRow(tableId: string, rowId: string): Promise<void> {
   const config = getAppwriteConfig();
   await appwriteRequest(
-    `/databases/${config.databaseId}/tables/${tableId}/rows/${rowId}`,
+    `/tablesdb/${config.databaseId}/tables/${tableId}/rows/${rowId}`,
     { method: "DELETE" }
   );
 }
@@ -263,29 +263,47 @@ export async function uploadFile(
 }
 
 export function buildEqualQuery(field: string, value: string | boolean): string {
-  const formatted =
-    typeof value === "string"
-      ? `"${value.replace(/\"/g, "\\\"")}"`
-      : value;
-  return `equal("${field}", ${formatted})`;
+  return JSON.stringify({
+    method: "equal",
+    attribute: field,
+    values: [value],
+  });
 }
 
 export function buildSearchQuery(field: string, value: string): string {
-  return `search("${field}", "${value.replace(/\"/g, "\\\"")}")`;
+  return JSON.stringify({
+    method: "search",
+    attribute: field,
+    values: [value],
+  });
 }
 
 export function buildGreaterThanEqualQuery(field: string, value: string): string {
-  return `greaterThanEqual("${field}", "${value.replace(/\"/g, "\\\"")}")`;
+  return JSON.stringify({
+    method: "greaterThanEqual",
+    attribute: field,
+    values: [value],
+  });
 }
 
 export function buildLessThanEqualQuery(field: string, value: string): string {
-  return `lessThanEqual("${field}", "${value.replace(/\"/g, "\\\"")}")`;
+  return JSON.stringify({
+    method: "lessThanEqual",
+    attribute: field,
+    values: [value],
+  });
 }
 
 export function buildOrderDesc(field: string): string {
-  return `orderDesc("${field}")`;
+  return JSON.stringify({
+    method: "orderDesc",
+    attribute: field,
+  });
 }
 
 export function buildOrderAsc(field: string): string {
-  return `orderAsc("${field}")`;
+  return JSON.stringify({
+    method: "orderAsc",
+    attribute: field,
+  });
 }

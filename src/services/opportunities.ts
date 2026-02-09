@@ -163,8 +163,44 @@ export async function listPublishedOpportunities(params?: {
   queries.push(buildOrderAsc("eventData"));
   queries.push(buildOrderAsc("$createdAt"));
 
-  const rows = await listRows<OpportunityRow>(TABLE_ID, queries);
-  return sortDeterministically(rows.map(mapOpportunity));
+  try {
+    const rows = await listRows<OpportunityRow>(TABLE_ID, queries);
+    return sortDeterministically(rows.map(mapOpportunity));
+  } catch (error) {
+    // Appwrite query syntax can vary across TablesDB versions.
+    // Fallback keeps behavior deterministic and public-safe.
+    if (!(error instanceof ValidationError)) {
+      throw error;
+    }
+
+    const rows = await listRows<OpportunityRow>(TABLE_ID);
+    const normalizedSdg = parsed.data.sdg?.toLowerCase();
+    const fromTime = fromDate?.getTime();
+    const toTime = toDate?.getTime();
+
+    return sortDeterministically(
+      rows
+        .map(mapOpportunity)
+        .filter((item) => {
+          if (!item.published) return false;
+          if (parsed.data.chapterId && item.chapterId !== parsed.data.chapterId) {
+            return false;
+          }
+          if (
+            normalizedSdg &&
+            !item.sdgs.some((tag) => tag.toLowerCase().includes(normalizedSdg))
+          ) {
+            return false;
+          }
+
+          const eventTime = new Date(item.eventDate).getTime();
+          if (Number.isNaN(eventTime)) return false;
+          if (fromTime !== undefined && eventTime < fromTime) return false;
+          if (toTime !== undefined && eventTime > toTime) return false;
+          return true;
+        })
+    );
+  }
 }
 
 export async function listPublicOpportunities(params?: {
