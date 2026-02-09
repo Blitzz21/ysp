@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function LandingHeader() {
   return (
@@ -6,10 +7,12 @@ export function LandingHeader() {
       <div className="mx-auto flex w-[92%] max-w-6xl flex-wrap items-center justify-between gap-3 py-3">
         <Link className="flex items-center gap-3" href="/" aria-label="YSP home">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-soft ring-1 ring-orange-100">
-            <img
-              src="YSP LOGO.png"
+            <Image
+              src="/YSP LOGO.png"
               alt="Youth Service Philippines logo"
               className="h-16 w-16 object-contain"
+              width={64}
+              height={64}
             />
           </span>
         </Link>
