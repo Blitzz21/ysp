@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
-import { signOut } from "@/services/auth";
+import { getSession, signOut } from "@/services/auth";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview" },
@@ -12,7 +12,12 @@ const NAV_ITEMS = [
   { href: "/admin/settings", label: "Settings" },
 ];
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const session = await getSession();
+  if (!session || session.role !== "admin") {
+    redirect("/login?next=/admin");
+  }
+
   async function signOutAction() {
     "use server";
     await signOut();
