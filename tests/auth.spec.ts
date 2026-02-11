@@ -88,6 +88,11 @@ test("admin opportunities route is usable", async ({ page }) => {
   await expectAdminPageOrLoginRedirect(page, "Opportunities", "Create opportunity");
 });
 
+test("admin chapters route is usable", async ({ page }) => {
+  await page.goto("/admin/chapters");
+  await expectAdminPageOrLoginRedirect(page, "Chapters", "Create chapter");
+});
+
 test("admin settings route is usable", async ({ page }) => {
   await page.goto("/admin/settings");
   await expectAdminPageOrLoginRedirect(page, "Settings");
