@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { getAuthErrorMessage, type AuthErrorPayload } from "@/lib/authErrors";
 
 const metrics = [
   { value: "Admin", label: "Role required" },
@@ -19,6 +21,13 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const errorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.focus();
+    }
+  }, [error]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,13 +44,13 @@ export default function SignupPage() {
       });
 
       if (!response.ok) {
-        const payload = await response.json().catch(() => null);
-        setError(payload?.error ?? "Signup failed. Please try again.");
+        const payload = (await response.json().catch(() => null)) as AuthErrorPayload | null;
+        setError(getAuthErrorMessage(payload, "Signup failed. Please try again."));
         return;
       }
 
       router.push("/admin");
-    } catch (err) {
+    } catch {
       setError("Signup failed. Please try again.");
     } finally {
       setLoading(false);
@@ -121,7 +130,15 @@ export default function SignupPage() {
             </label>
 
             {error ? (
-              <div className="auth-reveal rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <div
+                ref={errorRef}
+                className="auth-reveal rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+                data-testid="auth-error"
+                role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
+                tabIndex={-1}
+              >
                 {error}
               </div>
             ) : null}

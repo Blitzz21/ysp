@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { getAuthErrorMessage, type AuthErrorPayload } from "@/lib/authErrors";
 
 const metrics = [
   { value: "120+", label: "Partner chapters" },
@@ -19,6 +21,7 @@ export default function LoginClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const errorRef = useRef<HTMLDivElement | null>(null);
 
   const redirectTo = useMemo(() => {
     const next = searchParams.get("next");
@@ -42,7 +45,7 @@ export default function LoginClient() {
     return `${base}/account/sessions/oauth2/google?${params.toString()}`;
   }, [endpoint, projectId, redirectTo]);
 
-  async function exchangeJwt(): Promise<boolean> {
+  const exchangeJwt = useCallback(async (): Promise<boolean> => {
     if (!endpoint || !projectId) {
       setError("Appwrite is not configured. Check environment variables.");
       return false;
@@ -81,7 +84,7 @@ export default function LoginClient() {
     }
 
     return true;
-  }
+  }, [endpoint, projectId]);
 
   useEffect(() => {
     const oauth = searchParams.get("oauth");
@@ -95,7 +98,7 @@ export default function LoginClient() {
         }
       })
       .finally(() => setLoading(false));
-  }, [redirectTo, router, searchParams]);
+  }, [exchangeJwt, redirectTo, router, searchParams]);
 
   useEffect(() => {
     const oauthError = searchParams.get("error");
@@ -103,6 +106,12 @@ export default function LoginClient() {
       setError("OAuth login failed. Please try again.");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.focus();
+    }
+  }, [error]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -119,13 +128,13 @@ export default function LoginClient() {
       });
 
       if (!response.ok) {
-        const payload = await response.json().catch(() => null);
-        setError(payload?.error ?? "Login failed. Check your credentials.");
+        const payload = (await response.json().catch(() => null)) as AuthErrorPayload | null;
+        setError(getAuthErrorMessage(payload, "Login failed. Check your credentials."));
         return;
       }
 
       router.push(redirectTo);
-    } catch (err) {
+    } catch {
       setError("Login failed. Please try again.");
     } finally {
       setLoading(false);
@@ -209,7 +218,15 @@ export default function LoginClient() {
             </label>
 
             {error ? (
-              <div className="auth-reveal rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <div
+                ref={errorRef}
+                className="auth-reveal rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+                data-testid="auth-error"
+                role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
+                tabIndex={-1}
+              >
                 {error}
               </div>
             ) : null}
