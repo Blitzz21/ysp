@@ -18,7 +18,7 @@ export type SessionInfo = {
   assignedChapterId?: string;
 } | null;
 
-let sessionOverride: SessionInfo = null;
+let sessionOverride: SessionInfo | undefined;
 
 export function setSessionForTesting(session: SessionInfo): void {
   sessionOverride = session;
@@ -146,7 +146,7 @@ export async function signOut(): Promise<void> {
 }
 
 export async function getSession(): Promise<SessionInfo> {
-  if (sessionOverride) {
+  if (sessionOverride !== undefined) {
     return sessionOverride;
   }
 
