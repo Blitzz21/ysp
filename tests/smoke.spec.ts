@@ -65,6 +65,19 @@ test("programs list page renders", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("home opportunities CTA routes to public opportunities page", async ({ page }) => {
+  await page.goto("/");
+  const cta = page.getByRole("link", { name: "See all opportunities" });
+  await expect(cta).toHaveAttribute("href", "/volunteer-opportunities");
+});
+
+test("home opportunities copy has no encoding artifacts", async ({ page }) => {
+  await page.goto("/");
+  const opportunitiesSection = page.locator("#opportunities");
+  await expect(opportunitiesSection).toBeVisible();
+  await expect(opportunitiesSection).not.toContainText("Â·");
+});
+
 test("chapters page renders", async ({ page }) => {
   await page.goto("/chapters");
   await expect(
@@ -98,6 +111,25 @@ test("membership page renders with settings-driven content", async ({ page }) =>
 test("contact page renders", async ({ page }) => {
   await page.goto("/contact");
   await expect(page.getByRole("heading", { name: "Reach the YSP team" })).toBeVisible();
+});
+
+test("home contact methods are actionable links", async ({ page }) => {
+  await page.goto("/");
+  const contactSection = page.locator("#contact");
+  await expect(contactSection).toBeVisible();
+
+  await expect(
+    contactSection.getByRole("link", { name: "phyouthservice@gmail.com" })
+  ).toHaveAttribute("href", "mailto:phyouthservice@gmail.com");
+  await expect(
+    contactSection.getByRole("link", { name: "/YOUTHSERVICEPHILIPPINES" })
+  ).toHaveAttribute(
+    "href",
+    "https://www.facebook.com/YOUTHSERVICEPHILIPPINES"
+  );
+  await expect(
+    contactSection.getByRole("link", { name: "0917 779 8413" })
+  ).toHaveAttribute("href", "tel:+639177798413");
 });
 
 test("volunteer opportunities page renders", async ({ page }) => {
