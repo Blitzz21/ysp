@@ -777,5 +777,15 @@
   .admin-route-enter {
     animation: none;
   }
+
+  .opportunity-stream {
+    transition: none;
+  }
+
+  .stream-track {
+    will-change: auto;
+    transition: none;
+    transform: none !important;
+  }
 }
 

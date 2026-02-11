@@ -9,6 +9,30 @@ test("home page renders", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("opportunity stream respects reduced motion preference", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  const streamSection = page.locator("[data-stream-section]");
+  const firstStreamRow = page.locator("[data-stream-row]").first();
+
+  await expect(streamSection).toHaveAttribute("data-motion-mode", "reduced");
+  await expect(firstStreamRow).toBeVisible();
+
+  const beforeScrollTransform = await firstStreamRow.evaluate(
+    (element) => getComputedStyle(element).transform
+  );
+
+  await page.mouse.wheel(0, 1200);
+  await page.waitForTimeout(120);
+
+  const afterScrollTransform = await firstStreamRow.evaluate(
+    (element) => getComputedStyle(element).transform
+  );
+
+  expect(afterScrollTransform).toBe(beforeScrollTransform);
+});
+
 test("mobile home nav opens and routes to programs", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

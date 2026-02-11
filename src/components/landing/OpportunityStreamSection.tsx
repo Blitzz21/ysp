@@ -12,8 +12,26 @@ export function OpportunityStreamSection() {
     const streamRows = streamSection.querySelectorAll<HTMLElement>(
       "[data-stream-row]"
     );
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let rafId: number | null = null;
+    let isScrollBound = false;
+
+    const setStaticFallback = () => {
+      streamSection.dataset.motionMode = "reduced";
+      streamRows.forEach((row) => {
+        row.style.transform = "none";
+      });
+      streamSection.style.opacity = "1";
+      streamSection.style.transform = "none";
+    };
 
     const updateStreamGallery = () => {
+      if (mediaQuery.matches) {
+        setStaticFallback();
+        return;
+      }
+
+      streamSection.dataset.motionMode = "full";
       const rect = streamSection.getBoundingClientRect();
       const viewportHeight =
         window.innerHeight || document.documentElement.clientHeight;
@@ -38,14 +56,49 @@ export function OpportunityStreamSection() {
     };
 
     const handleScroll = () => {
-      window.requestAnimationFrame(updateStreamGallery);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      rafId = window.requestAnimationFrame(updateStreamGallery);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    updateStreamGallery();
+    const bindMotionBehavior = () => {
+      if (mediaQuery.matches) {
+        if (isScrollBound) {
+          window.removeEventListener("scroll", handleScroll);
+          isScrollBound = false;
+        }
+        setStaticFallback();
+        return;
+      }
+
+      if (!isScrollBound) {
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        isScrollBound = true;
+      }
+      updateStreamGallery();
+    };
+
+    bindMotionBehavior();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", bindMotionBehavior);
+    } else {
+      mediaQuery.addListener(bindMotionBehavior);
+    }
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      if (isScrollBound) {
+        window.removeEventListener("scroll", handleScroll);
+      }
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      if (typeof mediaQuery.removeEventListener === "function") {
+        mediaQuery.removeEventListener("change", bindMotionBehavior);
+      } else {
+        mediaQuery.removeListener(bindMotionBehavior);
+      }
     };
   }, []);
 
