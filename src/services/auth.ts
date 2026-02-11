@@ -150,7 +150,15 @@ export async function getSession(): Promise<SessionInfo> {
     return sessionOverride;
   }
 
-  const account = await fetchAccount();
+  let account: AccountResponse | null;
+  try {
+    account = await fetchAccount();
+  } catch (error) {
+    if (error instanceof UnexpectedError && /not configured/i.test(error.message)) {
+      return null;
+    }
+    throw error;
+  }
   if (!account) {
     return null;
   }
