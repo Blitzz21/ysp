@@ -197,15 +197,26 @@ export async function createRow<T>(
   tableId: string,
   data: Record<string, unknown>,
   permissions?: string[],
-  rowId: string = "unique()"
+  rowId?: string
 ): Promise<AppwriteRow<T>> {
   const config = getAppwriteConfig();
+  // Appwrite Tables variants differ on accepted row id field names.
+  // Send both camelCase and snake_case with an explicit generated id.
+  const resolvedRowId =
+    rowId ??
+    (globalThis.crypto?.randomUUID?.().replace(/-/g, "").slice(0, 32) ??
+      `${Date.now()}${Math.random().toString(36).slice(2, 10)}`);
   return appwriteRequest<AppwriteRow<T>>(
     `/tablesdb/${config.databaseId}/tables/${tableId}/rows`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rowId, data, permissions }),
+      body: JSON.stringify({
+        rowId: resolvedRowId,
+        row_id: resolvedRowId,
+        data,
+        permissions,
+      }),
     }
   );
 }
