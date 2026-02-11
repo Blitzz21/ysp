@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const jwt = typeof body?.jwt === "string" ? body.jwt : "";
   if (!jwt) {
-    return NextResponse.json({ error: "Missing jwt" }, { status: 400 });
+    return NextResponse.json({ error: "Missing jwt", code: "validation" }, { status: 400 });
   }
 
   const cookieStore = await cookies();

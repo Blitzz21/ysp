@@ -9,6 +9,31 @@ test("home page renders", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("mobile home nav opens and routes to programs", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  const openMenuButton = page.getByRole("button", {
+    name: "Open navigation menu",
+  });
+  await expect(openMenuButton).toBeVisible();
+  await openMenuButton.click({ force: true });
+
+  const mobileNav = page.locator("#mobile-primary-nav");
+  await expect(
+    mobileNav.getByRole("navigation", { name: "Primary mobile links" })
+  ).toBeVisible();
+
+  const programsLink = mobileNav.getByRole("link", { name: "Programs" });
+  await expect(programsLink).toBeVisible();
+  await programsLink.focus();
+  await programsLink.press("Enter");
+  await expect(page).toHaveURL(/\/programs$/);
+  await expect(
+    page.getByRole("heading", { name: "Programs built to scale youth action." })
+  ).toBeVisible();
+});
+
 test("programs list page renders", async ({ page }) => {
   await page.goto("/programs");
   await expect(

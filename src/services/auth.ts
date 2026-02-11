@@ -149,6 +149,12 @@ export async function getSession(): Promise<SessionInfo> {
   if (sessionOverride !== undefined) {
     return sessionOverride;
   }
+  if (process.env.NODE_ENV === "test" && process.env.E2E_ADMIN_BYPASS === "1") {
+    return {
+      userId: "e2e-admin",
+      role: "admin",
+    };
+  }
 
   let account: AccountResponse | null;
   try {

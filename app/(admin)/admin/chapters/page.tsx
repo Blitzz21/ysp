@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { CountedInput } from "@/components/admin/CountedField";
+import { toPublicDomainError } from "@/services/errorContract";
 import {
   adminListChapters,
   createChapter,
@@ -46,7 +47,7 @@ async function createChapterAction(formData: FormData): Promise<void> {
       published,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create chapter";
+    const message = toPublicDomainError(error, "Failed to create chapter").message;
     buildRedirect("error", message);
   }
 
@@ -83,7 +84,7 @@ async function updateChapterAction(formData: FormData): Promise<void> {
       published,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update chapter";
+    const message = toPublicDomainError(error, "Failed to update chapter").message;
     buildRedirect("error", message);
   }
 
@@ -97,7 +98,7 @@ async function deleteChapterAction(formData: FormData): Promise<void> {
   try {
     await deleteChapter(id);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to delete chapter";
+    const message = toPublicDomainError(error, "Failed to delete chapter").message;
     buildRedirect("error", message);
   }
   revalidatePath("/admin/chapters");

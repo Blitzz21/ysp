@@ -1,5 +1,7 @@
-﻿import { cookies } from "next/headers";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+
+import { fromHttpStatus } from "@/services/errorContract";
 
 const SESSION_COOKIE = "ysp_session";
 
@@ -16,13 +18,13 @@ export async function POST(request: Request) {
   const password = body.password;
   const name = body.name?.trim();
   if (!email || !password || !name) {
-    return NextResponse.json({ error: "Name, email, and password required" }, { status: 400 });
+    return NextResponse.json({ error: "Name, email, and password required", code: "validation" }, { status: 400 });
   }
 
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   if (!endpoint || !projectId) {
-    return NextResponse.json({ error: "Appwrite is not configured" }, { status: 500 });
+    return NextResponse.json({ error: "Appwrite is not configured", code: "unexpected" }, { status: 500 });
   }
 
   const base = endpoint.replace(/\/$/, "");
@@ -42,8 +44,9 @@ export async function POST(request: Request) {
 
   if (!createResponse.ok) {
     const payload = await createResponse.json().catch(() => null);
+    const normalized = fromHttpStatus(createResponse.status, payload?.message);
     return NextResponse.json(
-      { error: payload?.message ?? "Signup failed" },
+      { error: normalized.message, code: normalized.code },
       { status: createResponse.status }
     );
   }
@@ -59,8 +62,9 @@ export async function POST(request: Request) {
 
   if (!sessionResponse.ok) {
     const payload = await sessionResponse.json().catch(() => null);
+    const normalized = fromHttpStatus(sessionResponse.status, payload?.message);
     return NextResponse.json(
-      { error: payload?.message ?? "Account created but login failed" },
+      { error: normalized.message, code: normalized.code },
       { status: sessionResponse.status }
     );
   }
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
   const session = (await sessionResponse.json()) as AppwriteSession;
   const token = session.secret ?? session.$id;
   if (!token) {
-    return NextResponse.json({ error: "Session token missing" }, { status: 500 });
+    return NextResponse.json({ error: "Session token missing", code: "unexpected" }, { status: 500 });
   }
 
   const cookieStore = await cookies();

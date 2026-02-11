@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { CountedInput, CountedTextarea } from "@/components/admin/CountedField";
+import { toPublicDomainError } from "@/services/errorContract";
 import {
   adminListPrograms,
   createProgram,
@@ -48,7 +49,7 @@ async function createProgramAction(formData: FormData): Promise<void> {
       imageFile,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create program";
+    const message = toPublicDomainError(error, "Failed to create program").message;
     buildRedirect("error", message);
   }
 
@@ -75,7 +76,7 @@ async function updateProgramAction(formData: FormData): Promise<void> {
       imageFile: removeImage ? null : imageFile,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update program";
+    const message = toPublicDomainError(error, "Failed to update program").message;
     buildRedirect("error", message);
   }
 
@@ -89,7 +90,7 @@ async function deleteProgramAction(formData: FormData): Promise<void> {
   try {
     await deleteProgram(id);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to delete program";
+    const message = toPublicDomainError(error, "Failed to delete program").message;
     buildRedirect("error", message);
   }
   revalidatePath("/admin/programs");
@@ -144,7 +145,6 @@ function ProgramCard({ program }: { program: Program }) {
           <form
             action={updateProgramAction}
             className="space-y-3"
-            encType="multipart/form-data"
           >
             <input type="hidden" name="id" value={program.id} />
             <div className="grid gap-3 md:grid-cols-2">
@@ -276,7 +276,6 @@ export default async function AdminProgramsPage({
       <form
         action={createProgramAction}
         className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
-        encType="multipart/form-data"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>

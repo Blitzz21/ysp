@@ -739,6 +739,22 @@
   will-change: opacity, transform;
 }
 
+@keyframes adminRouteEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.996);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.admin-route-enter {
+  animation: adminRouteEnter 0.28s ease both;
+  will-change: opacity, transform;
+}
+
 @media (max-width: 900px) {
   .auth-panel {
     grid-template-columns: 1fr;
@@ -757,7 +773,8 @@
 @media (prefers-reduced-motion: reduce) {
   .auth-panel,
   .auth-aside,
-  .auth-card {
+  .auth-card,
+  .admin-route-enter {
     animation: none;
   }
 }
