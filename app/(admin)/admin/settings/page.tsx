@@ -62,6 +62,7 @@ async function updateStatsAction(formData: FormData): Promise<void> {
       projectsCount: parseOptionalInteger(formData.get("projectsCount")),
       chaptersCount: parseOptionalInteger(formData.get("chaptersCount")),
       membersCount: parseOptionalInteger(formData.get("membersCount")),
+      livesImpactedCount: parseOptionalInteger(formData.get("livesImpactedCount")),
     });
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update site stats").message;
@@ -110,6 +111,7 @@ export default async function AdminSettingsPage({
     projectsCount: 0,
     chaptersCount: 0,
     membersCount: 0,
+    livesImpactedCount: 0,
   };
 
   try {
@@ -227,7 +229,7 @@ export default async function AdminSettingsPage({
               Counters used for public trust signals on landing and related pages.
             </p>
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <label className="text-xs font-semibold text-ink">
               Projects count
               <input
@@ -259,6 +261,17 @@ export default async function AdminSettingsPage({
                 min={0}
                 step={1}
                 defaultValue={stats.membersCount}
+              />
+            </label>
+            <label className="text-xs font-semibold text-ink">
+              Lives impacted count
+              <input
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                name="livesImpactedCount"
+                type="number"
+                min={0}
+                step={1}
+                defaultValue={stats.livesImpactedCount}
               />
             </label>
           </div>

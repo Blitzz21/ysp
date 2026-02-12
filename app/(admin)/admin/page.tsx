@@ -26,7 +26,12 @@ export default async function AdminHomePage() {
   let chaptersCount = 0;
   let opportunitiesCount = 0;
   let draftsCount = 0;
-  let stats = { projectsCount: 0, chaptersCount: 0, membersCount: 0 };
+  let stats = {
+    projectsCount: 0,
+    chaptersCount: 0,
+    membersCount: 0,
+    livesImpactedCount: 0,
+  };
   let hasDataIssue = false;
 
   try {

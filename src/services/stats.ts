@@ -18,12 +18,14 @@ const updateSchema = z.object({
   projectsCount: z.number().int().optional(),
   chaptersCount: z.number().int().optional(),
   membersCount: z.number().int().optional(),
+  livesImpactedCount: z.number().int().optional(),
 });
 
 type StatsRow = {
   projectsCount: number;
   chaptersCount: number;
   membersCount: number;
+  livesImpactedCount?: number;
 };
 
 function mapStats(row?: StatsRow): SiteStats {
@@ -31,6 +33,7 @@ function mapStats(row?: StatsRow): SiteStats {
     projectsCount: row?.projectsCount ?? 0,
     chaptersCount: row?.chaptersCount ?? 0,
     membersCount: row?.membersCount ?? 0,
+    livesImpactedCount: row?.livesImpactedCount ?? 0,
   };
 }
 

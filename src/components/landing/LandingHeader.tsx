@@ -45,7 +45,7 @@ export function LandingHeader() {
         </Link>
 
         <nav
-          className="hidden items-center gap-2 rounded-full border border-gray-200 bg-white/90 px-4 py-2 text-xs font-semibold text-muted shadow-soft md:flex"
+          className="hidden items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-muted md:flex"
           aria-label="Primary"
         >
           {NAV_LINKS.map((item) => (

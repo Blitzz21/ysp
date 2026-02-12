@@ -52,4 +52,5 @@ export interface SiteStats {
   projectsCount: number;
   chaptersCount: number;
   membersCount: number;
+  livesImpactedCount: number;
 }
