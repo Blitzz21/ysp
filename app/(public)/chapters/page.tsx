@@ -1,33 +1,10 @@
 import Link from "next/link";
+import { listChapters } from "@/services/chapters";
 
-const CHAPTERS = [
-  {
-    name: "Manila Chapter",
-    location: "Metro Manila",
-    focus: "Civic innovation and education",
-    status: "Active",
-  },
-  {
-    name: "Cebu Chapter",
-    location: "Cebu City",
-    focus: "Mentorship and digital skills",
-    status: "Active",
-  },
-  {
-    name: "Davao Chapter",
-    location: "Davao City",
-    focus: "Health and community relief",
-    status: "Active",
-  },
-  {
-    name: "Baguio Chapter",
-    location: "Baguio City",
-    focus: "Environment and youth leadership",
-    status: "Launching",
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function ChaptersPage() {
+export default async function ChaptersPage() {
+  const chapters = await listChapters();
   return (
     <main className="pb-20">
         <section className="relative overflow-hidden pb-14 pt-12">
@@ -69,27 +46,31 @@ export default function ChaptersPage() {
             </div>
           </div>
 
-          {CHAPTERS.length === 0 ? (
+          {chapters.length === 0 ? (
             <div className="mt-8 rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">
               No chapters are published yet. Check back soon.
             </div>
           ) : (
             <div className="mt-8 grid gap-6 md:grid-cols-2">
-              {CHAPTERS.map((chapter) => (
+              {chapters.map((chapter) => (
                 <article
-                  key={chapter.name}
+                  key={chapter.id}
                   className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
                 >
                   <div className="flex items-center justify-between text-xs font-semibold text-muted">
-                    <span>{chapter.location}</span>
+                    <span>{chapter.location ?? "Philippines"}</span>
                     <span className="rounded-full bg-orange-500/10 px-3 py-1 text-orange-600">
-                      {chapter.status}
+                      {chapter.published ? "Active" : "Draft"}
                     </span>
                   </div>
                   <h3 className="mt-4 font-manrope text-xl font-semibold">
                     {chapter.name}
                   </h3>
-                  <p className="mt-2 text-sm text-muted">{chapter.focus}</p>
+                  <p className="mt-2 text-sm text-muted">
+                    {chapter.contactEmail || chapter.contactPhone
+                      ? `Contact: ${chapter.contactEmail ?? chapter.contactPhone}`
+                      : "Chapter profile is live. Reach out to join local activities."}
+                  </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Link
                       className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
