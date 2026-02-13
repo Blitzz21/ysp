@@ -16,30 +16,30 @@ export function ContactSection() {
             <div className="reveal rounded-3xl border border-gray-200 bg-white p-5 shadow-soft">
               <p className="text-xs font-semibold text-muted">Email</p>
               <a
-                className="mt-2 block text-sm font-semibold text-orange-600 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                className="mt-2 block text-sm font-semibold text-orange-600 underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
                 href="mailto:phyouthservice@gmail.com"
               >
-                phyouthservice@gmail.com
+                <span className="break-words">phyouthservice@gmail.com</span>
               </a>
             </div>
             <div className="reveal rounded-3xl border border-gray-200 bg-white p-5 shadow-soft">
               <p className="text-xs font-semibold text-muted">Facebook</p>
               <a
-                className="mt-2 block text-sm font-semibold text-orange-600 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                className="mt-2 block text-sm font-semibold text-orange-600 underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
                 href="https://www.facebook.com/YOUTHSERVICEPHILIPPINES"
                 target="_blank"
                 rel="noreferrer"
               >
-                /YOUTHSERVICEPHILIPPINES
+                <span className="break-words">/YOUTHSERVICEPHILIPPINES</span>
               </a>
             </div>
             <div className="reveal rounded-3xl border border-gray-200 bg-white p-5 shadow-soft">
               <p className="text-xs font-semibold text-muted">Mobile</p>
               <a
-                className="mt-2 block text-sm font-semibold text-orange-600 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                className="mt-2 block text-sm font-semibold text-orange-600 underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
                 href="tel:+639177798413"
               >
-                0917 779 8413
+                <span className="break-words">0917 779 8413</span>
               </a>
             </div>
           </div>
