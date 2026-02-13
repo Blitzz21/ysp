@@ -31,6 +31,8 @@ import {
   buildOrderAsc,
   getRow,
   createRow,
+  updateRow,
+  deleteRow,
 } from "../appwriteClient";
 
 const baseRow = {
@@ -228,5 +230,29 @@ describe("opportunities service RBAC", () => {
     setSessionForTesting({ userId: "u1", role: "admin" });
 
     await expect(listMyChapterOpportunities()).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it("revokes chapter head update access after reassignment", async () => {
+    vi.mocked(getRow).mockResolvedValue({ ...baseRow, chapterId: "chapter-1" } as OpportunityRow);
+    vi.mocked(updateRow).mockResolvedValue({ ...baseRow } as OpportunityRow);
+
+    await expect(updateOpportunity("opp1", { title: "new" })).resolves.toBeDefined();
+
+    setSessionForTesting({ userId: "u1", role: "chapter_head", assignedChapterId: "chapter-2" });
+
+    await expect(updateOpportunity("opp1", { title: "newer" })).rejects.toBeInstanceOf(
+      ForbiddenError
+    );
+  });
+
+  it("revokes chapter head delete access after reassignment", async () => {
+    vi.mocked(getRow).mockResolvedValue({ ...baseRow, chapterId: "chapter-1" } as OpportunityRow);
+    vi.mocked(deleteRow).mockResolvedValueOnce(undefined);
+
+    await deleteOpportunity("opp1");
+
+    setSessionForTesting({ userId: "u1", role: "chapter_head", assignedChapterId: "chapter-2" });
+
+    await expect(deleteOpportunity("opp1")).rejects.toBeInstanceOf(ForbiddenError);
   });
 });
