@@ -6,12 +6,11 @@ import { z } from "zod";
 import {
   buildEqualQuery,
   createRow,
-  getAppwriteConfig,
   listRows,
   uploadFile,
   updateRow,
-  addReadPermissions,
   userReadPermissions,
+  userReadWritePermissions,
 } from "./appwriteClient";
 import {
   ForbiddenError,
@@ -33,6 +32,7 @@ type UserProfileRow = {
   name?: string;
   age?: number;
   avatarUrl?: string;
+  avatarFileId?: string;
   email?: string;
 };
 
@@ -40,6 +40,7 @@ const profileSchema = z.object({
   name: z.string().min(1).max(128).optional(),
   age: z.number().int().min(0).max(120).optional(),
   avatarUrl: z.string().url().optional(),
+  avatarFileId: z.string().min(1).max(128).optional(),
   email: z.string().email().optional(),
 });
 
@@ -64,6 +65,7 @@ function mapProfile(
     name: row.name ?? undefined,
     age: row.age ?? undefined,
     avatarUrl: row.avatarUrl ?? undefined,
+    avatarFileId: row.avatarFileId ?? undefined,
     email: row.email ?? undefined,
     createdAt: row.$createdAt,
     updatedAt: row.$updatedAt,
@@ -98,6 +100,7 @@ export async function updateProfile(input: {
   name?: string;
   age?: number;
   avatarUrl?: string;
+  avatarFileId?: string;
   email?: string;
 }): Promise<UserProfile> {
   const session = requireSession(await getSession());
@@ -128,25 +131,15 @@ export async function updateProfile(input: {
   return mapProfile(updated);
 }
 
-function buildFileViewUrl(fileId: string): string {
-  const config = getAppwriteConfig();
-  const endpoint = normalizeEndpoint(config.endpoint);
-  return `${endpoint}/storage/buckets/${config.bucketId}/files/${fileId}/view?project=${config.projectId}`;
-}
-
 export async function updateAvatar(file: File): Promise<UserProfile> {
   const session = requireSession(await getSession());
   if (!file || file.size === 0) {
     throw new ValidationError("Avatar file is required");
   }
 
-  const permissions = addReadPermissions(
-    userReadPermissions(session.userId),
-    ['read("any")']
-  );
+  const permissions = userReadWritePermissions(session.userId);
   const uploaded = await uploadFile(file, permissions);
-  const avatarUrl = buildFileViewUrl(uploaded.$id);
-  return updateProfile({ avatarUrl });
+  return updateProfile({ avatarFileId: uploaded.$id });
 }
 
 function requirePublicEnv(name: string, value?: string): string {

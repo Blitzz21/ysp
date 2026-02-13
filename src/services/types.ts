@@ -93,6 +93,7 @@ export interface UserProfile {
   name?: string;
   age?: number;
   avatarUrl?: string;
+  avatarFileId?: string;
   email?: string;
   createdAt: string;
   updatedAt: string;

@@ -133,13 +133,16 @@ export default async function SettingsPage(props: {
   }
 
   const profile = await getMyProfile();
+  const avatarSrc = profile.avatarFileId
+    ? `/api/profile/avatar?rev=${profile.avatarFileId}`
+    : null;
 
   return (
     <div className="space-y-10">
       <AvatarUploader
         name={profile.name ?? null}
         roleLabel={profile.role ?? "member"}
-        initialUrl={profile.avatarUrl ?? null}
+        initialUrl={avatarSrc}
         onUpload={updateAvatarAction}
       />
       <header>
