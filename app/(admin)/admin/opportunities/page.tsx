@@ -44,6 +44,15 @@ function parseSdgs(value: string): string[] {
   return parsed;
 }
 
+function parseCount(value: string, fieldName: string): number | undefined {
+  if (!value) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`${fieldName} must be a non-negative number`);
+  }
+  return Math.floor(parsed);
+}
+
 function toDateTimeLocalValue(value: string): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
@@ -68,6 +77,13 @@ async function createOpportunityAction(formData: FormData): Promise<void> {
     const signupContactName = String(formData.get("signupContactName") ?? "").trim();
     const signupContactEmail = String(formData.get("signupContactEmail") ?? "").trim();
     const signupContactPhone = String(formData.get("signupContactPhone") ?? "").trim();
+    const capacity = parseCount(String(formData.get("capacity") ?? "").trim(), "Capacity");
+    const currentVolunteers = parseCount(
+      String(formData.get("currentVolunteers") ?? "").trim(),
+      "Current volunteers"
+    );
+    const waitlistEnabled =
+      String(formData.get("waitlistEnabled") ?? "false") === "true";
     const published = String(formData.get("published") ?? "false") === "true";
 
     await createOpportunity({
@@ -79,6 +95,9 @@ async function createOpportunityAction(formData: FormData): Promise<void> {
       signupContactName: signupContactName.length ? signupContactName : undefined,
       signupContactEmail: signupContactEmail.length ? signupContactEmail : undefined,
       signupContactPhone: signupContactPhone.length ? signupContactPhone : undefined,
+      capacity,
+      currentVolunteers,
+      waitlistEnabled,
       published,
     });
   } catch (error) {
@@ -102,6 +121,13 @@ async function updateOpportunityAction(formData: FormData): Promise<void> {
     const signupContactName = String(formData.get("signupContactName") ?? "").trim();
     const signupContactEmail = String(formData.get("signupContactEmail") ?? "").trim();
     const signupContactPhone = String(formData.get("signupContactPhone") ?? "").trim();
+    const capacity = parseCount(String(formData.get("capacity") ?? "").trim(), "Capacity");
+    const currentVolunteers = parseCount(
+      String(formData.get("currentVolunteers") ?? "").trim(),
+      "Current volunteers"
+    );
+    const waitlistEnabled =
+      String(formData.get("waitlistEnabled") ?? "false") === "true";
     const published = String(formData.get("published") ?? "false") === "true";
 
     await updateOpportunity(id, {
@@ -115,6 +141,9 @@ async function updateOpportunityAction(formData: FormData): Promise<void> {
       signupContactName: signupContactName.length ? signupContactName : undefined,
       signupContactEmail: signupContactEmail.length ? signupContactEmail : undefined,
       signupContactPhone: signupContactPhone.length ? signupContactPhone : undefined,
+      capacity,
+      currentVolunteers,
+      waitlistEnabled,
       published,
     });
   } catch (error) {
@@ -289,6 +318,39 @@ function OpportunityCard({
               />
             </label>
           </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <label className="text-xs font-semibold text-ink">
+              Capacity needed
+              <input
+                name="capacity"
+                type="number"
+                min={0}
+                defaultValue={String(opportunity.capacity)}
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="text-xs font-semibold text-ink">
+              Current volunteers
+              <input
+                name="currentVolunteers"
+                type="number"
+                min={0}
+                defaultValue={String(opportunity.currentVolunteers)}
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="text-xs font-semibold text-ink">
+              Waitlist
+              <select
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                name="waitlistEnabled"
+                defaultValue={opportunity.waitlistEnabled ? "true" : "false"}
+              >
+                <option value="false">Disabled</option>
+                <option value="true">Enabled</option>
+              </select>
+            </label>
+          </div>
           <button
             type="submit"
             className="rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-glow"
@@ -441,6 +503,41 @@ export default async function AdminOpportunitiesPage({
           <label className="text-xs font-semibold text-ink">
             Contact phone
             <CountedInput name="signupContactPhone" maxLength={64} />
+          </label>
+        </div>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <label className="text-xs font-semibold text-ink">
+            Capacity needed
+            <input
+              name="capacity"
+              type="number"
+              min={0}
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            />
+            <div className="mt-1 text-[11px] text-muted">Total volunteers needed.</div>
+          </label>
+          <label className="text-xs font-semibold text-ink">
+            Current volunteers
+            <input
+              name="currentVolunteers"
+              type="number"
+              min={0}
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+            />
+            <div className="mt-1 text-[11px] text-muted">
+              Existing volunteers already committed.
+            </div>
+          </label>
+          <label className="text-xs font-semibold text-ink">
+            Waitlist
+            <select
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              name="waitlistEnabled"
+              defaultValue="false"
+            >
+              <option value="false">Disabled</option>
+              <option value="true">Enabled</option>
+            </select>
           </label>
         </div>
         <button

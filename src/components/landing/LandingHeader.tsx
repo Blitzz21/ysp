@@ -33,7 +33,7 @@ export function LandingHeader() {
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur">
       <div className="mx-auto flex w-[92%] max-w-6xl items-center justify-between gap-3 py-3">
         <Link className="flex items-center gap-3" href="/" aria-label="YSP home">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-soft ring-1 ring-orange-100">
+          <span className="flex h-11 w-11 items-center justify-center">
             <Image
               src="/ysp-logo.png"
               alt="Youth Service Philippines logo"

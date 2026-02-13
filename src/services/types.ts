@@ -35,6 +35,9 @@ export interface VolunteerOpportunity {
   signupContactName?: string;
   signupContactEmail?: string;
   signupContactPhone?: string;
+  capacity: number;
+  currentVolunteers: number;
+  waitlistEnabled: boolean;
   published: boolean;
   createdAt: string;
   updatedAt: string;

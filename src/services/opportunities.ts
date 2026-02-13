@@ -17,10 +17,11 @@ import {
   userReadWritePermissions,
 } from "./appwriteClient";
 import { ForbiddenError, NotFoundError, ValidationError } from "./errors";
-import { requireAdmin, requireAssignedChapter, requireChapterHead } from "./rbac";
+import { requireAdmin, requireAssignedChapter, requireChapterHead, requireSession } from "./rbac";
 import type { VolunteerOpportunity } from "./types";
 
 const TABLE_ID = "volunteer_opportunities";
+const SIGNUPS_TABLE_ID = "opportunity_signups";
 const PUBLISHED_FIELD = "pubished";
 
 const createSchema = z.object({
@@ -32,6 +33,9 @@ const createSchema = z.object({
   signupContactName: z.string().min(1).optional(),
   signupContactEmail: z.string().email().optional(),
   signupContactPhone: z.string().min(3).optional(),
+  capacity: z.number().int().nonnegative().optional(),
+  currentVolunteers: z.number().int().nonnegative().optional(),
+  waitlistEnabled: z.boolean().optional(),
   published: z.boolean().optional(),
 });
 
@@ -61,7 +65,17 @@ type OpportunityRow = {
   signupContactName?: string;
   signupContactEmail?: string;
   signupContactPhone?: string;
+  capacity?: number;
+  currentVolunteers?: number;
+  waitlistEnabled?: boolean;
   pubished: boolean;
+};
+
+type OpportunitySignupRow = {
+  userId: string;
+  opportunityId: string;
+  status: "joined" | "cancelled" | "waitlisted";
+  joinedAt: string;
 };
 
 function serializeSdgs(values: string[]): string {
@@ -89,6 +103,9 @@ function mapOpportunity(
     signupContactName: row.signupContactName ?? undefined,
     signupContactEmail: row.signupContactEmail ?? undefined,
     signupContactPhone: row.signupContactPhone ?? undefined,
+    capacity: Math.max(0, row.capacity ?? 0),
+    currentVolunteers: Math.max(0, row.currentVolunteers ?? 0),
+    waitlistEnabled: row.waitlistEnabled ?? false,
     published: row.pubished,
     createdAt: row.$createdAt,
     updatedAt: row.$updatedAt,
@@ -256,6 +273,9 @@ export async function createOpportunity(input: {
   signupContactName?: string;
   signupContactEmail?: string;
   signupContactPhone?: string;
+  capacity?: number;
+  currentVolunteers?: number;
+  waitlistEnabled?: boolean;
   published?: boolean;
 }): Promise<VolunteerOpportunity> {
   const session = await getSession();
@@ -267,6 +287,13 @@ export async function createOpportunity(input: {
   }
 
   const published = parsed.data.published ?? false;
+  const capacity = parsed.data.capacity ?? 0;
+  const currentVolunteers = parsed.data.currentVolunteers ?? 0;
+  const waitlistEnabled = parsed.data.waitlistEnabled ?? false;
+
+  if (capacity > 0 && currentVolunteers > capacity) {
+    throw new ValidationError("Current volunteers cannot exceed capacity");
+  }
 
   const row = await createRow<OpportunityRow>(
     TABLE_ID,
@@ -279,6 +306,9 @@ export async function createOpportunity(input: {
       signupContactName: parsed.data.signupContactName,
       signupContactEmail: parsed.data.signupContactEmail,
       signupContactPhone: parsed.data.signupContactPhone,
+      capacity,
+      currentVolunteers,
+      waitlistEnabled,
       [PUBLISHED_FIELD]: published,
     },
     buildOpportunityPermissions(published)
@@ -300,6 +330,13 @@ export async function createMyChapterOpportunity(
   }
 
   const published = parsed.data.published ?? false;
+  const capacity = parsed.data.capacity ?? 0;
+  const currentVolunteers = parsed.data.currentVolunteers ?? 0;
+  const waitlistEnabled = parsed.data.waitlistEnabled ?? false;
+
+  if (capacity > 0 && currentVolunteers > capacity) {
+    throw new ValidationError("Current volunteers cannot exceed capacity");
+  }
   const row = await createRow<OpportunityRow>(
     TABLE_ID,
     {
@@ -311,6 +348,9 @@ export async function createMyChapterOpportunity(
       signupContactName: parsed.data.signupContactName,
       signupContactEmail: parsed.data.signupContactEmail,
       signupContactPhone: parsed.data.signupContactPhone,
+      capacity,
+      currentVolunteers,
+      waitlistEnabled,
       [PUBLISHED_FIELD]: published,
     },
     buildOpportunityPermissions(published, session?.userId)
@@ -331,6 +371,12 @@ export async function updateOpportunity(
     }
     const current = await getRow<OpportunityRow>(TABLE_ID, id);
     const published = parsed.data.published ?? current.pubished;
+    const capacity = parsed.data.capacity ?? current.capacity ?? 0;
+    const currentVolunteers =
+      parsed.data.currentVolunteers ?? current.currentVolunteers ?? 0;
+    if (capacity > 0 && currentVolunteers > capacity) {
+      throw new ValidationError("Current volunteers cannot exceed capacity");
+    }
     const data: Record<string, unknown> = { ...parsed.data };
     if (parsed.data.eventDate) {
       data.eventData = parsed.data.eventDate.toISOString();
@@ -342,6 +388,15 @@ export async function updateOpportunity(
     if (parsed.data.published !== undefined) {
       data[PUBLISHED_FIELD] = parsed.data.published;
       delete data.published;
+    }
+    if (parsed.data.capacity !== undefined) {
+      data.capacity = capacity;
+    }
+    if (parsed.data.currentVolunteers !== undefined) {
+      data.currentVolunteers = currentVolunteers;
+    }
+    if (parsed.data.waitlistEnabled !== undefined) {
+      data.waitlistEnabled = parsed.data.waitlistEnabled;
     }
     const row = await updateRow<OpportunityRow>(
       TABLE_ID,
@@ -364,6 +419,12 @@ export async function updateOpportunity(
   }
 
   const published = parsed.data.published ?? current.pubished;
+  const capacity = parsed.data.capacity ?? current.capacity ?? 0;
+  const currentVolunteers =
+    parsed.data.currentVolunteers ?? current.currentVolunteers ?? 0;
+  if (capacity > 0 && currentVolunteers > capacity) {
+    throw new ValidationError("Current volunteers cannot exceed capacity");
+  }
   const data: Record<string, unknown> = { ...parsed.data };
   delete data.chapterId;
   if (parsed.data.eventDate) {
@@ -376,6 +437,15 @@ export async function updateOpportunity(
   if (parsed.data.published !== undefined) {
     data[PUBLISHED_FIELD] = parsed.data.published;
     delete data.published;
+  }
+  if (parsed.data.capacity !== undefined) {
+    data.capacity = capacity;
+  }
+  if (parsed.data.currentVolunteers !== undefined) {
+    data.currentVolunteers = currentVolunteers;
+  }
+  if (parsed.data.waitlistEnabled !== undefined) {
+    data.waitlistEnabled = parsed.data.waitlistEnabled;
   }
 
   const row = await updateRow<OpportunityRow>(
@@ -403,4 +473,57 @@ export async function deleteOpportunity(id: string): Promise<void> {
     throw new ForbiddenError("Cannot delete opportunities outside your chapter");
   }
   await deleteRow(TABLE_ID, id);
+}
+
+export async function joinOpportunity(
+  opportunityId: string
+): Promise<"joined" | "waitlisted"> {
+  const session = requireSession(await getSession());
+  const opportunity = await getRow<OpportunityRow>(TABLE_ID, opportunityId);
+  if (!opportunity) {
+    throw new NotFoundError("Opportunity not found");
+  }
+  if (!opportunity.pubished) {
+    throw new ForbiddenError("Opportunity is not open for signups");
+  }
+
+  const existing = await listRows<OpportunitySignupRow>(SIGNUPS_TABLE_ID, [
+    buildEqualQuery("userId", session.userId),
+    buildEqualQuery("opportunityId", opportunityId),
+  ]);
+  const active = existing.find((row) => row.status !== "cancelled");
+  if (active) {
+    return active.status;
+  }
+
+  const capacity = Math.max(0, opportunity.capacity ?? 0);
+  const currentVolunteers = Math.max(0, opportunity.currentVolunteers ?? 0);
+  const waitlistEnabled = opportunity.waitlistEnabled ?? false;
+
+  let status: "joined" | "waitlisted" = "joined";
+  if (capacity > 0 && currentVolunteers >= capacity) {
+    if (!waitlistEnabled) {
+      throw new ValidationError("Opportunity is full");
+    }
+    status = "waitlisted";
+  }
+
+  await createRow<OpportunitySignupRow>(
+    SIGNUPS_TABLE_ID,
+    {
+      userId: session.userId,
+      opportunityId,
+      status,
+      joinedAt: new Date().toISOString(),
+    },
+    userReadWritePermissions(session.userId)
+  );
+
+  if (status === "joined") {
+    await updateRow<OpportunityRow>(TABLE_ID, opportunityId, {
+      currentVolunteers: currentVolunteers + 1,
+    });
+  }
+
+  return status;
 }

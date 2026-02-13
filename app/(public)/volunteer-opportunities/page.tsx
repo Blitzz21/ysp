@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { listPublicChapters } from "@/services/chapters";
-import { listPublicOpportunities } from "@/services/opportunities";
+import { listPublicOpportunities, joinOpportunity } from "@/services/opportunities";
+import { toPublicDomainError } from "@/services/errorContract";
 import type { VolunteerOpportunity } from "@/services/types";
 
 const MANILA_TIMEZONE = "Asia/Manila";
@@ -54,6 +57,47 @@ function getSdgColor(tag: string): string {
   return "bg-orange-500";
 }
 
+function buildRedirect(status: "success" | "error", message: string): never {
+  const encoded = encodeURIComponent(message);
+  redirect(`/volunteer-opportunities?status=${status}&message=${encoded}`);
+}
+
+async function joinOpportunityAction(formData: FormData): Promise<void> {
+  "use server";
+  const id = String(formData.get("id") ?? "").trim();
+  try {
+    const result = await joinOpportunity(id);
+    const message =
+      result === "waitlisted"
+        ? "You have been added to the waitlist."
+        : "You are now signed up.";
+    revalidatePath("/volunteer-opportunities");
+    buildRedirect("success", message);
+  } catch (error) {
+    const message = toPublicDomainError(
+      error,
+      "Unable to join this opportunity."
+    ).message;
+    buildRedirect("error", message);
+  }
+}
+
+function StatusBanner({ status, message }: { status?: string; message?: string }) {
+  if (!message) return null;
+  const isError = status === "error";
+  return (
+    <div
+      className={`mt-6 rounded-2xl border px-4 py-3 text-sm ${
+        isError
+          ? "border-red-200 bg-red-50 text-red-700"
+          : "border-green-200 bg-green-50 text-green-700"
+      }`}
+    >
+      {message}
+    </div>
+  );
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function VolunteerOpportunitiesPage(props: {
@@ -66,6 +110,8 @@ export default async function VolunteerOpportunitiesPage(props: {
   const fromDateRaw = readParam(searchParams, "fromDate");
   const toDateRaw = readParam(searchParams, "toDate");
   const status = getStatusFilter(searchParams);
+  const statusMessage = readParam(searchParams, "status");
+  const message = readParam(searchParams, "message");
 
   const fromDate = parseDateValue(fromDateRaw);
   const toDate = parseDateValue(toDateRaw);
@@ -208,6 +254,8 @@ export default async function VolunteerOpportunitiesPage(props: {
             </div>
           ) : null}
 
+          <StatusBanner status={statusMessage} message={message} />
+
           {!hasLoadError && opportunities.length === 0 ? (
             <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">
               No opportunities match your current filters.
@@ -243,6 +291,53 @@ export default async function VolunteerOpportunitiesPage(props: {
                       <span className="rounded-full bg-gray-400 px-2 py-1">No SDG tags</span>
                     )}
                   </div>
+                  {(() => {
+                    const capacity = Math.max(0, opportunity.capacity);
+                    const current = Math.max(0, opportunity.currentVolunteers);
+                    const hasCapacity = capacity > 0;
+                    const isFull = hasCapacity && current >= capacity;
+                    const ratio = hasCapacity ? Math.min(current / capacity, 1) : 0;
+                    return (
+                      <div className="mt-5">
+                        <div className="flex items-center justify-between text-xs font-semibold text-ink">
+                          <span>
+                            {hasCapacity
+                              ? `${current} / ${capacity} volunteers`
+                              : `${current} volunteers`}
+                          </span>
+                          <span className="text-muted">
+                            {hasCapacity
+                              ? isFull
+                                ? opportunity.waitlistEnabled
+                                  ? "Waitlist open"
+                                  : "Full"
+                                : `${capacity - current} spots left`
+                              : "Open"}
+                          </span>
+                        </div>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
+                          <div
+                            className="h-full rounded-full bg-orange-500 transition-all"
+                            style={{ width: `${Math.round(ratio * 100)}%` }}
+                          />
+                        </div>
+                        <form action={joinOpportunityAction} className="mt-4">
+                          <input type="hidden" name="id" value={opportunity.id} />
+                          <button
+                            type="submit"
+                            className="w-full rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+                            disabled={isFull && !opportunity.waitlistEnabled}
+                          >
+                            {isFull
+                              ? opportunity.waitlistEnabled
+                                ? "Join waitlist"
+                                : "Full"
+                              : "Join opportunity"}
+                          </button>
+                        </form>
+                      </div>
+                    );
+                  })()}
                 </article>
               ))}
             </div>
