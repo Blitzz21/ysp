@@ -1,6 +1,48 @@
 import Link from "next/link";
 
-export function OpportunitiesSection() {
+import { listPublicChapters } from "@/services/chapters";
+import { listPublicOpportunities } from "@/services/opportunities";
+
+const MANILA_TIMEZONE = "Asia/Manila";
+
+function formatEventDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+  return new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: MANILA_TIMEZONE,
+  }).format(date);
+}
+
+function getSdgColor(tag: string): string {
+  const normalized = tag.toLowerCase();
+  if (normalized.includes("health")) return "bg-[#4C9F38]";
+  if (normalized.includes("education")) return "bg-[#C5192D]";
+  if (normalized.includes("water")) return "bg-[#26BDE2]";
+  if (normalized.includes("climate")) return "bg-[#3F7E44]";
+  if (normalized.includes("cities")) return "bg-[#FD9D24]";
+  if (normalized.includes("inequal")) return "bg-[#DD1367]";
+  return "bg-orange-500";
+}
+
+export async function OpportunitiesSection() {
+  let hasLoadError = false;
+  let opportunities: Awaited<ReturnType<typeof listPublicOpportunities>> = [];
+  let chapterNameById = new Map<string, string>();
+
+  try {
+    const [publicOpportunities, publicChapters] = await Promise.all([
+      listPublicOpportunities(),
+      listPublicChapters(),
+    ]);
+    opportunities = publicOpportunities.slice(0, 3);
+    chapterNameById = new Map(publicChapters.map((chapter) => [chapter.id, chapter.name]));
+  } catch {
+    // Keep page render-safe when Appwrite env is not available in CI/dev.
+    hasLoadError = true;
+  }
+
   return (
     <section className="py-20" id="opportunities">
       <div className="mx-auto w-[92%] max-w-6xl">
@@ -22,79 +64,62 @@ export function OpportunitiesSection() {
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <article className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
-            <div className="h-32 rounded-2xl bg-[linear-gradient(135deg,#FFE9C7_0%,#FF7A1A_90%)]"></div>
-            <div className="mt-4 flex items-center justify-between text-xs font-semibold text-muted">
-              <span>Manila Chapter</span>
-              <span className="rounded-full bg-orange-500/10 px-3 py-1 text-orange-600">
-                On-site
-              </span>
-            </div>
-            <h3 className="mt-3 font-manrope text-lg font-semibold">
-              Manila River Sweep
-            </h3>
-            <p className="mt-2 text-sm text-muted">
-              March 18, 2025 | 7:00 AM - 12:00 PM | Pasig River
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-white">
-              <span className="rounded-full bg-[#26BDE2] px-2 py-1">
-                Clean Water
-              </span>
-              <span className="rounded-full bg-[#3F7E44] px-2 py-1">
-                Climate Action
-              </span>
-            </div>
-          </article>
+        {hasLoadError ? (
+          <div className="mt-8 rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">
+            Opportunities preview is unavailable right now.
+          </div>
+        ) : null}
 
-          <article className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
-            <div className="h-32 rounded-2xl bg-[linear-gradient(135deg,#F7F8FA_0%,#FFCF3D_90%)]"></div>
-            <div className="mt-4 flex items-center justify-between text-xs font-semibold text-muted">
-              <span>Cebu Chapter</span>
-              <span className="rounded-full bg-orange-500/10 px-3 py-1 text-orange-600">
-                Virtual
-              </span>
-            </div>
-            <h3 className="mt-3 font-manrope text-lg font-semibold">
-              Mentor a Learner Night
-            </h3>
-            <p className="mt-2 text-sm text-muted">
-              March 21, 2025 | 6:00 PM - 8:00 PM | Online
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-white">
-              <span className="rounded-full bg-[#C5192D] px-2 py-1">
-                Quality Education
-              </span>
-              <span className="rounded-full bg-[#DD1367] px-2 py-1">
-                Reduced Inequalities
-              </span>
-            </div>
-          </article>
+        {!hasLoadError && opportunities.length === 0 ? (
+          <div className="mt-8 rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">
+            No published opportunities yet. Check back soon.
+          </div>
+        ) : null}
 
-          <article className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
-            <div className="h-32 rounded-2xl bg-[linear-gradient(135deg,#F7F8FA_0%,#FF7A1A_90%)]"></div>
-            <div className="mt-4 flex items-center justify-between text-xs font-semibold text-muted">
-              <span>Davao Chapter</span>
-              <span className="rounded-full bg-orange-500/10 px-3 py-1 text-orange-600">
-                On-site
-              </span>
-            </div>
-            <h3 className="mt-3 font-manrope text-lg font-semibold">
-              Barangay Health Kits
-            </h3>
-            <p className="mt-2 text-sm text-muted">
-              March 29, 2025 | 8:00 AM - 2:00 PM | Davao City
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-white">
-              <span className="rounded-full bg-[#4C9F38] px-2 py-1">
-                Good Health
-              </span>
-              <span className="rounded-full bg-[#FD9D24] px-2 py-1">
-                Sustainable Cities
-              </span>
-            </div>
-          </article>
-        </div>
+        {!hasLoadError && opportunities.length > 0 ? (
+          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {opportunities.map((opportunity, index) => (
+              <article
+                key={opportunity.id}
+                className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
+              >
+                <div
+                  className={`h-32 rounded-2xl ${
+                    index % 3 === 1
+                      ? "bg-[linear-gradient(135deg,#F7F8FA_0%,#FFCF3D_90%)]"
+                      : "bg-[linear-gradient(135deg,#FFE9C7_0%,#FF7A1A_90%)]"
+                  }`}
+                ></div>
+                <div className="mt-4 flex items-center justify-between text-xs font-semibold text-muted">
+                  <span>{chapterNameById.get(opportunity.chapterId) ?? "YSP Chapter"}</span>
+                  <span className="rounded-full bg-orange-500/10 px-3 py-1 text-orange-600">
+                    Live
+                  </span>
+                </div>
+                <h3 className="mt-3 font-manrope text-lg font-semibold">
+                  {opportunity.title}
+                </h3>
+                <p className="mt-2 text-sm text-muted">
+                  {formatEventDate(opportunity.eventDate)}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-white">
+                  {opportunity.sdgs.length > 0 ? (
+                    opportunity.sdgs.map((tag) => (
+                      <span
+                        key={`${opportunity.id}-${tag}`}
+                        className={`rounded-full px-2 py-1 ${getSdgColor(tag)}`}
+                      >
+                        {tag}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="rounded-full bg-gray-400 px-2 py-1">No SDG tags</span>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );

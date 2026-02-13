@@ -33,7 +33,7 @@ function mapStats(row?: StatsRow): SiteStats {
     projectsCount: row?.projectsCount ?? 0,
     chaptersCount: row?.chaptersCount ?? 0,
     membersCount: row?.membersCount ?? 0,
-    livesImpactedCount: row?.livesImpactedCount ?? 0,
+    livesImpactedCount: row?.livesImpactedCount ?? row?.membersCount ?? 0,
   };
 }
 

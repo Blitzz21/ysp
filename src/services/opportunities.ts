@@ -213,6 +213,21 @@ export async function listPublicOpportunities(params?: {
   return listPublishedOpportunities(params);
 }
 
+export async function listMyChapterOpportunities(): Promise<VolunteerOpportunity[]> {
+  const session = await getSession();
+  requireChapterHead(session);
+  const chapterId = requireAssignedChapter(session);
+
+  const queries = [
+    buildEqualQuery("chapterId", chapterId),
+    buildOrderAsc("eventData"),
+    buildOrderAsc("$createdAt"),
+  ];
+
+  const rows = await listRows<OpportunityRow>(TABLE_ID, queries);
+  return sortDeterministically(rows.map(mapOpportunity));
+}
+
 export async function adminListOpportunities(params?: {
   chapterId?: string;
   includeDrafts?: boolean;

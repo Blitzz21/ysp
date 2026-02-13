@@ -6,13 +6,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { getAuthErrorMessage, type AuthErrorPayload } from "@/lib/authErrors";
 
-const metrics = [
-  { value: "Admin", label: "Role required" },
-  { value: "24/7", label: "Console access" },
-  { value: "Secure", label: "Appwrite sessions" },
-  { value: "YSP", label: "Mission aligned" },
-];
-
 export default function SignupPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -159,25 +152,6 @@ export default function SignupPage() {
             </Link>
           </div>
         </section>
-
-        <aside className="auth-aside">
-          <div className="auth-aside-card">
-            <p className="auth-kicker">Admin readiness</p>
-            <h3 className="auth-title">What you can do after approval</h3>
-            <p className="auth-copy">
-              Create programs, publish opportunities, and manage chapters with secure access
-              controls and audit-ready permissions.
-            </p>
-            <div className="auth-metrics">
-              {metrics.map((metric) => (
-                <div key={metric.label}>
-                  <p className="auth-metric-value">{metric.value}</p>
-                  <p className="auth-metric-label">{metric.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
       </div>
     </div>
   );

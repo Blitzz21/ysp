@@ -6,13 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getAuthErrorMessage, type AuthErrorPayload } from "@/lib/authErrors";
 
-const metrics = [
-  { value: "120+", label: "Partner chapters" },
-  { value: "1.5k+", label: "Active volunteers" },
-  { value: "70+", label: "Programs live" },
-  { value: "PH", label: "Nationwide reach" },
-];
-
 export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -156,26 +149,7 @@ export default function LoginClient() {
         </Link>
       </div>
 
-      <div className="auth-panel">
-        <aside className="auth-aside">
-          <div className="auth-aside-card">
-            <p className="auth-kicker">Secure access</p>
-            <h1 className="auth-title">Sign in to manage YSP programs and chapters.</h1>
-            <p className="auth-copy">
-              Use your admin credentials or Google account to access the console. All actions
-              are tracked and permissioned.
-            </p>
-            <div className="auth-metrics">
-              {metrics.map((metric) => (
-                <div key={metric.label}>
-                  <p className="auth-metric-value">{metric.value}</p>
-                  <p className="auth-metric-label">{metric.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
+      <div className="auth-panel auth-panel-single">
         <section className="auth-card">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.3em] text-orange-600">Admin login</p>

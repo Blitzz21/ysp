@@ -18,6 +18,7 @@ vi.mock("../appwriteClient", async (importOriginal) => {
 import {
   createMyChapterOpportunity,
   deleteOpportunity,
+  listMyChapterOpportunities,
   listPublicOpportunities,
   listPublishedOpportunities,
   updateOpportunity,
@@ -209,5 +210,23 @@ describe("opportunities service RBAC", () => {
         sdgs: ["sdg1"],
       })
     ).resolves.toBeDefined();
+  });
+
+  it("lists chapter head opportunities scoped to assigned chapter", async () => {
+    vi.mocked(listRows).mockResolvedValueOnce([baseRow as OpportunityRow]);
+
+    await listMyChapterOpportunities();
+
+    expect(listRows).toHaveBeenCalledWith("volunteer_opportunities", [
+      buildEqualQuery("chapterId", "chapter-1"),
+      buildOrderAsc("eventData"),
+      buildOrderAsc("$createdAt"),
+    ]);
+  });
+
+  it("blocks non-chapter-head access to chapter opportunities list", async () => {
+    setSessionForTesting({ userId: "u1", role: "admin" });
+
+    await expect(listMyChapterOpportunities()).rejects.toBeInstanceOf(ForbiddenError);
   });
 });
