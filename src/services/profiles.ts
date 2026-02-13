@@ -6,8 +6,11 @@ import { z } from "zod";
 import {
   buildEqualQuery,
   createRow,
+  getAppwriteConfig,
   listRows,
+  uploadFile,
   updateRow,
+  addReadPermissions,
   userReadPermissions,
 } from "./appwriteClient";
 import {
@@ -123,6 +126,27 @@ export async function updateProfile(input: {
     parsed.data
   );
   return mapProfile(updated);
+}
+
+function buildFileViewUrl(fileId: string): string {
+  const config = getAppwriteConfig();
+  const endpoint = normalizeEndpoint(config.endpoint);
+  return `${endpoint}/storage/buckets/${config.bucketId}/files/${fileId}/view?project=${config.projectId}`;
+}
+
+export async function updateAvatar(file: File): Promise<UserProfile> {
+  const session = requireSession(await getSession());
+  if (!file || file.size === 0) {
+    throw new ValidationError("Avatar file is required");
+  }
+
+  const permissions = addReadPermissions(
+    userReadPermissions(session.userId),
+    ['read("any")']
+  );
+  const uploaded = await uploadFile(file, permissions);
+  const avatarUrl = buildFileViewUrl(uploaded.$id);
+  return updateProfile({ avatarUrl });
 }
 
 function requirePublicEnv(name: string, value?: string): string {

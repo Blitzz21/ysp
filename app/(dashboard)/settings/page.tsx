@@ -3,7 +3,14 @@ import { redirect } from "next/navigation";
 
 import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
-import { updateAccountEmail, updateAccountPassword, updateProfile, getMyProfile } from "@/services/profiles";
+import {
+  updateAccountEmail,
+  updateAccountPassword,
+  updateAvatar,
+  updateProfile,
+  getMyProfile,
+} from "@/services/profiles";
+import AvatarUploader from "@/components/settings/AvatarUploader";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +74,22 @@ async function updateProfileAction(formData: FormData): Promise<void> {
   }
 }
 
+async function updateAvatarAction(formData: FormData): Promise<void> {
+  "use server";
+  const file = formData.get("avatar");
+  if (!file || typeof file === "string") {
+    buildRedirect("error", "Please select an avatar image.");
+  }
+  try {
+    await updateAvatar(file as File);
+    revalidatePath("/settings");
+    buildRedirect("success", "Avatar updated.");
+  } catch (error) {
+    const message = toPublicDomainError(error, "Unable to update avatar.").message;
+    buildRedirect("error", message);
+  }
+}
+
 async function updateEmailAction(formData: FormData): Promise<void> {
   "use server";
   const email = String(formData.get("accountEmail") ?? "").trim();
@@ -113,6 +136,12 @@ export default async function SettingsPage(props: {
 
   return (
     <div className="space-y-10">
+      <AvatarUploader
+        name={profile.name ?? null}
+        roleLabel={profile.role ?? "member"}
+        initialUrl={profile.avatarUrl ?? null}
+        onUpload={updateAvatarAction}
+      />
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-600">
           Settings
