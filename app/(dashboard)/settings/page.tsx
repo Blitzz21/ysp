@@ -51,7 +51,6 @@ async function updateProfileAction(formData: FormData): Promise<void> {
   "use server";
   const name = String(formData.get("name") ?? "").trim();
   const ageRaw = String(formData.get("age") ?? "").trim();
-  const avatarUrl = String(formData.get("avatarUrl") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
 
   const age = ageRaw ? Number(ageRaw) : undefined;
@@ -63,7 +62,6 @@ async function updateProfileAction(formData: FormData): Promise<void> {
     await updateProfile({
       name: name || undefined,
       age,
-      avatarUrl: avatarUrl || undefined,
       email: email || undefined,
     });
     revalidatePath("/settings");
@@ -188,15 +186,6 @@ export default async function SettingsPage(props: {
                 min={0}
                 max={120}
                 defaultValue={profile.age ?? ""}
-              />
-            </label>
-            <label className="text-sm font-semibold text-ink">
-              Avatar URL
-              <input
-                className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                name="avatarUrl"
-                placeholder="https://"
-                defaultValue={profile.avatarUrl ?? ""}
               />
             </label>
             <label className="text-sm font-semibold text-ink">

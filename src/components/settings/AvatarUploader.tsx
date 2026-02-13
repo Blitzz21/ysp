@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 const CANVAS_SIZE = 320;
 
@@ -27,6 +27,7 @@ export default function AvatarUploader({
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [isPending, startTransition] = useTransition();
+  const [isOpen, setIsOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
@@ -36,6 +37,25 @@ export default function AvatarUploader({
   const previewUrl = fileUrl ?? initialUrl ?? null;
 
   const hasCustomImage = Boolean(fileUrl);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const openEditor = () => setIsOpen(true);
+  const closeEditor = () => setIsOpen(false);
 
   const drawPreview = () => {
     const canvas = canvasRef.current;
@@ -116,6 +136,7 @@ export default function AvatarUploader({
 
       startTransition(async () => {
         await onUpload(formData);
+        setIsOpen(false);
       });
     }, "image/jpeg", 0.92);
   };
@@ -142,7 +163,12 @@ export default function AvatarUploader({
             <p className="mt-1 text-sm text-muted">{displayRole} dashboard access</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="relative h-24 w-24 overflow-hidden rounded-full border border-white bg-white shadow-soft">
+            <button
+              type="button"
+              onClick={openEditor}
+              className="relative h-24 w-24 overflow-hidden rounded-full border border-white bg-white shadow-soft transition hover:shadow-xl"
+              aria-label="Change profile photo"
+            >
               {previewUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -156,85 +182,121 @@ export default function AvatarUploader({
                   {initials}
                 </div>
               )}
-            </div>
-            <div className="text-xs text-muted">
-              <p className="font-semibold text-ink">Profile photo</p>
-              <p>Square preview used across dashboards.</p>
+            </button>
+            <div className="space-y-2 text-xs text-muted">
+              <div>
+                <p className="font-semibold text-ink">Profile photo</p>
+                <p>Square preview used across dashboards.</p>
+              </div>
+              <button
+                type="button"
+                onClick={openEditor}
+                className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold text-orange-600 transition hover:border-orange-300 hover:text-orange-700"
+              >
+                Change photo
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-2xl border border-dashed border-gray-200 bg-[#fff7ea] p-5">
-          <p className="text-sm font-semibold text-ink">Edit avatar</p>
-          <p className="mt-2 text-xs text-muted">
-            Upload a photo, then adjust zoom and rotation before saving.
-          </p>
-          <input
-            className="mt-4 block w-full text-xs text-ink"
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-          />
-          <div className="mt-4 flex items-center gap-4">
-            <label className="text-xs font-semibold text-ink">
-              Zoom
-              <input
-                className="mt-2 w-40"
-                type="range"
-                min={1}
-                max={3}
-                step={0.05}
-                value={zoom}
-                onChange={handleZoomChange}
-                disabled={!hasCustomImage}
-              />
-            </label>
-            <label className="text-xs font-semibold text-ink">
-              Rotate
-              <input
-                className="mt-2 w-40"
-                type="range"
-                min={-180}
-                max={180}
-                step={1}
-                value={rotation}
-                onChange={handleRotateChange}
-                disabled={!hasCustomImage}
-              />
-            </label>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleUpload}
-              disabled={!hasCustomImage || isPending}
-              className="rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-orange-200"
-            >
-              {isPending ? "Uploading..." : "Save avatar"}
-            </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={!hasCustomImage || isPending}
-              className="rounded-full border border-gray-200 bg-white px-5 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-            >
-              Reset
-            </button>
-          </div>
-        </div>
+      {isOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-5xl rounded-3xl border border-gray-200 bg-white shadow-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-600">
+                  Avatar editor
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  Upload a photo, then adjust zoom and rotation before saving.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeEditor}
+                className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+              >
+                Close
+              </button>
+            </div>
+            <div className="grid gap-6 p-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-2xl border border-dashed border-gray-200 bg-[#fff7ea] p-5">
+                <p className="text-sm font-semibold text-ink">Edit avatar</p>
+                <p className="mt-2 text-xs text-muted">
+                  Upload a photo, then adjust zoom and rotation before saving.
+                </p>
+                <input
+                  className="mt-4 block w-full text-xs text-ink"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+                <div className="mt-4 flex flex-wrap items-center gap-4">
+                  <label className="text-xs font-semibold text-ink">
+                    Zoom
+                    <input
+                      className="mt-2 w-40"
+                      type="range"
+                      min={1}
+                      max={3}
+                      step={0.05}
+                      value={zoom}
+                      onChange={handleZoomChange}
+                      disabled={!hasCustomImage}
+                    />
+                  </label>
+                  <label className="text-xs font-semibold text-ink">
+                    Rotate
+                    <input
+                      className="mt-2 w-40"
+                      type="range"
+                      min={-180}
+                      max={180}
+                      step={1}
+                      value={rotation}
+                      onChange={handleRotateChange}
+                      disabled={!hasCustomImage}
+                    />
+                  </label>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleUpload}
+                    disabled={!hasCustomImage || isPending}
+                    className="rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-orange-200"
+                  >
+                    {isPending ? "Uploading..." : "Save avatar"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    disabled={!hasCustomImage || isPending}
+                    className="rounded-full border border-gray-200 bg-white px-5 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
 
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white p-5 shadow-soft">
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_SIZE}
-            height={CANVAS_SIZE}
-            className="h-48 w-48 rounded-3xl border border-gray-200 bg-white"
-          />
-          <p className="mt-3 text-xs text-muted">Live preview</p>
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white p-5 shadow-soft">
+                <canvas
+                  ref={canvasRef}
+                  width={CANVAS_SIZE}
+                  height={CANVAS_SIZE}
+                  className="h-48 w-48 rounded-3xl border border-gray-200 bg-white"
+                />
+                <p className="mt-3 text-xs text-muted">Live preview</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }

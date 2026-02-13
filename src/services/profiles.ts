@@ -31,7 +31,6 @@ type UserProfileRow = {
   assignedChapterId?: string;
   name?: string;
   age?: number;
-  avatarUrl?: string;
   avatarFileId?: string;
   email?: string;
 };
@@ -39,7 +38,6 @@ type UserProfileRow = {
 const profileSchema = z.object({
   name: z.string().min(1).max(128).optional(),
   age: z.number().int().min(0).max(120).optional(),
-  avatarUrl: z.string().url().optional(),
   avatarFileId: z.string().min(1).max(128).optional(),
   email: z.string().email().optional(),
 });
@@ -64,7 +62,6 @@ function mapProfile(
     assignedChapterId: row.assignedChapterId ?? undefined,
     name: row.name ?? undefined,
     age: row.age ?? undefined,
-    avatarUrl: row.avatarUrl ?? undefined,
     avatarFileId: row.avatarFileId ?? undefined,
     email: row.email ?? undefined,
     createdAt: row.$createdAt,
@@ -99,7 +96,6 @@ export async function getMyProfile(): Promise<UserProfile> {
 export async function updateProfile(input: {
   name?: string;
   age?: number;
-  avatarUrl?: string;
   avatarFileId?: string;
   email?: string;
 }): Promise<UserProfile> {

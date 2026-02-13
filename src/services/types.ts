@@ -92,7 +92,6 @@ export interface UserProfile {
   assignedChapterId?: string;
   name?: string;
   age?: number;
-  avatarUrl?: string;
   avatarFileId?: string;
   email?: string;
   createdAt: string;
