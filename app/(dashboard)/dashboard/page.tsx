@@ -10,12 +10,5 @@ export default async function DashboardEntryPage() {
     redirect("/login?next=/dashboard");
   }
 
-  if (session.role === "admin") {
-    redirect("/admin");
-  }
-  if (session.role === "chapter_head") {
-    redirect("/chapter");
-  }
-
   redirect("/dashboard/member");
 }

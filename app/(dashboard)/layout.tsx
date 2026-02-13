@@ -25,6 +25,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         : session.role === "officer"
           ? "Officer"
           : "Member";
+  const isAdmin = session.role === "admin";
+  const isChapterHead = session.role === "chapter_head";
 
   return (
     <div className="min-h-screen bg-[#fdf6ef]">
@@ -49,9 +51,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <nav className="hidden items-center gap-3 md:flex">
             <Link
               className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-              href="/dashboard"
+              href="/dashboard/member"
             >
-              Dashboard
+              Member dashboard
             </Link>
             <Link
               className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
@@ -59,6 +61,22 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             >
               Settings
             </Link>
+            {(isChapterHead || isAdmin) && (
+              <Link
+                className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+                href="/chapter"
+              >
+                Chapter dashboard
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+                href="/admin"
+              >
+                Admin console
+              </Link>
+            )}
             <Link
               className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
               href="/volunteer-opportunities"

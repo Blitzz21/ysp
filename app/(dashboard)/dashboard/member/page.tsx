@@ -171,6 +171,8 @@ export default async function MemberDashboardPage(props: {
   if (!session) {
     redirect("/login?next=/dashboard/member");
   }
+  const isAdmin = session.role === "admin";
+  const isChapterHead = session.role === "chapter_head";
 
   let loadError: string | null = null;
   const profile = await getMyProfile();
@@ -192,6 +194,7 @@ export default async function MemberDashboardPage(props: {
   const activeMemberships = memberships.filter(
     (membership) => membership.status === "active" || membership.status === "pending"
   );
+  const chapterNameById = new Map(chapters.map((chapter) => [chapter.id, chapter.name]));
 
   return (
     <div className="space-y-10">
@@ -287,7 +290,9 @@ export default async function MemberDashboardPage(props: {
               ) : (
                 memberships.map((membership) => (
                   <div key={membership.id} className="flex items-center justify-between">
-                    <span className="text-ink">{membership.chapterId}</span>
+                    <span className="text-ink">
+                      {chapterNameById.get(membership.chapterId) ?? membership.chapterId}
+                    </span>
                     <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
                       {membership.status}
                     </span>
@@ -309,6 +314,32 @@ export default async function MemberDashboardPage(props: {
               Explore opportunities
             </Link>
           </div>
+          {(isAdmin || isChapterHead) && (
+            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
+              <h3 className="font-manrope text-xl font-semibold text-ink">Switch dashboards</h3>
+              <p className="mt-2 text-sm text-muted">
+                Jump to the dashboards you are allowed to access.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {(isChapterHead || isAdmin) && (
+                  <Link
+                    href="/chapter"
+                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+                  >
+                    Chapter dashboard
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+                  >
+                    Admin console
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </div>
