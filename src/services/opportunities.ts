@@ -14,6 +14,7 @@ import {
   getRow,
   listRows,
   updateRow,
+  userReadPermissions,
   userReadWritePermissions,
 } from "./appwriteClient";
 import { ForbiddenError, NotFoundError, ValidationError } from "./errors";
@@ -516,7 +517,7 @@ export async function joinOpportunity(
       status,
       joinedAt: new Date().toISOString(),
     },
-    userReadWritePermissions(session.userId)
+    userReadPermissions(session.userId)
   );
 
   if (status === "joined") {

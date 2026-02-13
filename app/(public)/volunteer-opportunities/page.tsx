@@ -2,6 +2,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getSession } from "@/services/auth";
 import { listPublicChapters } from "@/services/chapters";
 import { listPublicOpportunities, joinOpportunity } from "@/services/opportunities";
 import { toPublicDomainError } from "@/services/errorContract";
@@ -112,6 +113,8 @@ export default async function VolunteerOpportunitiesPage(props: {
   const status = getStatusFilter(searchParams);
   const statusMessage = readParam(searchParams, "status");
   const message = readParam(searchParams, "message");
+  const session = await getSession();
+  const isAuthenticated = Boolean(session);
 
   const fromDate = parseDateValue(fromDateRaw);
   const toDate = parseDateValue(toDateRaw);
@@ -321,20 +324,34 @@ export default async function VolunteerOpportunitiesPage(props: {
                             style={{ width: `${Math.round(ratio * 100)}%` }}
                           />
                         </div>
-                        <form action={joinOpportunityAction} className="mt-4">
-                          <input type="hidden" name="id" value={opportunity.id} />
-                          <button
-                            type="submit"
-                            className="w-full rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
-                            disabled={isFull && !opportunity.waitlistEnabled}
-                          >
-                            {isFull
-                              ? opportunity.waitlistEnabled
-                                ? "Join waitlist"
-                                : "Full"
-                              : "Join opportunity"}
-                          </button>
-                        </form>
+                        {isAuthenticated ? (
+                          <form action={joinOpportunityAction} className="mt-4">
+                            <input type="hidden" name="id" value={opportunity.id} />
+                            <button
+                              type="submit"
+                              className="w-full rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+                              disabled={isFull && !opportunity.waitlistEnabled}
+                            >
+                              {isFull
+                                ? opportunity.waitlistEnabled
+                                  ? "Join waitlist"
+                                  : "Full"
+                                : "Join opportunity"}
+                            </button>
+                          </form>
+                        ) : (
+                          <div className="mt-4">
+                            <Link
+                              href="/login"
+                              className="block w-full rounded-full border border-orange-200 bg-white px-4 py-2 text-center text-sm font-semibold text-orange-600 shadow-soft transition hover:border-orange-300 hover:text-orange-700"
+                            >
+                              Sign in to join
+                            </Link>
+                            <p className="mt-2 text-center text-xs text-muted">
+                              Create an account to join opportunities.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}

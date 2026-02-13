@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { createRow, userReadPermissions } from "@/services/appwriteClient";
 import { fromHttpStatus } from "@/services/errorContract";
 
 const SESSION_COOKIE = "ysp_session";
@@ -10,6 +11,9 @@ type SignupPayload = { email?: string; password?: string; name?: string };
 type AppwriteSession = {
   $id?: string;
   secret?: string;
+};
+type AppwriteAccount = {
+  $id?: string;
 };
 
 export async function POST(request: Request) {
@@ -73,6 +77,20 @@ export async function POST(request: Request) {
   const token = session.secret ?? session.$id;
   if (!token) {
     return NextResponse.json({ error: "Session token missing", code: "unexpected" }, { status: 500 });
+  }
+
+  const createdAccount = (await createResponse.json().catch(() => null)) as AppwriteAccount | null;
+  const accountId = createdAccount?.$id ?? null;
+  if (accountId) {
+    try {
+      await createRow(
+        "user_profiles",
+        { userId: accountId, role: "member", name, email },
+        userReadPermissions(accountId)
+      );
+    } catch {
+      // Do not block signup if profile row creation fails.
+    }
   }
 
   const cookieStore = await cookies();

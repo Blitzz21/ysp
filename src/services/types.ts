@@ -1,4 +1,4 @@
-﻿export type Role = "admin" | "chapter_head" | null;
+﻿export type Role = "admin" | "chapter_head" | "officer" | "member" | null;
 
 export interface Program {
   id: string;
@@ -57,3 +57,44 @@ export interface SiteStats {
   membersCount: number;
   livesImpactedCount: number;
 }
+
+
+export type MembershipStatus = "active" | "pending" | "removed";
+export type MembershipRole = "member" | "officer" | "chapter_head";
+
+export interface ChapterMembership {
+  id: string;
+  userId: string;
+  chapterId: string;
+  role: MembershipRole;
+  status: MembershipStatus;
+  joinedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type OpportunitySignupStatus = "joined" | "cancelled" | "waitlisted";
+
+export interface OpportunitySignup {
+  id: string;
+  userId: string;
+  opportunityId: string;
+  status: OpportunitySignupStatus;
+  joinedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserProfile {
+  id: string;
+  userId: string;
+  role: Role;
+  assignedChapterId?: string;
+  name?: string;
+  age?: number;
+  avatarUrl?: string;
+  email?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
