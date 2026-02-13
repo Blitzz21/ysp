@@ -493,7 +493,7 @@ export async function joinOpportunity(
     buildEqualQuery("opportunityId", opportunityId),
   ]);
   const active = existing.find((row) => row.status !== "cancelled");
-  if (active) {
+  if (active && active.status !== "cancelled") {
     return active.status;
   }
 

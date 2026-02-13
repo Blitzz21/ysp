@@ -14,9 +14,23 @@ vi.mock("../appwriteClient", async (importOriginal) => {
 });
 
 import { joinChapter, leaveChapter, listMyMemberships } from "../memberships";
-import { buildEqualQuery, createRow, listRows, updateRow } from "../appwriteClient";
+import {
+  AppwriteRow,
+  buildEqualQuery,
+  createRow,
+  listRows,
+  updateRow,
+} from "../appwriteClient";
 
-const baseRow = {
+type MembershipRow = {
+  userId: string;
+  chapterId: string;
+  role: "member" | "officer" | "chapter_head";
+  status: "pending" | "active" | "removed";
+  joinedAt: string;
+};
+
+const baseRow: AppwriteRow<MembershipRow> = {
   $id: "m1",
   $createdAt: "2026-02-13T00:00:00.000Z",
   $updatedAt: "2026-02-13T00:00:00.000Z",
@@ -70,9 +84,11 @@ describe("membership service", () => {
 
   it("reactivates a removed membership", async () => {
     vi.mocked(listRows).mockResolvedValueOnce([
-      { ...baseRow, status: "removed" },
+      { ...baseRow, status: "removed" } as AppwriteRow<MembershipRow>,
     ]);
-    vi.mocked(updateRow).mockResolvedValueOnce({ ...baseRow, status: "pending" });
+    vi.mocked(updateRow).mockResolvedValueOnce(
+      { ...baseRow, status: "pending" } as AppwriteRow<MembershipRow>
+    );
 
     const membership = await joinChapter("c1");
 
@@ -82,7 +98,9 @@ describe("membership service", () => {
 
   it("leaves a chapter by marking membership removed", async () => {
     vi.mocked(listRows).mockResolvedValueOnce([baseRow]);
-    vi.mocked(updateRow).mockResolvedValueOnce({ ...baseRow, status: "removed" });
+    vi.mocked(updateRow).mockResolvedValueOnce(
+      { ...baseRow, status: "removed" } as AppwriteRow<MembershipRow>
+    );
 
     const membership = await leaveChapter("c1");
 
