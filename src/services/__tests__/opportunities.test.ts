@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { setSessionForTesting } from "../auth";
-import { ForbiddenError, ValidationError } from "../errors";
+import { ForbiddenError, UnauthorizedError, ValidationError } from "../errors";
 
 vi.mock("../appwriteClient", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../appwriteClient")>();
@@ -18,6 +18,7 @@ vi.mock("../appwriteClient", async (importOriginal) => {
 import {
   createMyChapterOpportunity,
   deleteOpportunity,
+  joinOpportunity,
   listMyChapterOpportunities,
   listPublicOpportunities,
   listPublishedOpportunities,
@@ -34,6 +35,7 @@ import {
   updateRow,
   deleteRow,
 } from "../appwriteClient";
+import type { AppwriteRow } from "../appwriteClient";
 
 const baseRow = {
   $id: "opp1",
@@ -47,6 +49,12 @@ const baseRow = {
   pubished: false,
 };
 type OpportunityRow = typeof baseRow;
+type OpportunitySignupRow = {
+  userId: string;
+  opportunityId: string;
+  status: "joined" | "cancelled" | "waitlisted";
+  joinedAt: string;
+};
 
 describe("opportunities service RBAC", () => {
   beforeEach(() => {
@@ -254,5 +262,136 @@ describe("opportunities service RBAC", () => {
     setSessionForTesting({ userId: "u1", role: "chapter_head", assignedChapterId: "chapter-2" });
 
     await expect(deleteOpportunity("opp1")).rejects.toBeInstanceOf(ForbiddenError);
+  });
+});
+
+describe("opportunities service join flow", () => {
+  beforeEach(() => {
+    setSessionForTesting({ userId: "u1", role: "member" });
+    vi.clearAllMocks();
+    process.env.APPWRITE_ENDPOINT = "https://example.appwrite.io/v1";
+    process.env.APPWRITE_PROJECT_ID = "project";
+    process.env.APPWRITE_API_KEY = "key";
+    process.env.APPWRITE_DATABASE_ID = "db";
+    process.env.APPWRITE_BUCKET_ID = "bucket";
+  });
+
+  it("joins when capacity is available", async () => {
+    vi.mocked(getRow).mockResolvedValueOnce({
+      ...baseRow,
+      pubished: true,
+      capacity: 10,
+      currentVolunteers: 2,
+      waitlistEnabled: true,
+    } as OpportunityRow);
+    vi.mocked(listRows).mockResolvedValueOnce([]);
+    vi.mocked(createRow).mockResolvedValueOnce({
+      $id: "signup-1",
+      $createdAt: "2026-02-13T00:00:00.000Z",
+      $updatedAt: "2026-02-13T00:00:00.000Z",
+      userId: "u1",
+      opportunityId: "opp1",
+      status: "joined",
+      joinedAt: "2026-02-13T00:00:00.000Z",
+    } as AppwriteRow<OpportunitySignupRow>);
+    vi.mocked(updateRow).mockResolvedValueOnce({
+      ...baseRow,
+      currentVolunteers: 3,
+    } as OpportunityRow);
+
+    const status = await joinOpportunity("opp1");
+
+    expect(status).toBe("joined");
+    expect(createRow).toHaveBeenCalledWith(
+      "opportunity_signups",
+      expect.objectContaining({
+        opportunityId: "opp1",
+        status: "joined",
+      }),
+      expect.any(Array)
+    );
+    expect(updateRow).toHaveBeenCalledWith(
+      "volunteer_opportunities",
+      "opp1",
+      { currentVolunteers: 3 }
+    );
+  });
+
+  it("waitlists when full and waitlist enabled", async () => {
+    vi.mocked(getRow).mockResolvedValueOnce({
+      ...baseRow,
+      pubished: true,
+      capacity: 2,
+      currentVolunteers: 2,
+      waitlistEnabled: true,
+    } as OpportunityRow);
+    vi.mocked(listRows).mockResolvedValueOnce([]);
+    vi.mocked(createRow).mockResolvedValueOnce({
+      $id: "signup-2",
+      $createdAt: "2026-02-13T00:00:00.000Z",
+      $updatedAt: "2026-02-13T00:00:00.000Z",
+      userId: "u1",
+      opportunityId: "opp1",
+      status: "waitlisted",
+      joinedAt: "2026-02-13T00:00:00.000Z",
+    } as AppwriteRow<OpportunitySignupRow>);
+
+    const status = await joinOpportunity("opp1");
+
+    expect(status).toBe("waitlisted");
+    expect(updateRow).not.toHaveBeenCalled();
+  });
+
+  it("blocks joins when full and waitlist disabled", async () => {
+    vi.mocked(getRow).mockResolvedValueOnce({
+      ...baseRow,
+      pubished: true,
+      capacity: 2,
+      currentVolunteers: 2,
+      waitlistEnabled: false,
+    } as OpportunityRow);
+    vi.mocked(listRows).mockResolvedValueOnce([]);
+
+    await expect(joinOpportunity("opp1")).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("returns existing signup status when already joined", async () => {
+    vi.mocked(getRow).mockResolvedValueOnce({
+      ...baseRow,
+      pubished: true,
+      capacity: 2,
+      currentVolunteers: 1,
+      waitlistEnabled: false,
+    } as OpportunityRow);
+    vi.mocked(listRows).mockResolvedValueOnce([
+      {
+        $id: "signup-3",
+        $createdAt: "2026-02-13T00:00:00.000Z",
+        $updatedAt: "2026-02-13T00:00:00.000Z",
+        userId: "u1",
+        opportunityId: "opp1",
+        status: "joined",
+        joinedAt: "2026-02-13T00:00:00.000Z",
+      } as AppwriteRow<OpportunitySignupRow>,
+    ]);
+
+    const status = await joinOpportunity("opp1");
+
+    expect(status).toBe("joined");
+    expect(createRow).not.toHaveBeenCalled();
+  });
+
+  it("blocks joins for unpublished opportunities", async () => {
+    vi.mocked(getRow).mockResolvedValueOnce({
+      ...baseRow,
+      pubished: false,
+    } as OpportunityRow);
+
+    await expect(joinOpportunity("opp1")).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it("rejects join when user is not authenticated", async () => {
+    setSessionForTesting(null);
+    await expect(joinOpportunity("opp1")).rejects.toBeInstanceOf(UnauthorizedError);
   });
 });

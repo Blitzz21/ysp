@@ -19,6 +19,18 @@ async function expectAdminPageOrLoginRedirect(
   }
 }
 
+async function expectMemberPageOrLoginRedirect(page: Page, headingMatcher: RegExp | string) {
+  const loginHeading = page.getByRole("heading", { name: "Welcome back" });
+  const targetHeading = page.getByRole("heading", { name: headingMatcher });
+
+  if ((await loginHeading.count()) > 0) {
+    await expect(page).toHaveURL(/\/login/);
+    return;
+  }
+
+  await expect(targetHeading).toBeVisible();
+}
+
 test("login page renders", async ({ page }) => {
   await page.goto("/login");
   await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
@@ -100,4 +112,14 @@ test("admin settings route is usable", async ({ page }) => {
     await expect(page.getByRole("button", { name: "Save contact settings" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Save counters" })).toBeVisible();
   }
+});
+
+test("member dashboard route is usable", async ({ page }) => {
+  await page.goto("/dashboard");
+  await expectMemberPageOrLoginRedirect(page, /Welcome/);
+});
+
+test("member settings route is usable", async ({ page }) => {
+  await page.goto("/settings");
+  await expectMemberPageOrLoginRedirect(page, "Account and profile");
 });
