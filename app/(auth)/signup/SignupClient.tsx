@@ -20,6 +20,7 @@ export default function SignupClient() {
   const [error, setError] = useState<string | null>(null);
   const [showPasswords, setShowPasswords] = useState(false);
   const errorRef = useRef<HTMLDivElement | null>(null);
+  const submitLockRef = useRef(false);
 
   const redirectTo = useMemo(() => {
     const next = searchParams.get("next");
@@ -113,9 +114,14 @@ export default function SignupClient() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitLockRef.current) {
+      return;
+    }
+    submitLockRef.current = true;
     setError(null);
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
+      submitLockRef.current = false;
       return;
     }
 
@@ -143,6 +149,7 @@ export default function SignupClient() {
     } catch {
       setError("Signup failed. Please try again.");
     } finally {
+      submitLockRef.current = false;
       setLoading(false);
     }
   }
@@ -242,7 +249,7 @@ export default function SignupClient() {
             ) : null}
 
             <button
-              className="mt-2 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-2 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-orange-500"
               type="submit"
               disabled={loading}
             >
@@ -260,12 +267,17 @@ export default function SignupClient() {
           </div>
 
           <button
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-navy shadow-soft transition hover:border-orange-300"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-navy shadow-soft transition hover:border-orange-300 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:border-gray-200"
             type="button"
             disabled={loading}
             onClick={() => {
+              if (submitLockRef.current || loading) {
+                return;
+              }
+              submitLockRef.current = true;
               if (!oauthUrl) {
                 setError("OAuth is not configured. Check Appwrite settings.");
+                submitLockRef.current = false;
                 setLoading(false);
                 return;
               }

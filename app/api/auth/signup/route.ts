@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { buildTokenHeaders, normalizeEndpoint, resolveSessionToken } from "../_lib/appwriteAuth";
 import { writeAuthAudit } from "../_lib/audit";
 import { extractClientIp, takeRateLimit } from "../_lib/rateLimit";
 import { createRow, userReadPermissions } from "@/services/appwriteClient";
@@ -10,10 +11,6 @@ const SESSION_COOKIE = "ysp_session";
 
 type SignupPayload = { email?: string; password?: string; confirmPassword?: string; name?: string };
 
-type AppwriteSession = {
-  $id?: string;
-  secret?: string;
-};
 type AppwriteAccount = {
   $id?: string;
 };
@@ -109,8 +106,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Appwrite is not configured", code: "unexpected" }, { status: 500 });
   }
 
-  const base = endpoint.replace(/\/$/, "");
-  const createResponse = await fetch(`${base}/account`, {
+  const baseEndpoint = normalizeEndpoint(endpoint);
+  const createResponse = await fetch(`${baseEndpoint}/account`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -140,7 +137,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const sessionResponse = await fetch(`${base}/account/sessions/email`, {
+  const sessionResponse = await fetch(`${baseEndpoint}/account/sessions/email`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -165,8 +162,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const session = (await sessionResponse.json()) as AppwriteSession;
-  const token = session.secret ?? session.$id;
+  const token = await resolveSessionToken(sessionResponse, baseEndpoint, projectId);
   if (!token) {
     await writeAuthAudit({
       event: "signup",
@@ -179,13 +175,9 @@ export async function POST(request: Request) {
   }
 
   const verificationUrl = new URL("/verify-email", request.url).toString();
-  const verificationResponse = await fetch(`${base}/account/verification`, {
+  const verificationResponse = await fetch(`${baseEndpoint}/account/verification`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Appwrite-Project": projectId,
-      "X-Appwrite-Session": token,
-    },
+    headers: buildTokenHeaders(projectId, token, "application/json"),
     body: JSON.stringify({
       url: verificationUrl,
     }),

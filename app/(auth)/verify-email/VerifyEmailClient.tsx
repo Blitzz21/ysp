@@ -2,9 +2,16 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LandingHeader } from "@/components/landing/LandingHeader";
+
+type VerifyApiErrorPayload = {
+  code?: string;
+  error?: string;
+};
+
+type VerifyStatusResult = "verified" | "unverified" | "unauthorized" | "error";
 
 export default function VerifyEmailClient() {
   const searchParams = useSearchParams();
@@ -13,43 +20,135 @@ export default function VerifyEmailClient() {
   const [verified, setVerified] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [statusUnauthorized, setStatusUnauthorized] = useState(false);
   const doneRef = useRef(false);
+  const syncInFlightRef = useRef(false);
 
   const userId = searchParams.get("userId") ?? "";
   const secret = searchParams.get("secret") ?? "";
+  const hasLinkParams = Boolean(userId && secret);
   const next = useMemo(() => {
     const value = searchParams.get("next");
     return value && value.startsWith("/") ? value : "/dashboard";
   }, [searchParams]);
 
+  const syncVerificationStatus = useCallback(async (): Promise<VerifyStatusResult> => {
+    if (syncInFlightRef.current) {
+      return "error";
+    }
+    syncInFlightRef.current = true;
+    try {
+      const response = await fetch("/api/auth/verify/status", {
+        method: "GET",
+        cache: "no-store",
+      });
+      if (response.status === 401) {
+        setStatusUnauthorized(true);
+        return "unauthorized";
+      }
+      if (!response.ok) {
+        return "error";
+      }
+      setStatusUnauthorized(false);
+      const payload = (await response.json().catch(() => null)) as { emailVerified?: boolean } | null;
+      if (payload?.emailVerified === true) {
+        setVerified(true);
+        setMessage("Your email is already verified. You can continue to your dashboard.");
+        setError(null);
+        return "verified";
+      }
+      return "unverified";
+    } catch {
+      return "error";
+    } finally {
+      syncInFlightRef.current = false;
+    }
+  }, []);
+
   useEffect(() => {
-    if (!userId || !secret || doneRef.current) {
+    if (hasLinkParams) {
+      return;
+    }
+    void syncVerificationStatus();
+  }, [hasLinkParams, syncVerificationStatus]);
+
+  useEffect(() => {
+    if (verified || statusUnauthorized || hasLinkParams) {
+      return;
+    }
+
+    const onFocus = () => {
+      void syncVerificationStatus();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void syncVerificationStatus();
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void syncVerificationStatus();
+    }, 2500);
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [hasLinkParams, statusUnauthorized, syncVerificationStatus, verified]);
+
+  useEffect(() => {
+    if (!hasLinkParams || doneRef.current) {
       return;
     }
     doneRef.current = true;
     setVerifying(true);
     setError(null);
-    fetch("/api/auth/verify/complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, secret }),
-    })
-      .then(async (response) => {
+    const run = async () => {
+      try {
+        const response = await fetch("/api/auth/verify/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, secret }),
+        });
+        const payload = (await response.json().catch(() => null)) as VerifyApiErrorPayload | null;
         if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(payload?.error ?? "Verification failed.");
+          if (payload?.code === "conflict") {
+            setVerified(true);
+            setMessage("Your email is already verified. You can continue to your dashboard.");
+            setError(null);
+            return;
+          }
+          if (payload?.code === "validation" || payload?.code === "not_found") {
+            setError("Verification link is invalid or expired.");
+            return;
+          }
+          if (payload?.code === "unauthorized") {
+            setError("Verification could not be completed. Please request a new link.");
+            return;
+          }
+          if (payload?.code === "rate_limited") {
+            setError("Too many verification attempts. Please wait and try again.");
+            return;
+          }
+          setError(payload?.error ?? "Verification failed. Please try again.");
+          return;
         }
         setVerified(true);
         setMessage("Your email is verified. You can continue to your dashboard.");
-      })
-      .catch((err: unknown) => {
-        const reason = err instanceof Error ? err.message : "Verification failed.";
-        setError(reason);
-      })
-      .finally(() => {
+      } catch {
+        setError("Verification failed. Please try again.");
+      } finally {
         setVerifying(false);
-      });
-  }, [secret, userId]);
+      }
+    };
+
+    void run();
+  }, [hasLinkParams, secret, userId]);
 
   async function handleResend() {
     setLoading(true);

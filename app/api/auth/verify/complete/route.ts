@@ -3,7 +3,47 @@ import { NextResponse } from "next/server";
 import { normalizeEndpoint } from "../../_lib/appwriteAuth";
 import { writeAuthAudit } from "../../_lib/audit";
 import { extractClientIp, takeRateLimit } from "../../_lib/rateLimit";
-import { fromHttpStatus } from "@/services/errorContract";
+
+type VerifyErrorCode =
+  | "validation"
+  | "unauthorized"
+  | "not_found"
+  | "conflict"
+  | "rate_limited"
+  | "unexpected";
+
+type VerifyError = {
+  code: VerifyErrorCode;
+  message: string;
+};
+
+function mapVerifyCompleteError(status: number, fallbackMessage?: string): VerifyError {
+  if (status === 400) {
+    return { code: "validation", message: "Invalid verification link." };
+  }
+  if (status === 401) {
+    return {
+      code: "unauthorized",
+      message: "Verification could not be completed. Please request a new link.",
+    };
+  }
+  if (status === 404) {
+    return { code: "not_found", message: "Verification link is invalid or expired." };
+  }
+  if (status === 409) {
+    return { code: "conflict", message: "Email is already verified." };
+  }
+  if (status === 429) {
+    return {
+      code: "rate_limited",
+      message: "Too many verification attempts. Please wait and try again.",
+    };
+  }
+  return {
+    code: "unexpected",
+    message: fallbackMessage ?? "Verification failed. Please try again.",
+  };
+}
 
 type CompletePayload = {
   userId?: string;
@@ -61,7 +101,7 @@ export async function POST(request: Request) {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    const normalized = fromHttpStatus(response.status, payload?.message);
+    const normalized = mapVerifyCompleteError(response.status, payload?.message);
     await writeAuthAudit({
       event: "verify_complete",
       status: "failure",

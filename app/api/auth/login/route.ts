@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { buildTokenHeaders, normalizeEndpoint, resolveSessionToken } from "../_lib/appwriteAuth";
 import { writeAuthAudit } from "../_lib/audit";
 import { extractClientIp, takeRateLimit } from "../_lib/rateLimit";
 import { fromHttpStatus } from "@/services/errorContract";
@@ -9,10 +10,6 @@ const SESSION_COOKIE = "ysp_session";
 
 type LoginPayload = { email?: string; password?: string; remember?: boolean };
 
-type AppwriteSession = {
-  $id?: string;
-  secret?: string;
-};
 type AppwriteAccount = {
   emailVerification?: boolean;
 };
@@ -89,8 +86,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ error: "Appwrite is not configured", code: "unexpected" }, { status: 500 });
   }
+  const baseEndpoint = normalizeEndpoint(endpoint);
 
-  const response = await fetch(`${endpoint.replace(/\/$/, "")}/account/sessions/email`, {
+  const response = await fetch(`${baseEndpoint}/account/sessions/email`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -115,8 +113,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const session = (await response.json()) as AppwriteSession;
-  const token = session.secret ?? session.$id;
+  const token = await resolveSessionToken(response, baseEndpoint, projectId);
   if (!token) {
     await writeAuthAudit({
       event: "login",
@@ -128,11 +125,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Session token missing", code: "unexpected" }, { status: 500 });
   }
 
-  const accountResponse = await fetch(`${endpoint.replace(/\/$/, "")}/account`, {
-    headers: {
-      "X-Appwrite-Project": projectId,
-      "X-Appwrite-Session": token,
-    },
+  const accountResponse = await fetch(`${baseEndpoint}/account`, {
+    headers: buildTokenHeaders(projectId, token),
   });
   const account = (await accountResponse.json().catch(() => null)) as AppwriteAccount | null;
   const emailVerified = account?.emailVerification === true;

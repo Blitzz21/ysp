@@ -86,6 +86,97 @@ test("verify email page can resend verification", async ({ page }) => {
   await expect(page.getByText("Verification email sent. Check your inbox.")).toBeVisible();
 });
 
+test("verify email page auto-updates after external verification without refresh", async ({ page }) => {
+  let statusChecks = 0;
+  await page.route("**/api/auth/verify/status", async (route) => {
+    statusChecks += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        emailVerified: statusChecks >= 2,
+      }),
+    });
+  });
+
+  await page.goto("/verify-email");
+  await expect(page.getByText("Your email is already verified. You can continue to your dashboard.")).toBeVisible({
+    timeout: 8000,
+  });
+  await expect(page.getByRole("link", { name: "Continue" })).toBeVisible();
+});
+
+test("verify email page stops status polling after unauthorized", async ({ page }) => {
+  let statusChecks = 0;
+  await page.route("**/api/auth/verify/status", async (route) => {
+    statusChecks += 1;
+    await route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "unauthorized",
+        error: "Authentication required",
+      }),
+    });
+  });
+
+  await page.goto("/verify-email");
+  await page.waitForTimeout(3500);
+  expect(statusChecks).toBe(1);
+});
+
+test("verify email page shows invalid-or-expired message for invalid link", async ({ page }) => {
+  await page.route("**/api/auth/verify/complete", async (route) => {
+    await route.fulfill({
+      status: 404,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "not_found",
+        error: "The requested resource was not found.",
+      }),
+    });
+  });
+
+  await page.goto("/verify-email?userId=missing-user&secret=invalid-secret");
+  await expect(page.getByText("Verification link is invalid or expired.")).toBeVisible();
+  await expect(page.getByText("Invalid email or password.")).not.toBeVisible();
+});
+
+test("verify email page treats already-verified link as success", async ({ page }) => {
+  await page.route("**/api/auth/verify/complete", async (route) => {
+    await route.fulfill({
+      status: 409,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "conflict",
+        error: "Email is already verified.",
+      }),
+    });
+  });
+
+  await page.goto("/verify-email?userId=verified-user&secret=consumed-secret");
+  await expect(page.getByText("Your email is already verified. You can continue to your dashboard.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue" })).toBeVisible();
+});
+
+test("verify email page reflects already-verified session", async ({ page }) => {
+  await page.route("**/api/auth/verify/status", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        emailVerified: true,
+      }),
+    });
+  });
+
+  await page.goto("/verify-email");
+  await expect(page.getByText("Your email is already verified. You can continue to your dashboard.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue" })).toBeVisible();
+});
+
 test("login announces auth errors through live region", async ({ page }) => {
   await page.route("**/api/auth/login", async (route) => {
     await route.fulfill({
