@@ -277,7 +277,33 @@ test("member dashboard route is usable", async ({ page }) => {
   await expectMemberPageOrLoginRedirect(page, /Welcome/);
 });
 
+test("member dashboard uses sidebar navigation", async ({ page }) => {
+  await page.goto("/dashboard/member");
+  const loginHeading = page.getByRole("heading", { name: "Welcome back" });
+  if ((await loginHeading.count()) > 0) {
+    await expect(page).toHaveURL(/\/login/);
+    return;
+  }
+
+  await expect(page.getByRole("link", { name: "Member dashboard" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Opportunities" })).toBeVisible();
+});
+
 test("member settings route is usable", async ({ page }) => {
   await page.goto("/settings");
   await expectMemberPageOrLoginRedirect(page, "Account and profile");
+});
+
+test("chapter dashboard uses sidebar navigation", async ({ page }) => {
+  await page.goto("/chapter");
+  const loginHeading = page.getByRole("heading", { name: "Welcome back" });
+  if ((await loginHeading.count()) > 0) {
+    await expect(page).toHaveURL(/\/login/);
+    return;
+  }
+
+  await expect(page.getByRole("link", { name: "Chapter dashboard" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chapter opportunities" })).toBeVisible();
+  await expect(page.getByText("Chapter assignment required")).toBeVisible();
 });
