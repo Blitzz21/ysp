@@ -135,7 +135,11 @@ export default function SignupClient() {
         return;
       }
 
-      router.push(redirectTo);
+      const payload = (await response.json().catch(() => null)) as { verificationSent?: boolean } | null;
+      if (payload?.verificationSent === false) {
+        setError("Account created but verification email could not be sent. Use resend on verification page.");
+      }
+      router.push(`/verify-email?next=${encodeURIComponent(redirectTo)}`);
     } catch {
       setError("Signup failed. Please try again.");
     } finally {

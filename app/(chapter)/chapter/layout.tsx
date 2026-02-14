@@ -9,6 +9,9 @@ export default async function ChapterLayout({ children }: { children: ReactNode 
   if (!session) {
     redirect("/login?next=/chapter");
   }
+  if (session.emailVerified === false) {
+    redirect("/verify-email?next=/chapter");
+  }
 
   const isAdmin = session.role === "admin";
   const isChapterHead = session.role === "chapter_head";

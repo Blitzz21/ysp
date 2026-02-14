@@ -14,6 +14,7 @@ export default function LoginClient() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -120,7 +121,7 @@ export default function LoginClient() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember: rememberMe }),
       });
 
       if (!response.ok) {
@@ -129,6 +130,11 @@ export default function LoginClient() {
         return;
       }
 
+      const payload = (await response.json().catch(() => null)) as { emailVerified?: boolean } | null;
+      if (payload?.emailVerified === false) {
+        router.push(`/verify-email?next=${encodeURIComponent(redirectTo)}`);
+        return;
+      }
       router.push(redirectTo);
     } catch {
       setError("Login failed. Please try again.");
@@ -182,6 +188,20 @@ export default function LoginClient() {
                 </button>
               </div>
             </label>
+            <div className="flex items-center justify-between gap-4">
+              <label className="inline-flex items-center gap-2 text-sm text-muted">
+                <input
+                  className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                />
+                Remember me
+              </label>
+              <Link className="text-sm font-semibold text-orange-600 hover:underline" href="/forgot-password">
+                Forgot password?
+              </Link>
+            </div>
 
             {error ? (
               <div

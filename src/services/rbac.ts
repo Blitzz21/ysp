@@ -5,6 +5,9 @@ export function requireSession(session: SessionInfo): NonNullable<SessionInfo> {
   if (!session) {
     throw new UnauthorizedError("Authentication required");
   }
+  if (session.emailVerified === false) {
+    throw new ForbiddenError("Email verification required");
+  }
   return session;
 }
 

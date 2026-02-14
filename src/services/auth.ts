@@ -16,6 +16,7 @@ export type SessionInfo = {
   userId: string;
   role: Role;
   assignedChapterId?: string;
+  emailVerified?: boolean;
 } | null;
 
 let sessionOverride: SessionInfo | undefined;
@@ -24,7 +25,7 @@ export function setSessionForTesting(session: SessionInfo): void {
   sessionOverride = session;
 }
 
-type AccountResponse = { $id: string };
+type AccountResponse = { $id: string; emailVerification?: boolean };
 
 type UserProfileRow = {
   userId: string;
@@ -153,6 +154,7 @@ export async function getSession(): Promise<SessionInfo> {
     return {
       userId: "e2e-admin",
       role: "admin",
+      emailVerified: true,
     };
   }
 
@@ -174,5 +176,6 @@ export async function getSession(): Promise<SessionInfo> {
     userId: account.$id,
     role: profile?.role ?? null,
     assignedChapterId: profile?.assignedChapterId,
+    emailVerified: account.emailVerification === true,
   };
 }

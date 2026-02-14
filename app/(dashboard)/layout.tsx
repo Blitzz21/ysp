@@ -10,6 +10,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (!session) {
     redirect("/login?next=/dashboard");
   }
+  if (session.emailVerified === false) {
+    redirect("/verify-email?next=/dashboard");
+  }
 
   async function signOutAction() {
     "use server";

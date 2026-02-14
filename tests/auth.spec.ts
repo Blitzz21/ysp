@@ -35,12 +35,55 @@ test("login page renders", async ({ page }) => {
   await page.goto("/login");
   await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Remember me" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Forgot password?" })).toBeVisible();
 });
 
 test("signup page renders", async ({ page }) => {
   await page.goto("/signup");
   await expect(page.getByRole("heading", { name: "Join Youth Service Philippines" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+});
+
+test("forgot password page renders and can submit request", async ({ page }) => {
+  await page.route("**/api/auth/recovery/start", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+
+  await page.goto("/forgot-password");
+  await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
+  await page.getByLabel("Email").fill("member@example.com");
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(
+    page.getByText("If your account exists, we sent a reset link to your email.")
+  ).toBeVisible();
+});
+
+test("reset password page requires valid token params", async ({ page }) => {
+  await page.goto("/reset-password");
+  await expect(
+    page.getByText("Invalid or expired reset link. Request a new one from Forgot password.")
+  ).toBeVisible();
+});
+
+test("verify email page can resend verification", async ({ page }) => {
+  await page.route("**/api/auth/verify/start", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+
+  await page.goto("/verify-email");
+  await expect(page.getByRole("heading", { name: "Verify your account" })).toBeVisible();
+  await page.getByRole("button", { name: "Resend verification email" }).click();
+  await expect(page.getByText("Verification email sent. Check your inbox.")).toBeVisible();
 });
 
 test("login announces auth errors through live region", async ({ page }) => {
@@ -64,6 +107,25 @@ test("login announces auth errors through live region", async ({ page }) => {
   await expect(authError).toBeVisible();
   await expect(authError).toHaveAttribute("role", "alert");
   await expect(authError).toContainText("Invalid email or password.");
+});
+
+test("login redirects unverified users to verify email", async ({ page }) => {
+  await page.route("**/api/auth/login", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        emailVerified: false,
+      }),
+    });
+  });
+
+  await page.goto("/login");
+  await page.getByLabel("Email").fill("member@example.com");
+  await page.getByPlaceholder("Enter your password").fill("valid-password-123");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/verify-email\?next=/);
 });
 
 test("signup announces auth errors through live region", async ({ page }) => {
