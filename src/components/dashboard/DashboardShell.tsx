@@ -131,6 +131,8 @@ export function DashboardShell({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const focusRing =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2";
 
   return (
     <div className="h-screen overflow-hidden bg-[#f7f5f0] text-ink">
@@ -144,6 +146,7 @@ export function DashboardShell({
         />
 
         <aside
+          id="dashboard-sidebar"
           className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-gray-200 bg-white/95 backdrop-blur transition-all duration-300 ease-out md:translate-x-0 ${
             collapsed ? "w-20" : "w-72"
           } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
@@ -176,7 +179,7 @@ export function DashboardShell({
               </span>
             </Link>
             <button
-              className="inline-flex rounded-full border border-gray-200 p-2 text-muted transition hover:border-orange-300 hover:text-orange-600 md:hidden"
+              className={`inline-flex rounded-full border border-gray-200 p-2 text-muted transition hover:border-orange-300 hover:text-orange-600 md:hidden ${focusRing}`}
               onClick={() => setMobileOpen(false)}
               type="button"
               aria-label="Close sidebar"
@@ -199,7 +202,7 @@ export function DashboardShell({
                     active
                       ? "border-orange-200 bg-orange-50 text-orange-700"
                       : "border-transparent text-ink hover:border-orange-200 hover:bg-orange-50/60"
-                  } ${collapsed ? "justify-center gap-0" : "gap-3"}`}
+                  } ${collapsed ? "justify-center gap-0" : "gap-3"} ${focusRing}`}
                 >
                   <span className={`shrink-0 ${iconClassName(active)}`}>
                     <NavIcon icon={item.icon} />
@@ -222,7 +225,7 @@ export function DashboardShell({
             <button
               className={`flex w-full items-center rounded-2xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-muted transition hover:border-orange-300 hover:text-orange-600 ${
                 collapsed ? "justify-center" : "gap-2"
-              }`}
+              } ${focusRing}`}
               onClick={() => setCollapsed((prev) => !prev)}
               type="button"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -242,7 +245,7 @@ export function DashboardShell({
               <button
                 className={`flex w-full items-center rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2.5 font-semibold text-orange-700 transition hover:border-orange-300 ${
                   collapsed ? "justify-center text-xs" : "gap-2 text-sm"
-                }`}
+                } ${focusRing}`}
                 type="submit"
               >
                 <span className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-orange-200">
@@ -266,10 +269,12 @@ export function DashboardShell({
           }`}
         >
           <button
-            className="fixed left-4 top-4 z-20 inline-flex rounded-full border border-gray-200 bg-white p-2 text-muted shadow-soft transition hover:border-orange-300 hover:text-orange-600 md:hidden"
+            className={`fixed left-4 top-4 z-20 inline-flex rounded-full border border-gray-200 bg-white p-2 text-muted shadow-soft transition hover:border-orange-300 hover:text-orange-600 md:hidden ${focusRing}`}
             onClick={() => setMobileOpen(true)}
             type="button"
             aria-label="Open sidebar"
+            aria-controls="dashboard-sidebar"
+            aria-expanded={mobileOpen}
           >
             <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
               <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" />
