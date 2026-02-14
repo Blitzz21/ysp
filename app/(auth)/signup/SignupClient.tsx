@@ -242,7 +242,10 @@ export default function SignupClient() {
               type="submit"
               disabled={loading}
             >
-              {loading ? "Creating account..." : "Create account"}
+              <span className="inline-flex items-center justify-center gap-2">
+                {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
+                {loading ? "Creating account..." : "Create account"}
+              </span>
             </button>
           </form>
 
@@ -259,13 +262,15 @@ export default function SignupClient() {
             onClick={() => {
               if (!oauthUrl) {
                 setError("OAuth is not configured. Check Appwrite settings.");
+                setLoading(false);
                 return;
               }
+              setLoading(true);
               window.location.href = oauthUrl;
             }}
           >
-            <GoogleIcon />
-            Continue with Google
+            {loading ? <span className="auth-spinner auth-spinner--dark" aria-hidden="true" /> : <GoogleIcon />}
+            {loading ? "Redirecting..." : "Continue with Google"}
           </button>
 
           <div className="auth-footer mt-6 text-sm">

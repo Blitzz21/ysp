@@ -691,6 +691,20 @@
   transform: translateY(-50%) scale(1.04);
 }
 
+.auth-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  animation: authSpinnerSpin 0.7s linear infinite;
+}
+
+.auth-spinner--dark {
+  border-color: rgba(12, 18, 48, 0.2);
+  border-top-color: #1f2a33;
+}
+
 .auth-footer {
   display: flex;
   justify-content: space-between;
@@ -748,6 +762,29 @@
   will-change: opacity, transform;
 }
 
+button[data-submitting="true"],
+input[type="submit"][data-submitting="true"] {
+  cursor: not-allowed;
+}
+
+button[data-submitting="true"] {
+  position: relative;
+}
+
+button[data-submitting="true"]::after {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: currentColor;
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  animation: buttonSpin 0.7s linear infinite;
+}
+
 @keyframes adminRouteEnter {
   from {
     opacity: 0;
@@ -756,6 +793,21 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes authSpinnerSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes buttonSpin {
+  from {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(360deg);
   }
 }
 

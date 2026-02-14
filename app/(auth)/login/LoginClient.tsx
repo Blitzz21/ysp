@@ -202,7 +202,10 @@ export default function LoginClient() {
               type="submit"
               disabled={loading}
             >
-              {loading ? "Signing in..." : "Sign in"}
+              <span className="inline-flex items-center justify-center gap-2">
+                {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
+                {loading ? "Signing in..." : "Sign in"}
+              </span>
             </button>
           </form>
 
@@ -215,16 +218,19 @@ export default function LoginClient() {
           <button
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-navy shadow-soft transition hover:border-orange-300"
             type="button"
+            disabled={loading}
             onClick={() => {
               if (!oauthUrl) {
                 setError("OAuth is not configured. Check Appwrite settings.");
+                setLoading(false);
                 return;
               }
+              setLoading(true);
               window.location.href = oauthUrl;
             }}
           >
-            <GoogleIcon />
-            Continue with Google
+            {loading ? <span className="auth-spinner auth-spinner--dark" aria-hidden="true" /> : <GoogleIcon />}
+            {loading ? "Redirecting..." : "Continue with Google"}
           </button>
 
           <div className="auth-footer mt-6 text-sm">
