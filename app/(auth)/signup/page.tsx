@@ -11,9 +11,10 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
   const errorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -25,6 +26,10 @@ export default function SignupPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -33,7 +38,7 @@ export default function SignupPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, confirmPassword, name }),
       });
 
       if (!response.ok) {
@@ -42,7 +47,7 @@ export default function SignupPage() {
         return;
       }
 
-      router.push("/admin");
+      router.push("/dashboard");
     } catch {
       setError("Signup failed. Please try again.");
     } finally {
@@ -56,7 +61,7 @@ export default function SignupPage() {
         <div className="auth-brand">
           <span className="auth-logo">YSP</span>
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-muted">Admin Console</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-muted">Public Access</p>
             <p className="font-manrope text-lg font-semibold text-navy">Youth Service Philippines</p>
           </div>
         </div>
@@ -68,12 +73,9 @@ export default function SignupPage() {
       <div className="auth-panel auth-panel-single">
         <section className="auth-card">
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.3em] text-orange-600">Create access</p>
-            <h2 className="font-manrope text-2xl font-semibold text-navy">Request admin access</h2>
-            <p className="text-sm text-muted">
-              Admin accounts are provisioned by YSP leadership. If you are approved, your
-              role will be activated on login.
-            </p>
+            <p className="text-xs uppercase tracking-[0.3em] text-orange-600">Create account</p>
+            <h2 className="font-manrope text-2xl font-semibold text-navy">Join Youth Service Philippines</h2>
+            <p className="text-sm text-muted">Create your member account to join chapters and opportunities.</p>
           </div>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -104,7 +106,7 @@ export default function SignupPage() {
               <div className="relative mt-2">
                 <input
                   className="auth-input pr-12"
-                  type={showPassword ? "text" : "password"}
+                  type={showPasswords ? "text" : "password"}
                   placeholder="Create a password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -114,10 +116,32 @@ export default function SignupPage() {
                 <button
                   className="auth-icon-button"
                   type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPasswords((prev) => !prev)}
+                  aria-label={showPasswords ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? "Hide" : "Show"}
+                  {showPasswords ? "Hide" : "Show"}
+                </button>
+              </div>
+            </label>
+            <label className="block text-sm font-semibold text-navy">
+              Confirm password
+              <div className="relative mt-2">
+                <input
+                  className="auth-input pr-12"
+                  type={showPasswords ? "text" : "password"}
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  minLength={8}
+                  required
+                />
+                <button
+                  className="auth-icon-button"
+                  type="button"
+                  onClick={() => setShowPasswords((prev) => !prev)}
+                  aria-label={showPasswords ? "Hide password" : "Show password"}
+                >
+                  {showPasswords ? "Hide" : "Show"}
                 </button>
               </div>
             </label>

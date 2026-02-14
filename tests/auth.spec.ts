@@ -39,7 +39,7 @@ test("login page renders", async ({ page }) => {
 
 test("signup page renders", async ({ page }) => {
   await page.goto("/signup");
-  await expect(page.getByRole("heading", { name: "Request admin access" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Join Youth Service Philippines" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
 });
 
@@ -82,6 +82,7 @@ test("signup announces auth errors through live region", async ({ page }) => {
   await page.getByLabel("Full name").fill("Jane Doe");
   await page.getByLabel("Email").fill("jane@example.com");
   await page.getByPlaceholder("Create a password").fill("valid-password-123");
+  await page.getByPlaceholder("Confirm your password").fill("valid-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
 
   const authError = page.getByTestId("auth-error");

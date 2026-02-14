@@ -6,7 +6,7 @@ import { fromHttpStatus } from "@/services/errorContract";
 
 const SESSION_COOKIE = "ysp_session";
 
-type SignupPayload = { email?: string; password?: string; name?: string };
+type SignupPayload = { email?: string; password?: string; confirmPassword?: string; name?: string };
 
 type AppwriteSession = {
   $id?: string;
@@ -20,9 +20,16 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as SignupPayload;
   const email = body.email?.trim();
   const password = body.password;
+  const confirmPassword = body.confirmPassword;
   const name = body.name?.trim();
-  if (!email || !password || !name) {
-    return NextResponse.json({ error: "Name, email, and password required", code: "validation" }, { status: 400 });
+  if (!email || !password || !confirmPassword || !name) {
+    return NextResponse.json(
+      { error: "Name, email, password, and confirm password are required", code: "validation" },
+      { status: 400 }
+    );
+  }
+  if (password !== confirmPassword) {
+    return NextResponse.json({ error: "Passwords do not match", code: "validation" }, { status: 400 });
   }
 
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;

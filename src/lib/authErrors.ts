@@ -15,7 +15,7 @@ export type AuthErrorPayload = {
 const MESSAGE_BY_CODE: Record<AuthErrorCode, string> = {
   validation: "Please review the form fields and try again.",
   unauthorized: "Invalid email or password.",
-  forbidden: "Your account does not have admin access yet.",
+  forbidden: "Your account does not have permission for this action.",
   not_found: "Account not found.",
   conflict: "This account already exists. Try signing in instead.",
   rate_limited: "Too many attempts. Please wait and try again.",
@@ -41,4 +41,3 @@ export function getAuthErrorMessage(
   }
   return payload.error ?? fallback;
 }
-

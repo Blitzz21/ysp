@@ -18,7 +18,7 @@ export default function LoginClient() {
 
   const redirectTo = useMemo(() => {
     const next = searchParams.get("next");
-    return next && next.startsWith("/") ? next : "/admin";
+    return next && next.startsWith("/") ? next : "/dashboard";
   }, [searchParams]);
 
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
@@ -140,7 +140,7 @@ export default function LoginClient() {
         <div className="auth-brand">
           <span className="auth-logo">YSP</span>
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-muted">Admin Console</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-muted">Public Access</p>
             <p className="font-manrope text-lg font-semibold text-navy">Youth Service Philippines</p>
           </div>
         </div>
@@ -152,9 +152,9 @@ export default function LoginClient() {
       <div className="auth-panel auth-panel-single">
         <section className="auth-card">
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.3em] text-orange-600">Admin login</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-orange-600">Account login</p>
             <h2 className="font-manrope text-2xl font-semibold text-navy">Welcome back</h2>
-            <p className="text-sm text-muted">Sign in with your email or Google account.</p>
+            <p className="text-sm text-muted">Sign in with your email or Google account to continue.</p>
           </div>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
