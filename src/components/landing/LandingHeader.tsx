@@ -13,7 +13,11 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function LandingHeader() {
+type LandingHeaderProps = {
+  fullWidth?: boolean;
+};
+
+export function LandingHeader({ fullWidth = false }: LandingHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -31,7 +35,13 @@ export function LandingHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex w-[92%] max-w-6xl items-center justify-between gap-3 py-3">
+      <div
+        className={
+          fullWidth
+            ? "flex w-full items-center justify-between gap-3 px-6 py-3 lg:px-10"
+            : "mx-auto flex w-[92%] max-w-6xl items-center justify-between gap-3 py-3"
+        }
+      >
         <Link className="flex items-center gap-3" href="/" aria-label="YSP home">
           <span className="flex h-11 w-11 items-center justify-center">
             <Image
@@ -112,7 +122,9 @@ export function LandingHeader() {
         }`}
       >
         <div
-          className={`mx-auto w-[92%] max-w-6xl overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out ${
+          className={`${
+            fullWidth ? "w-full px-6 lg:px-10" : "mx-auto w-[92%] max-w-6xl"
+          } overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out ${
             menuOpen ? "max-h-[420px] pb-4 opacity-100 translate-y-0" : "max-h-0 pb-0 opacity-0 -translate-y-1"
           }`}
         >

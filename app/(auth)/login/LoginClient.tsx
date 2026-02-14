@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { GoogleIcon } from "@/components/auth/GoogleIcon";
+import { PasswordToggleIcon } from "@/components/auth/PasswordToggleIcon";
+import { LandingHeader } from "@/components/landing/LandingHeader";
 import { getAuthErrorMessage, type AuthErrorPayload } from "@/lib/authErrors";
 
 export default function LoginClient() {
@@ -136,18 +139,7 @@ export default function LoginClient() {
 
   return (
     <div className="auth-frame">
-      <div className="auth-nav">
-        <div className="auth-brand">
-          <span className="auth-logo">YSP</span>
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-muted">Public Access</p>
-            <p className="font-manrope text-lg font-semibold text-navy">Youth Service Philippines</p>
-          </div>
-        </div>
-        <Link className="auth-return" href="/">
-          Return to site
-        </Link>
-      </div>
+      <LandingHeader fullWidth />
 
       <div className="auth-panel auth-panel-single">
         <section className="auth-card">
@@ -186,7 +178,7 @@ export default function LoginClient() {
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? "Hide" : "Show"}
+                  <PasswordToggleIcon visible={showPassword} />
                 </button>
               </div>
             </label>
@@ -231,6 +223,7 @@ export default function LoginClient() {
               window.location.href = oauthUrl;
             }}
           >
+            <GoogleIcon />
             Continue with Google
           </button>
 

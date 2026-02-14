@@ -1,13 +1,17 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { GoogleIcon } from "@/components/auth/GoogleIcon";
+import { PasswordToggleIcon } from "@/components/auth/PasswordToggleIcon";
+import { LandingHeader } from "@/components/landing/LandingHeader";
 import { getAuthErrorMessage, type AuthErrorPayload } from "@/lib/authErrors";
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,11 +21,95 @@ export default function SignupPage() {
   const [showPasswords, setShowPasswords] = useState(false);
   const errorRef = useRef<HTMLDivElement | null>(null);
 
+  const redirectTo = useMemo(() => {
+    const next = searchParams.get("next");
+    return next && next.startsWith("/") ? next : "/dashboard";
+  }, [searchParams]);
+
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
+
+  const oauthUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const base = endpoint.replace(/\/$/, "");
+    const origin = window.location.origin;
+    const success = `${origin}/signup?oauth=1&next=${encodeURIComponent(redirectTo)}`;
+    const failure = `${origin}/signup?error=oauth`;
+    const params = new URLSearchParams({
+      project: projectId,
+      success,
+      failure,
+    });
+    return `${base}/account/sessions/oauth2/google?${params.toString()}`;
+  }, [endpoint, projectId, redirectTo]);
+
   useEffect(() => {
     if (error && errorRef.current) {
       errorRef.current.focus();
     }
   }, [error]);
+
+  const exchangeJwt = useCallback(async (): Promise<boolean> => {
+    if (!endpoint || !projectId) {
+      setError("Appwrite is not configured. Check environment variables.");
+      return false;
+    }
+    const base = endpoint.replace(/\/$/, "");
+    const jwtResponse = await fetch(`${base}/account/jwt`, {
+      method: "POST",
+      headers: {
+        "X-Appwrite-Project": projectId,
+      },
+      credentials: "include",
+    });
+
+    if (!jwtResponse.ok) {
+      setError("Signup succeeded but session sync failed.");
+      return false;
+    }
+
+    const payload = (await jwtResponse.json()) as { jwt?: string };
+    if (!payload.jwt) {
+      setError("Session token missing. Please try again.");
+      return false;
+    }
+
+    const cookieResponse = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ jwt: payload.jwt }),
+    });
+
+    if (!cookieResponse.ok) {
+      setError("Unable to store session locally.");
+      return false;
+    }
+
+    return true;
+  }, [endpoint, projectId]);
+
+  useEffect(() => {
+    const oauth = searchParams.get("oauth");
+    if (oauth !== "1") return;
+
+    setLoading(true);
+    exchangeJwt()
+      .then((ok) => {
+        if (ok) {
+          router.replace(redirectTo);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [exchangeJwt, redirectTo, router, searchParams]);
+
+  useEffect(() => {
+    const oauthError = searchParams.get("error");
+    if (oauthError === "oauth") {
+      setError("OAuth signup failed. Please try again.");
+    }
+  }, [searchParams]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,7 +135,7 @@ export default function SignupPage() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(redirectTo);
     } catch {
       setError("Signup failed. Please try again.");
     } finally {
@@ -57,18 +145,7 @@ export default function SignupPage() {
 
   return (
     <div className="auth-frame">
-      <div className="auth-nav">
-        <div className="auth-brand">
-          <span className="auth-logo">YSP</span>
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-muted">Public Access</p>
-            <p className="font-manrope text-lg font-semibold text-navy">Youth Service Philippines</p>
-          </div>
-        </div>
-        <Link className="auth-return" href="/">
-          Return to site
-        </Link>
-      </div>
+      <LandingHeader fullWidth />
 
       <div className="auth-panel auth-panel-single">
         <section className="auth-card">
@@ -119,7 +196,7 @@ export default function SignupPage() {
                   onClick={() => setShowPasswords((prev) => !prev)}
                   aria-label={showPasswords ? "Hide password" : "Show password"}
                 >
-                  {showPasswords ? "Hide" : "Show"}
+                  <PasswordToggleIcon visible={showPasswords} />
                 </button>
               </div>
             </label>
@@ -141,7 +218,7 @@ export default function SignupPage() {
                   onClick={() => setShowPasswords((prev) => !prev)}
                   aria-label={showPasswords ? "Hide password" : "Show password"}
                 >
-                  {showPasswords ? "Hide" : "Show"}
+                  <PasswordToggleIcon visible={showPasswords} />
                 </button>
               </div>
             </label>
@@ -169,8 +246,30 @@ export default function SignupPage() {
             </button>
           </form>
 
+          <div className="mt-5 flex items-center gap-3 text-xs text-muted">
+            <span className="h-px flex-1 bg-gray-200" />
+            or
+            <span className="h-px flex-1 bg-gray-200" />
+          </div>
+
+          <button
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-navy shadow-soft transition hover:border-orange-300"
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              if (!oauthUrl) {
+                setError("OAuth is not configured. Check Appwrite settings.");
+                return;
+              }
+              window.location.href = oauthUrl;
+            }}
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
+
           <div className="auth-footer mt-6 text-sm">
-            <span className="text-muted">Already approved?</span>
+            <span className="text-muted">Already have an account?</span>
             <Link className="font-semibold text-orange-600" href="/login">
               Sign in
             </Link>
