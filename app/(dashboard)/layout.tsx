@@ -64,9 +64,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             {(isChapterHead || isAdmin) && (
               <Link
                 className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-                href="/chapter"
+                href="/dashboard/chapter-head"
               >
-                Chapter dashboard
+                Chapter head dashboard
               </Link>
             )}
             {isAdmin && (

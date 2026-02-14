@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setSessionForTesting } from "../auth";
-import { NotFoundError, ValidationError } from "../errors";
+import { ForbiddenError, NotFoundError, ValidationError } from "../errors";
 
 vi.mock("../appwriteClient", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../appwriteClient")>();
@@ -13,7 +13,14 @@ vi.mock("../appwriteClient", async (importOriginal) => {
   };
 });
 
-import { joinChapter, leaveChapter, listMyMemberships } from "../memberships";
+import {
+  assignOfficer,
+  joinChapter,
+  leaveChapter,
+  listChapterMembers,
+  listMyMemberships,
+  removeMember,
+} from "../memberships";
 import {
   AppwriteRow,
   buildEqualQuery,
@@ -26,6 +33,7 @@ type MembershipRow = {
   userId: string;
   chapterId: string;
   role: "member" | "officer" | "chapter_head";
+  officerRoleId?: string;
   status: "pending" | "active" | "removed";
   joinedAt: string;
 };
@@ -115,5 +123,63 @@ describe("membership service", () => {
   it("throws when leaving without membership", async () => {
     vi.mocked(listRows).mockResolvedValueOnce([]);
     await expect(leaveChapter("c1")).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("lists chapter members for chapter head", async () => {
+    setSessionForTesting({ userId: "u2", role: "chapter_head", assignedChapterId: "c1" });
+    vi.mocked(listRows).mockResolvedValueOnce([baseRow]);
+
+    const rows = await listChapterMembers();
+
+    expect(rows).toHaveLength(1);
+    expect(listRows).toHaveBeenCalledWith("chapter_memberships", [
+      buildEqualQuery("chapterId", "c1"),
+    ]);
+  });
+
+  it("rejects chapter member listing for non chapter head", async () => {
+    setSessionForTesting({ userId: "u2", role: "member" });
+    await expect(listChapterMembers("c1")).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it("assigns officer role for a member", async () => {
+    setSessionForTesting({ userId: "u2", role: "chapter_head", assignedChapterId: "c1" });
+    vi.mocked(listRows)
+      .mockResolvedValueOnce([
+        {
+          $id: "role-1",
+          $createdAt: "2026-02-13T00:00:00.000Z",
+          $updatedAt: "2026-02-13T00:00:00.000Z",
+          roleId: "ops",
+          chapterId: "c1",
+          label: "Ops",
+          permissions: "manage_opps",
+        } as AppwriteRow<{ roleId: string; chapterId: string; label: string; permissions: string }>,
+      ])
+      .mockResolvedValueOnce([baseRow]);
+    vi.mocked(updateRow).mockResolvedValueOnce({
+      ...baseRow,
+      role: "officer",
+      officerRoleId: "ops",
+      status: "active",
+    } as AppwriteRow<MembershipRow>);
+
+    const updated = await assignOfficer({ userId: "u1", roleId: "ops" });
+
+    expect(updated.role).toBe("officer");
+    expect(updated.officerRoleId).toBe("ops");
+  });
+
+  it("removes a member by marking removed", async () => {
+    setSessionForTesting({ userId: "u2", role: "chapter_head", assignedChapterId: "c1" });
+    vi.mocked(listRows).mockResolvedValueOnce([baseRow]);
+    vi.mocked(updateRow).mockResolvedValueOnce({
+      ...baseRow,
+      status: "removed",
+    } as AppwriteRow<MembershipRow>);
+
+    const updated = await removeMember({ userId: "u1" });
+
+    expect(updated.status).toBe("removed");
   });
 });

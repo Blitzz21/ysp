@@ -67,8 +67,19 @@ export interface ChapterMembership {
   userId: string;
   chapterId: string;
   role: MembershipRole;
+  officerRoleId?: string;
   status: MembershipStatus;
   joinedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChapterOfficerRole {
+  id: string;
+  roleId: string;
+  chapterId: string;
+  label: string;
+  permissions: string;
   createdAt: string;
   updatedAt: string;
 }
