@@ -64,12 +64,13 @@ async function updateProfileAction(formData: FormData): Promise<void> {
       age,
       email: email || undefined,
     });
-    revalidatePath("/settings");
-    buildRedirect("success", "Profile updated.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update profile.").message;
     buildRedirect("error", message);
   }
+
+  revalidatePath("/settings");
+  buildRedirect("success", "Profile updated.");
 }
 
 async function updateAvatarAction(formData: FormData): Promise<void> {
@@ -80,12 +81,13 @@ async function updateAvatarAction(formData: FormData): Promise<void> {
   }
   try {
     await updateAvatar(file as File);
-    revalidatePath("/settings");
-    buildRedirect("success", "Avatar updated.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update avatar.").message;
     buildRedirect("error", message);
   }
+
+  revalidatePath("/settings");
+  buildRedirect("success", "Avatar updated.");
 }
 
 async function updateEmailAction(formData: FormData): Promise<void> {
@@ -95,12 +97,13 @@ async function updateEmailAction(formData: FormData): Promise<void> {
 
   try {
     await updateAccountEmail({ email, password });
-    revalidatePath("/settings");
-    buildRedirect("success", "Account email updated.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update email.").message;
     buildRedirect("error", message);
   }
+
+  revalidatePath("/settings");
+  buildRedirect("success", "Account email updated.");
 }
 
 async function updatePasswordAction(formData: FormData): Promise<void> {
@@ -110,12 +113,13 @@ async function updatePasswordAction(formData: FormData): Promise<void> {
 
   try {
     await updateAccountPassword({ currentPassword, nextPassword });
-    revalidatePath("/settings");
-    buildRedirect("success", "Password updated.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update password.").message;
     buildRedirect("error", message);
   }
+
+  revalidatePath("/settings");
+  buildRedirect("success", "Password updated.");
 }
 
 export default async function SettingsPage(props: {

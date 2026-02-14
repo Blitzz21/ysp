@@ -60,12 +60,13 @@ async function joinChapterAction(formData: FormData): Promise<void> {
   }
   try {
     await joinChapter(chapterId);
-    revalidatePath("/dashboard/member");
-    buildRedirect("success", "Chapter join request submitted.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to join chapter.").message;
     buildRedirect("error", message);
   }
+
+  revalidatePath("/dashboard/member");
+  buildRedirect("success", "Chapter join request submitted.");
 }
 
 async function leaveChapterAction(formData: FormData): Promise<void> {
@@ -76,12 +77,13 @@ async function leaveChapterAction(formData: FormData): Promise<void> {
   }
   try {
     await leaveChapter(chapterId);
-    revalidatePath("/dashboard/member");
-    buildRedirect("success", "Membership updated.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update membership.").message;
     buildRedirect("error", message);
   }
+
+  revalidatePath("/dashboard/member");
+  buildRedirect("success", "Membership updated.");
 }
 
 function buildMembershipMap(memberships: ChapterMembership[]): MembershipMap {

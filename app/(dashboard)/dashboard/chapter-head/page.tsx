@@ -52,11 +52,12 @@ async function createRoleAction(formData: FormData): Promise<void> {
 
   try {
     await createOfficerRole({ label, permissions });
-    buildRedirect("success", "Officer role created.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to create officer role.").message;
     buildRedirect("error", message);
   }
+
+  buildRedirect("success", "Officer role created.");
 }
 
 async function updateRoleAction(formData: FormData): Promise<void> {
@@ -67,11 +68,12 @@ async function updateRoleAction(formData: FormData): Promise<void> {
 
   try {
     await updateOfficerPermissions({ roleId, label: label || undefined, permissions });
-    buildRedirect("success", "Officer role updated.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update officer role.").message;
     buildRedirect("error", message);
   }
+
+  buildRedirect("success", "Officer role updated.");
 }
 
 async function assignOfficerAction(formData: FormData): Promise<void> {
@@ -81,11 +83,12 @@ async function assignOfficerAction(formData: FormData): Promise<void> {
 
   try {
     await assignOfficer({ userId, roleId });
-    buildRedirect("success", "Officer assigned.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to assign officer.").message;
     buildRedirect("error", message);
   }
+
+  buildRedirect("success", "Officer assigned.");
 }
 
 async function removeOfficerAction(formData: FormData): Promise<void> {
@@ -93,11 +96,12 @@ async function removeOfficerAction(formData: FormData): Promise<void> {
   const userId = String(formData.get("userId") ?? "").trim();
   try {
     await removeOfficer({ userId });
-    buildRedirect("success", "Officer removed.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to remove officer.").message;
     buildRedirect("error", message);
   }
+
+  buildRedirect("success", "Officer removed.");
 }
 
 async function removeMemberAction(formData: FormData): Promise<void> {
@@ -105,11 +109,12 @@ async function removeMemberAction(formData: FormData): Promise<void> {
   const userId = String(formData.get("userId") ?? "").trim();
   try {
     await removeMember({ userId });
-    buildRedirect("success", "Member removed.");
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to remove member.").message;
     buildRedirect("error", message);
   }
+
+  buildRedirect("success", "Member removed.");
 }
 
 export default async function ChapterHeadDashboard(props: {
