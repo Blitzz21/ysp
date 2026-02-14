@@ -272,6 +272,21 @@ test("admin settings route is usable", async ({ page }) => {
   }
 });
 
+test("admin dashboard uses sidebar navigation", async ({ page }) => {
+  await page.goto("/admin");
+  const loginHeading = page.getByRole("heading", { name: "Welcome back" });
+  if ((await loginHeading.count()) > 0) {
+    await expect(page).toHaveURL(/\/login/);
+    return;
+  }
+
+  await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Programs" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chapters" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Opportunities" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+});
+
 test("member dashboard route is usable", async ({ page }) => {
   await page.goto("/dashboard");
   await expectMemberPageOrLoginRedirect(page, /Welcome/);
@@ -288,6 +303,37 @@ test("member dashboard uses sidebar navigation", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Member dashboard" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Opportunities" })).toBeVisible();
+});
+
+test("sidebar mobile drawer is keyboard accessible", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/dashboard/member");
+  const loginHeading = page.getByRole("heading", { name: "Welcome back" });
+  if ((await loginHeading.count()) > 0) {
+    await expect(page).toHaveURL(/\/login/);
+    return;
+  }
+
+  const openButton = page.getByRole("button", { name: "Open sidebar" });
+  await expect(openButton).toBeVisible();
+  await openButton.focus();
+  await page.keyboard.press("Enter");
+  await expect(openButton).toHaveAttribute("aria-expanded", "true");
+  await page.getByRole("button", { name: "Close sidebar" }).click();
+  await expect(openButton).toHaveAttribute("aria-expanded", "false");
+});
+
+test("sidebar active state matches current route", async ({ page }) => {
+  await page.goto("/dashboard/member");
+  const loginHeading = page.getByRole("heading", { name: "Welcome back" });
+  if ((await loginHeading.count()) > 0) {
+    await expect(page).toHaveURL(/\/login/);
+    return;
+  }
+
+  await expect(page.getByRole("link", { name: "Member dashboard" })).toHaveClass(/bg-orange-50/);
+  await page.goto("/admin/settings");
+  await expect(page.getByRole("link", { name: "Settings" })).toHaveClass(/bg-orange-50/);
 });
 
 test("member settings route is usable", async ({ page }) => {
