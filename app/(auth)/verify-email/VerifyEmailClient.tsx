@@ -195,17 +195,19 @@ export default function VerifyEmailClient() {
           ) : null}
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              className="rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
-              type="button"
-              onClick={handleResend}
-              disabled={loading || verifying || verified}
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
-                {loading ? "Sending..." : "Resend verification email"}
-              </span>
-            </button>
+            {!verified ? (
+              <button
+                className="rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
+                type="button"
+                onClick={handleResend}
+                disabled={loading || verifying}
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
+                  {loading ? "Sending..." : "Resend verification email"}
+                </span>
+              </button>
+            ) : null}
 
             {verified ? (
               <Link

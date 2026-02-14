@@ -82,6 +82,7 @@ test("verify email page can resend verification", async ({ page }) => {
 
   await page.goto("/verify-email");
   await expect(page.getByRole("heading", { name: "Verify your account" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Resend verification email" })).toBeVisible();
   await page.getByRole("button", { name: "Resend verification email" }).click();
   await expect(page.getByText("Verification email sent. Check your inbox.")).toBeVisible();
 });
@@ -105,6 +106,7 @@ test("verify email page auto-updates after external verification without refresh
     timeout: 8000,
   });
   await expect(page.getByRole("link", { name: "Continue" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Resend verification email" })).toHaveCount(0);
 });
 
 test("verify email page stops status polling after unauthorized", async ({ page }) => {
@@ -158,6 +160,7 @@ test("verify email page treats already-verified link as success", async ({ page 
   await page.goto("/verify-email?userId=verified-user&secret=consumed-secret");
   await expect(page.getByText("Your email is already verified. You can continue to your dashboard.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Continue" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Resend verification email" })).toHaveCount(0);
 });
 
 test("verify email page reflects already-verified session", async ({ page }) => {
@@ -175,6 +178,7 @@ test("verify email page reflects already-verified session", async ({ page }) => 
   await page.goto("/verify-email");
   await expect(page.getByText("Your email is already verified. You can continue to your dashboard.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Continue" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Resend verification email" })).toHaveCount(0);
 });
 
 test("login announces auth errors through live region", async ({ page }) => {
