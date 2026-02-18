@@ -349,4 +349,74 @@ describe("auth route integration contracts", () => {
     );
     expect(cookieStore.set).not.toHaveBeenCalled();
   });
+
+  it("verify-start uses NEXT_PUBLIC_APP_URL for verification link instead of request.url", async () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://youthservicephilippines.appwrite.network";
+    cookieJar.set("ysp_session", "session-secret");
+
+    let capturedVerificationUrl = "";
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/account/verification")) {
+        const body = JSON.parse(init?.body as string);
+        capturedVerificationUrl = body.url;
+        return jsonResponse({}, 201);
+      }
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await verifyStartPost(
+      new Request("http://localhost:3000/api/auth/verify/start", { method: "POST" })
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true });
+    expect(capturedVerificationUrl).toBe(
+      "https://youthservicephilippines.appwrite.network/verify-email"
+    );
+  });
+
+  it("signup uses NEXT_PUBLIC_APP_URL for verification link", async () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://youthservicephilippines.appwrite.network";
+
+    let capturedVerificationUrl = "";
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/account")) {
+        return jsonResponse({ $id: "user-1" }, 201);
+      }
+      if (url.endsWith("/account/sessions/email")) {
+        return jsonResponse({ secret: "signup-session-secret" }, 201);
+      }
+      if (url.endsWith("/account/verification")) {
+        const body = JSON.parse(init?.body as string);
+        capturedVerificationUrl = body.url;
+        return jsonResponse({}, 201);
+      }
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await signupPost(
+      new Request("http://localhost:3000/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Test User",
+          email: "test@example.com",
+          password: "password123",
+          confirmPassword: "password123",
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(capturedVerificationUrl).toBe(
+      "https://youthservicephilippines.appwrite.network/verify-email"
+    );
+  });
 });

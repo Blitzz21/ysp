@@ -5,6 +5,7 @@ import {
   buildTokenHeaders,
   normalizeEndpoint,
   parseSessionExpiry,
+  resolveAppOrigin,
   resolveSessionToken,
 } from "../_lib/appwriteAuth";
 import { writeAuthAudit } from "../_lib/audit";
@@ -179,7 +180,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Session token missing", code: "unexpected" }, { status: 500 });
   }
 
-  const verificationUrl = new URL("/verify-email", request.url).toString();
+  const verificationUrl = `${resolveAppOrigin(request)}/verify-email`;
   const verificationResponse = await fetch(`${baseEndpoint}/account/verification`, {
     method: "POST",
     headers: buildTokenHeaders(projectId, resolvedToken.token, "application/json"),

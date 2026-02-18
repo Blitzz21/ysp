@@ -6,6 +6,31 @@ export function normalizeEndpoint(endpoint: string): string {
   return endpoint.replace(/\/$/, "");
 }
 
+/**
+ * Resolve the public-facing origin of this app for use in email links
+ * (verification, password reset, etc).
+ *
+ * Priority:
+ *  1. NEXT_PUBLIC_APP_URL env var (most reliable — set once, works everywhere)
+ *  2. x-forwarded-host + x-forwarded-proto headers (works behind reverse proxies)
+ *  3. Fallback to request.url (only correct in dev)
+ */
+export function resolveAppOrigin(request: Request): string {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (envUrl) {
+    return envUrl.replace(/\/$/, "");
+  }
+
+  const fwdHost = request.headers.get("x-forwarded-host");
+  const fwdProto = request.headers.get("x-forwarded-proto") ?? "https";
+  if (fwdHost) {
+    return `${fwdProto}://${fwdHost}`;
+  }
+
+  const parsed = new URL(request.url);
+  return parsed.origin;
+}
+
 function isJwt(value: string): boolean {
   return value.split(".").length === 3;
 }

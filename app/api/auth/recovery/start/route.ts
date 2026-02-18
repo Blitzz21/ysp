@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { normalizeEndpoint } from "../../_lib/appwriteAuth";
+import { normalizeEndpoint, resolveAppOrigin } from "../../_lib/appwriteAuth";
 import { writeAuthAudit } from "../../_lib/audit";
 import { extractClientIp, takeRateLimit } from "../../_lib/rateLimit";
 import { fromHttpStatus } from "@/services/errorContract";
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const resetUrl = new URL("/reset-password", request.url).toString();
+  const resetUrl = `${resolveAppOrigin(request)}/reset-password`;
   const response = await fetch(`${normalizeEndpoint(endpoint)}/account/recovery`, {
     method: "POST",
     headers: {
