@@ -11,15 +11,13 @@ function isJwt(value: string): boolean {
 }
 
 type AppwriteSessionPayload = {
-  $id?: string;
   secret?: string;
-  sessionId?: string;
   token?: string;
+  expire?: string;
   session?: {
-    $id?: string;
     secret?: string;
-    sessionId?: string;
     token?: string;
+    expire?: string;
   };
 };
 
@@ -31,6 +29,12 @@ export async function getSessionToken(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get(SESSION_COOKIE)?.value ?? null;
 }
+
+export type ResolvedSessionToken = {
+  token: string;
+  expire?: string;
+  source: "session_secret" | "session_token" | "jwt";
+};
 
 export function buildTokenHeaders(
   projectId: string,
@@ -47,22 +51,28 @@ export function buildTokenHeaders(
   return headers;
 }
 
-function readTokenFromSessionPayload(payload: AppwriteSessionPayload | null): string | null {
+function readTokenFromSessionPayload(
+  payload: AppwriteSessionPayload | null
+): Omit<ResolvedSessionToken, "source"> | null {
   if (!payload) {
     return null;
   }
 
-  return (
+  const token =
     payload.secret ??
-    payload.$id ??
-    payload.sessionId ??
-    payload.token ??
     payload.session?.secret ??
-    payload.session?.$id ??
-    payload.session?.sessionId ??
+    payload.token ??
     payload.session?.token ??
-    null
-  );
+    null;
+
+  if (!token) {
+    return null;
+  }
+
+  return {
+    token,
+    expire: payload.expire ?? payload.session?.expire,
+  };
 }
 
 function extractCookiePair(value: string): string | null {
@@ -108,7 +118,7 @@ async function createJwtFromCookie(
   endpoint: string,
   projectId: string,
   cookieHeader: string
-): Promise<string | null> {
+): Promise<ResolvedSessionToken | null> {
   const jwtResponse = await fetch(`${normalizeEndpoint(endpoint)}/account/jwt`, {
     method: "POST",
     headers: {
@@ -124,18 +134,39 @@ async function createJwtFromCookie(
   }
 
   const payload = (await jwtResponse.json().catch(() => null)) as AppwriteJwtPayload | null;
-  return typeof payload?.jwt === "string" && payload.jwt.length > 0 ? payload.jwt : null;
+  if (typeof payload?.jwt !== "string" || payload.jwt.length === 0) {
+    return null;
+  }
+
+  return {
+    token: payload.jwt,
+    source: "jwt",
+  };
+}
+
+export function parseSessionExpiry(expire?: string): Date | undefined {
+  if (!expire) {
+    return undefined;
+  }
+  const parsed = new Date(expire);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+  return parsed;
 }
 
 export async function resolveSessionToken(
   response: Response,
   endpoint: string,
   projectId: string
-): Promise<string | null> {
+): Promise<ResolvedSessionToken | null> {
   const payload = (await response.json().catch(() => null)) as AppwriteSessionPayload | null;
-  const tokenFromBody = readTokenFromSessionPayload(payload);
-  if (tokenFromBody) {
-    return tokenFromBody;
+  const sessionToken = readTokenFromSessionPayload(payload);
+  if (sessionToken) {
+    return {
+      ...sessionToken,
+      source: payload?.secret || payload?.session?.secret ? "session_secret" : "session_token",
+    };
   }
 
   const cookieHeader = extractCookieHeader(response);

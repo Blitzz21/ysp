@@ -1,7 +1,12 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { buildTokenHeaders, normalizeEndpoint, resolveSessionToken } from "../_lib/appwriteAuth";
+import {
+  buildTokenHeaders,
+  normalizeEndpoint,
+  parseSessionExpiry,
+  resolveSessionToken,
+} from "../_lib/appwriteAuth";
 import { writeAuthAudit } from "../_lib/audit";
 import { extractClientIp, takeRateLimit } from "../_lib/rateLimit";
 import { createRow, userReadPermissions } from "@/services/appwriteClient";
@@ -162,8 +167,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = await resolveSessionToken(sessionResponse, baseEndpoint, projectId);
-  if (!token) {
+  const resolvedToken = await resolveSessionToken(sessionResponse, baseEndpoint, projectId);
+  if (!resolvedToken) {
     await writeAuthAudit({
       event: "signup",
       status: "failure",
@@ -177,7 +182,7 @@ export async function POST(request: Request) {
   const verificationUrl = new URL("/verify-email", request.url).toString();
   const verificationResponse = await fetch(`${baseEndpoint}/account/verification`, {
     method: "POST",
-    headers: buildTokenHeaders(projectId, token, "application/json"),
+    headers: buildTokenHeaders(projectId, resolvedToken.token, "application/json"),
     body: JSON.stringify({
       url: verificationUrl,
     }),
@@ -198,11 +203,12 @@ export async function POST(request: Request) {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
+  cookieStore.set(SESSION_COOKIE, resolvedToken.token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
+    expires: parseSessionExpiry(resolvedToken.expire),
   });
 
   await writeAuthAudit({

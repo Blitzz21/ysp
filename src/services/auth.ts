@@ -21,7 +21,7 @@ export type SessionInfo = {
 
 let sessionOverride: SessionInfo | undefined;
 
-export function setSessionForTesting(session: SessionInfo): void {
+export function setSessionForTesting(session: SessionInfo | undefined): void {
   sessionOverride = session;
 }
 
@@ -86,17 +86,70 @@ async function fetchAccount(): Promise<AccountResponse | null> {
     headersInit.cookie = cookieHeader;
   }
 
-  const response = await fetch(`${normalizeEndpoint(endpoint)}/account`, {
-    headers: headersInit,
-    cache: "no-store",
-  });
+  const requestAccount = () =>
+    fetch(`${normalizeEndpoint(endpoint)}/account`, {
+      headers: headersInit,
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
+  async function readAccount(response: Response): Promise<AccountResponse | null> {
+    if (!response.ok) {
+      return null;
+    }
+    const data = (await response.json()) as AccountResponse;
+    return data?.$id ? data : null;
+  }
+
+  function isUnauthenticatedStatus(status: number): boolean {
+    return status === 401 || status === 403;
+  }
+
+  function isTransientStatus(status: number): boolean {
+    return status === 429 || status >= 500;
+  }
+
+  let response: Response;
+  try {
+    response = await requestAccount();
+  } catch {
+    try {
+      response = await requestAccount();
+    } catch {
+      throw new UnexpectedError("Authentication service is temporarily unavailable");
+    }
+  }
+
+  if (response.ok) {
+    return readAccount(response);
+  }
+
+  if (isUnauthenticatedStatus(response.status)) {
     return null;
   }
 
-  const data = (await response.json()) as AccountResponse;
-  return data?.$id ? data : null;
+  if (isTransientStatus(response.status)) {
+    let retryResponse: Response;
+    try {
+      retryResponse = await requestAccount();
+    } catch {
+      throw new UnexpectedError("Authentication service is temporarily unavailable");
+    }
+
+    if (retryResponse.ok) {
+      return readAccount(retryResponse);
+    }
+    if (isUnauthenticatedStatus(retryResponse.status)) {
+      return null;
+    }
+    if (isTransientStatus(retryResponse.status)) {
+      throw new UnexpectedError(
+        `Authentication service returned ${retryResponse.status} during session validation`
+      );
+    }
+    return null;
+  }
+
+  return null;
 }
 
 async function fetchUserProfile(userId: string): Promise<UserProfileRow | null> {

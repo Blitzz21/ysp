@@ -37,6 +37,7 @@ vi.mock("@/services/auth", () => ({
 }));
 
 import { POST as loginPost } from "../../app/api/auth/login/route";
+import { GET as oauthCallbackGet } from "../../app/api/auth/oauth/callback/route";
 import { POST as signupPost } from "../../app/api/auth/signup/route";
 import { POST as verifyStartPost } from "../../app/api/auth/verify/start/route";
 import { GET as verifyStatusGet } from "../../app/api/auth/verify/status/route";
@@ -108,6 +109,34 @@ describe("auth route integration contracts", () => {
       const url = String(input);
       if (url.endsWith("/account/sessions/email")) {
         return jsonResponse({}, 201);
+      }
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new Request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "member@example.com",
+        password: "password123",
+      }),
+    });
+    const response = await loginPost(request);
+    const payload = (await response.json()) as { code: string; error: string };
+
+    expect(response.status).toBe(500);
+    expect(payload).toEqual({
+      code: "unexpected",
+      error: "Session token missing",
+    });
+  });
+
+  it("login rejects session payloads without usable secret/token fields", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/account/sessions/email")) {
+        return jsonResponse({ $id: "session-id-only" }, 201);
       }
       throw new Error(`Unexpected fetch URL: ${url}`);
     });
@@ -210,5 +239,48 @@ describe("auth route integration contracts", () => {
 
     expect(response.status).toBe(200);
     expect(payload).toEqual({ ok: true, emailVerified: true });
+  });
+
+  it("oauth callback exchanges token session and redirects to next route", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/account/sessions/token")) {
+        return jsonResponse(
+          { secret: "oauth-session-secret", expire: "2099-01-01T00:00:00.000Z" },
+          201
+        );
+      }
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await oauthCallbackGet(
+      new Request(
+        "http://localhost/api/auth/oauth/callback?flow=login&next=%2Fdashboard%2Fmember&userId=user-1&secret=oauth-secret"
+      )
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/dashboard/member");
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      "ysp_session",
+      "oauth-session-secret",
+      expect.objectContaining({
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+      })
+    );
+  });
+
+  it("oauth callback redirects to flow auth page on missing params", async () => {
+    const response = await oauthCallbackGet(
+      new Request("http://localhost/api/auth/oauth/callback?flow=signup&next=%2Fsettings")
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/signup?error=oauth&next=%2Fsettings"
+    );
   });
 });

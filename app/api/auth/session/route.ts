@@ -5,17 +5,28 @@ const SESSION_COOKIE = "ysp_session";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
-  const jwt = typeof body?.jwt === "string" ? body.jwt : "";
-  if (!jwt) {
-    return NextResponse.json({ error: "Missing jwt", code: "validation" }, { status: 400 });
+  const token =
+    typeof body?.token === "string"
+      ? body.token
+      : typeof body?.jwt === "string"
+        ? body.jwt
+        : "";
+  const expire = typeof body?.expire === "string" ? body.expire : undefined;
+
+  if (!token) {
+    return NextResponse.json({ error: "Missing token", code: "validation" }, { status: 400 });
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, jwt, {
+  const expiresAt =
+    expire && !Number.isNaN(new Date(expire).getTime()) ? new Date(expire) : undefined;
+
+  cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
+    expires: expiresAt,
   });
 
   return NextResponse.json({ ok: true });
