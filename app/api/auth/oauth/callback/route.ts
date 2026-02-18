@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { normalizeEndpoint, parseSessionExpiry, resolveSessionToken } from "../../_lib/appwriteAuth";
 
 const SESSION_COOKIE = "ysp_session";
+const VALID_FLOWS = new Set(["login", "signup"]);
 
 function sanitizeNextPath(value: string | null): string {
   if (!value) {
@@ -16,9 +17,15 @@ function fallbackAuthPath(flow: string | null): string {
   return flow === "signup" ? "/signup" : "/login";
 }
 
-function buildErrorRedirect(requestUrl: URL, flow: string | null, nextPath: string): URL {
+function buildErrorRedirect(
+  requestUrl: URL,
+  flow: string | null,
+  nextPath: string,
+  reason: string
+): URL {
   const redirectUrl = new URL(fallbackAuthPath(flow), requestUrl.origin);
   redirectUrl.searchParams.set("error", "oauth");
+  redirectUrl.searchParams.set("reason", reason);
   if (nextPath !== "/dashboard") {
     redirectUrl.searchParams.set("next", nextPath);
   }
@@ -29,18 +36,30 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const flow = requestUrl.searchParams.get("flow");
   const nextPath = sanitizeNextPath(requestUrl.searchParams.get("next"));
-  const errorRedirect = buildErrorRedirect(requestUrl, flow, nextPath);
+
+  if (flow !== null && !VALID_FLOWS.has(flow)) {
+    console.error("[oauth/callback] Invalid flow param:", flow);
+    return NextResponse.redirect(
+      buildErrorRedirect(requestUrl, flow, nextPath, "invalid_flow")
+    );
+  }
 
   const userId = requestUrl.searchParams.get("userId")?.trim();
   const secret = requestUrl.searchParams.get("secret")?.trim();
   if (!userId || !secret) {
-    return NextResponse.redirect(errorRedirect);
+    console.error("[oauth/callback] Missing userId or secret params");
+    return NextResponse.redirect(
+      buildErrorRedirect(requestUrl, flow, nextPath, "missing_params")
+    );
   }
 
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   if (!endpoint || !projectId) {
-    return NextResponse.redirect(errorRedirect);
+    console.error("[oauth/callback] Appwrite env vars not configured");
+    return NextResponse.redirect(
+      buildErrorRedirect(requestUrl, flow, nextPath, "misconfigured")
+    );
   }
 
   const baseEndpoint = normalizeEndpoint(endpoint);
@@ -55,12 +74,22 @@ export async function GET(request: Request) {
   });
 
   if (!sessionResponse.ok) {
-    return NextResponse.redirect(errorRedirect);
+    const body = await sessionResponse.text().catch(() => "(unreadable)");
+    console.error(
+      `[oauth/callback] Token exchange failed — status ${sessionResponse.status}:`,
+      body
+    );
+    return NextResponse.redirect(
+      buildErrorRedirect(requestUrl, flow, nextPath, "token_exchange")
+    );
   }
 
   const resolvedToken = await resolveSessionToken(sessionResponse, baseEndpoint, projectId);
   if (!resolvedToken) {
-    return NextResponse.redirect(errorRedirect);
+    console.error("[oauth/callback] resolveSessionToken returned null — no usable token in response");
+    return NextResponse.redirect(
+      buildErrorRedirect(requestUrl, flow, nextPath, "no_token")
+    );
   }
 
   const cookieStore = await cookies();
@@ -74,4 +103,3 @@ export async function GET(request: Request) {
 
   return NextResponse.redirect(new URL(nextPath, requestUrl.origin));
 }
-

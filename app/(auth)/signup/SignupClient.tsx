@@ -41,7 +41,7 @@ export default function SignupClient() {
       success,
       failure,
     });
-    return `${base}/account/sessions/oauth2/google?${params.toString()}`;
+    return `${base}/account/tokens/oauth2/google?${params.toString()}`;
   }, [endpoint, projectId, redirectTo]);
 
   useEffect(() => {
@@ -53,7 +53,15 @@ export default function SignupClient() {
   useEffect(() => {
     const oauthError = searchParams.get("error");
     if (oauthError === "oauth") {
-      setError("OAuth signup failed. Please try again.");
+      const reason = searchParams.get("reason");
+      const messages: Record<string, string> = {
+        token_exchange: "Google sign-up failed. Please try again.",
+        no_token: "Could not establish a session. Please try again.",
+        invalid_flow: "Invalid sign-up request. Please try again.",
+        missing_params: "Sign-up was interrupted. Please try again.",
+        misconfigured: "OAuth is not configured. Contact support.",
+      };
+      setError(reason && reason in messages ? messages[reason] : "OAuth signup failed. Please try again.");
     }
   }, [searchParams]);
 

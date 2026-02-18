@@ -280,7 +280,73 @@ describe("auth route integration contracts", () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "http://localhost/signup?error=oauth&next=%2Fsettings"
+      "http://localhost/signup?error=oauth&reason=missing_params&next=%2Fsettings"
     );
+  });
+
+  it("oauth callback redirects with token_exchange reason when /account/sessions/token returns non-2xx", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/account/sessions/token")) {
+        return jsonResponse({ message: "Invalid token" }, 401);
+      }
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await oauthCallbackGet(
+      new Request(
+        "http://localhost/api/auth/oauth/callback?flow=login&next=%2Fdashboard&userId=user-1&secret=bad-secret"
+      )
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/login?error=oauth&reason=token_exchange"
+    );
+    expect(cookieStore.set).not.toHaveBeenCalled();
+  });
+
+  it("oauth callback redirects with no_token reason when session token cannot be resolved", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/account/sessions/token")) {
+        // 201 but no usable secret/token fields
+        return jsonResponse({ $id: "session-id-only" }, 201);
+      }
+      if (url.endsWith("/account/jwt")) {
+        // JWT fallback also fails
+        return jsonResponse({ message: "Unauthorized" }, 401);
+      }
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await oauthCallbackGet(
+      new Request(
+        "http://localhost/api/auth/oauth/callback?flow=login&next=%2Fdashboard&userId=user-1&secret=oauth-secret"
+      )
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/login?error=oauth&reason=no_token"
+    );
+    expect(cookieStore.set).not.toHaveBeenCalled();
+  });
+
+  it("oauth callback rejects unknown flow values with invalid_flow reason", async () => {
+    const response = await oauthCallbackGet(
+      new Request(
+        "http://localhost/api/auth/oauth/callback?flow=admin&next=%2Fdashboard&userId=user-1&secret=oauth-secret"
+      )
+    );
+
+    expect(response.status).toBe(307);
+    // Unknown flow falls back to /login
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/login?error=oauth&reason=invalid_flow"
+    );
+    expect(cookieStore.set).not.toHaveBeenCalled();
   });
 });

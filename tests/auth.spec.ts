@@ -46,6 +46,29 @@ test("signup page renders", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
 });
 
+test("login page shows generic OAuth error when redirected back with ?error=oauth", async ({ page }) => {
+  await page.goto("/login?error=oauth");
+  const authError = page.getByTestId("auth-error");
+  await expect(authError).toBeVisible();
+  await expect(authError).toHaveAttribute("role", "alert");
+  await expect(authError).toContainText("OAuth login failed. Please try again.");
+});
+
+test("login page shows specific error for token_exchange reason", async ({ page }) => {
+  await page.goto("/login?error=oauth&reason=token_exchange");
+  const authError = page.getByTestId("auth-error");
+  await expect(authError).toBeVisible();
+  await expect(authError).toContainText("Google sign-in failed. Please try again.");
+});
+
+test("signup page shows generic OAuth error when redirected back with ?error=oauth", async ({ page }) => {
+  await page.goto("/signup?error=oauth");
+  const authError = page.getByTestId("auth-error");
+  await expect(authError).toBeVisible();
+  await expect(authError).toHaveAttribute("role", "alert");
+  await expect(authError).toContainText("OAuth signup failed. Please try again.");
+});
+
 test("forgot password page renders and can submit request", async ({ page }) => {
   await page.route("**/api/auth/recovery/start", async (route) => {
     await route.fulfill({
