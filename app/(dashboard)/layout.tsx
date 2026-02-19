@@ -30,9 +30,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const isAdmin = session.role === "admin";
   const isChapterHead = session.role === "chapter_head";
   const navItems: DashboardNavItem[] = [
-    { href: "/dashboard/member", label: "Member dashboard", icon: "member" },
+    { href: "/dashboard/member", label: "Overview", icon: "member", exact: true },
+    { href: "/dashboard/member/chapters", label: "Chapters", icon: "chapter" },
+    { href: "/dashboard/member/opportunities", label: "Opportunities", icon: "opportunities" },
     { href: "/settings", label: "Settings", icon: "settings" },
-    { href: "/volunteer-opportunities", label: "Opportunities", icon: "opportunities" },
   ];
 
   if (isChapterHead || isAdmin) {

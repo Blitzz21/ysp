@@ -12,7 +12,8 @@ export type DashboardNavIcon =
   | "settings"
   | "opportunities"
   | "admin"
-  | "overview";
+  | "overview"
+  | "programs";
 
 export type DashboardNavItem = {
   href: string;
@@ -112,6 +113,12 @@ function NavIcon({ icon }: { icon: DashboardNavIcon }) {
           <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" stroke="currentColor" strokeWidth="1.7" />
         </svg>
       );
+    case "programs":
+      return (
+        <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
+          <path d="M5 4h14a1 1 0 0 1 1 1v14l-4-2-4 2-4-2-4 2V5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.7" />
+        </svg>
+      );
     default:
       return (
         <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
@@ -138,18 +145,16 @@ export function DashboardShell({
     <div className="h-screen overflow-hidden bg-[#f7f5f0] text-ink">
       <div className="flex h-full">
         <div
-          className={`fixed inset-0 z-30 bg-black/30 transition md:hidden ${
-            mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
+          className={`fixed inset-0 z-30 bg-black/30 transition md:hidden ${mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
           onClick={() => setMobileOpen(false)}
           aria-hidden="true"
         />
 
         <aside
           id="dashboard-sidebar"
-          className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-gray-200 bg-white/95 backdrop-blur transition-all duration-300 ease-out md:translate-x-0 ${
-            collapsed ? "w-20" : "w-72"
-          } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+          className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-gray-200 bg-white/95 backdrop-blur transition-all duration-300 ease-out md:translate-x-0 ${collapsed ? "w-20" : "w-72"
+            } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4">
             <Link className="flex min-w-0 items-center gap-3 overflow-hidden" href="/">
@@ -164,11 +169,10 @@ export function DashboardShell({
                 />
               </span>
               <span
-                className={`min-w-0 overflow-hidden transition-all duration-300 ease-out ${
-                  collapsed
-                    ? "max-w-0 translate-x-[-8px] opacity-0"
-                    : "max-w-[180px] translate-x-0 opacity-100"
-                }`}
+                className={`min-w-0 overflow-hidden transition-all duration-300 ease-out ${collapsed
+                  ? "max-w-0 translate-x-[-8px] opacity-0"
+                  : "max-w-[180px] translate-x-0 opacity-100"
+                  }`}
               >
                 <span className="block whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.32em] text-orange-600">
                   {productLabel}
@@ -198,21 +202,19 @@ export function DashboardShell({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
-                    active
-                      ? "border-orange-200 bg-orange-50 text-orange-700"
-                      : "border-transparent text-ink hover:border-orange-200 hover:bg-orange-50/60"
-                  } ${collapsed ? "justify-center gap-0" : "gap-3"} ${focusRing}`}
+                  className={`flex items-center rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${active
+                    ? "border-orange-200 bg-orange-50 text-orange-700"
+                    : "border-transparent text-ink hover:border-orange-200 hover:bg-orange-50/60"
+                    } ${collapsed ? "justify-center gap-0" : "gap-3"} ${focusRing}`}
                 >
                   <span className={`shrink-0 ${iconClassName(active)}`}>
                     <NavIcon icon={item.icon} />
                   </span>
                   <span
-                    className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-out ${
-                      collapsed
-                        ? "max-w-0 translate-x-[-8px] opacity-0"
-                        : "max-w-[150px] translate-x-0 opacity-100"
-                    }`}
+                    className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-out ${collapsed
+                      ? "max-w-0 translate-x-[-8px] opacity-0"
+                      : "max-w-[150px] translate-x-0 opacity-100"
+                      }`}
                   >
                     {item.label}
                   </span>
@@ -223,40 +225,42 @@ export function DashboardShell({
 
           <div className="space-y-2 border-t border-gray-100 p-3">
             <button
-              className={`flex w-full items-center rounded-2xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-muted transition hover:border-orange-300 hover:text-orange-600 ${
-                collapsed ? "justify-center" : "gap-2"
-              } ${focusRing}`}
+              className={`flex w-full items-center rounded-2xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-muted transition hover:border-orange-300 hover:text-orange-600 ${collapsed ? "justify-center" : "gap-2"
+                } ${focusRing}`}
               onClick={() => setCollapsed((prev) => !prev)}
               type="button"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               <SidebarToggleIcon collapsed={collapsed} />
               <span
-                className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-out ${
-                  collapsed
-                    ? "max-w-0 translate-x-[-8px] opacity-0"
-                    : "max-w-[130px] translate-x-0 opacity-100"
-                }`}
+                className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-out ${collapsed
+                  ? "max-w-0 translate-x-[-8px] opacity-0"
+                  : "max-w-[130px] translate-x-0 opacity-100"
+                  }`}
               >
                 Collapse sidebar
               </span>
             </button>
             <form action={signOutAction}>
               <button
-                className={`flex w-full items-center rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2.5 font-semibold text-orange-700 transition hover:border-orange-300 ${
-                  collapsed ? "justify-center text-xs" : "gap-2 text-sm"
-                } ${focusRing}`}
+                className={`flex w-full items-center rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2.5 font-semibold text-orange-700 transition hover:border-orange-300 ${collapsed ? "justify-center text-xs" : "gap-2 text-sm"
+                  } ${focusRing}`}
                 type="submit"
               >
-                <span className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-orange-200">
-                  <Image
-                    src="/ysp-logo.png"
-                    alt=""
-                    width={16}
-                    height={16}
-                    className="h-4 w-4 object-contain"
+                <svg
+                  className="h-4 w-4 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
-                </span>
+                </svg>
                 {!collapsed ? "Logout" : null}
               </button>
             </form>
@@ -264,9 +268,8 @@ export function DashboardShell({
         </aside>
 
         <div
-          className={`relative min-w-0 flex-1 transition-[margin] duration-300 ease-out ${
-            collapsed ? "md:ml-20" : "md:ml-72"
-          }`}
+          className={`relative min-w-0 flex-1 transition-[margin] duration-300 ease-out ${collapsed ? "md:ml-20" : "md:ml-72"
+            }`}
         >
           <button
             className={`fixed left-4 top-4 z-20 inline-flex rounded-full border border-gray-200 bg-white p-2 text-muted shadow-soft transition hover:border-orange-300 hover:text-orange-600 md:hidden ${focusRing}`}

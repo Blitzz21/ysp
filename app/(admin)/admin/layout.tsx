@@ -2,9 +2,24 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { getSession, signOut } from "@/services/auth";
-import { AdminShell } from "@/components/admin/AdminShell";
+import {
+  DashboardShell,
+  type DashboardNavItem,
+} from "@/components/dashboard/DashboardShell";
 
-export default async function AdminLayout({ children }: { children: ReactNode }) {
+const adminNavItems: DashboardNavItem[] = [
+  { href: "/admin", label: "Overview", icon: "overview", exact: true },
+  { href: "/admin/programs", label: "Programs", icon: "programs" },
+  { href: "/admin/chapters", label: "Chapters", icon: "chapter" },
+  { href: "/admin/opportunities", label: "Opportunities", icon: "opportunities" },
+  { href: "/admin/settings", label: "Settings", icon: "settings" },
+];
+
+export default async function AdminLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const session = await getSession();
   if (!session) {
     redirect("/login?next=/admin");
@@ -22,5 +37,15 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     redirect("/login");
   }
 
-  return <AdminShell signOutAction={signOutAction}>{children}</AdminShell>;
+  return (
+    <DashboardShell
+      productLabel="Admin Console"
+      title="YSP Admin"
+      navItems={adminNavItems}
+      signOutAction={signOutAction}
+    >
+      {children}
+    </DashboardShell>
+  );
 }
+
