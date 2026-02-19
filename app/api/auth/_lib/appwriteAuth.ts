@@ -7,29 +7,34 @@ export function normalizeEndpoint(endpoint: string): string {
 }
 
 /**
- * Resolve the public-facing origin of this app for use in email links
- * (verification, password reset, etc).
- *
- * Priority:
- *  1. NEXT_PUBLIC_APP_URL env var (most reliable — set once, works everywhere)
- *  2. x-forwarded-host + x-forwarded-proto headers (works behind reverse proxies)
- *  3. Fallback to request.url (only correct in dev)
+ * For BROWSER REDIRECTS (OAuth callback, etc.).
+ * Uses the actual request origin so localhost stays on localhost
+ * and production stays on production.
  */
-export function resolveAppOrigin(request: Request): string {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (envUrl) {
-    return envUrl.replace(/\/$/, "");
-  }
-
+export function resolveRequestOrigin(request: Request): string {
   const fwdHost = request.headers.get("x-forwarded-host");
   const fwdProto = request.headers.get("x-forwarded-proto") ?? "https";
   if (fwdHost) {
     return `${fwdProto}://${fwdHost}`;
   }
-
-  const parsed = new URL(request.url);
-  return parsed.origin;
+  return new URL(request.url).origin;
 }
+
+/**
+ * For EMAIL LINKS (verification, password reset, etc.).
+ * Prefers NEXT_PUBLIC_APP_URL so links always point to the canonical domain,
+ * even when triggered from a local dev server.
+ */
+export function resolveCanonicalOrigin(request: Request): string {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (envUrl) {
+    return envUrl.replace(/\/$/, "");
+  }
+  return resolveRequestOrigin(request);
+}
+
+/** @deprecated Use resolveRequestOrigin or resolveCanonicalOrigin instead. */
+export const resolveAppOrigin = resolveCanonicalOrigin;
 
 function isJwt(value: string): boolean {
   return value.split(".").length === 3;

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { normalizeEndpoint, parseSessionExpiry, resolveAppOrigin, resolveSessionToken } from "../../_lib/appwriteAuth";
+import { normalizeEndpoint, parseSessionExpiry, resolveRequestOrigin, resolveSessionToken } from "../../_lib/appwriteAuth";
 
 const SESSION_COOKIE = "ysp_session";
 const VALID_FLOWS = new Set(["login", "signup"]);
@@ -34,7 +34,7 @@ function buildErrorRedirect(
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const origin = resolveAppOrigin(request);
+  const origin = resolveRequestOrigin(request);
   const flow = requestUrl.searchParams.get("flow");
   const nextPath = sanitizeNextPath(requestUrl.searchParams.get("next"));
 

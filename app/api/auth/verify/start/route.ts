@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { buildSessionHeaders, normalizeEndpoint, resolveAppOrigin } from "../../_lib/appwriteAuth";
+import { buildSessionHeaders, normalizeEndpoint, resolveCanonicalOrigin } from "../../_lib/appwriteAuth";
 import { writeAuthAudit } from "../../_lib/audit";
 import { extractClientIp, takeRateLimit } from "../../_lib/rateLimit";
 import { fromHttpStatus } from "@/services/errorContract";
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Authentication required", code: "unauthorized" }, { status: 401 });
   }
 
-  const verificationUrl = `${resolveAppOrigin(request)}/verify-email`;
+  const verificationUrl = `${resolveCanonicalOrigin(request)}/verify-email`;
   const response = await fetch(`${normalizeEndpoint(endpoint)}/account/verification`, {
     method: "POST",
     headers,
