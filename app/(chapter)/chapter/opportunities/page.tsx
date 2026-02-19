@@ -9,6 +9,7 @@ import {
   listMyChapterOpportunities,
   updateOpportunity,
 } from "@/services/opportunities";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import type { VolunteerOpportunity } from "@/services/types";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -169,11 +170,10 @@ function StatusBanner({ status, message }: { status?: string; message?: string }
   const isError = status === "error";
   return (
     <div
-      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
-        isError
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-green-200 bg-green-50 text-green-700"
-      }`}
+      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${isError
+        ? "border-red-200 bg-red-50 text-red-700"
+        : "border-green-200 bg-green-50 text-green-700"
+        }`}
     >
       {message}
     </div>
@@ -192,11 +192,10 @@ function OpportunityCard({ opportunity }: { opportunity: VolunteerOpportunity })
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              opportunity.published
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-muted"
-            }`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${opportunity.published
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-muted"
+              }`}
           >
             {opportunity.published ? "Published" : "Draft"}
           </span>
@@ -372,17 +371,11 @@ export default async function ChapterOpportunitiesPage({
 
   return (
     <section>
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-600">
-          Chapter head
-        </p>
-        <h1 className="mt-2 font-manrope text-4xl font-bold text-navy">
-          Chapter opportunities
-        </h1>
-        <p className="mt-2 max-w-2xl text-muted">
-          Manage volunteer opportunities for your assigned chapter.
-        </p>
-      </div>
+      <PageHeader
+        label="Chapter head"
+        title="Chapter Opportunities"
+        subtitle="Manage volunteer opportunities for your assigned chapter."
+      />
 
       <StatusBanner status={status} message={message} />
 

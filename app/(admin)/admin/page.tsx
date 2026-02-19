@@ -4,22 +4,8 @@ import { adminListChapters } from "@/services/chapters";
 import { adminListOpportunities } from "@/services/opportunities";
 import { adminListPrograms } from "@/services/programs";
 import { getSiteStats } from "@/services/stats";
-
-type DashboardCard = {
-  label: string;
-  value: number;
-  helper: string;
-};
-
-function SummaryCard({ card }: { card: DashboardCard }) {
-  return (
-    <article className="rounded-3xl border border-gray-200 bg-white p-5 shadow-soft">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">{card.label}</p>
-      <p className="mt-2 font-manrope text-3xl font-bold text-navy">{card.value}</p>
-      <p className="mt-1 text-xs text-muted">{card.helper}</p>
-    </article>
-  );
-}
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { StatCard } from "@/components/dashboard/StatCard";
 
 export default async function AdminHomePage() {
   let programsCount = 0;
@@ -52,72 +38,91 @@ export default async function AdminHomePage() {
     hasDataIssue = true;
   }
 
-  const cards: DashboardCard[] = [
-    {
-      label: "Programs",
-      value: programsCount,
-      helper: `${stats.projectsCount} public counter value`,
-    },
-    {
-      label: "Chapters",
-      value: chaptersCount,
-      helper: `${stats.chaptersCount} public counter value`,
-    },
-    {
-      label: "Opportunities",
-      value: opportunitiesCount,
-      helper: `${draftsCount} total drafts pending review`,
-    },
-    {
-      label: "Members",
-      value: stats.membersCount,
-      helper: "Configured in public site stats",
-    },
-  ];
-
   return (
-    <section>
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-600">Admin</p>
-          <h1 className="mt-2 font-manrope text-4xl font-bold text-navy">Overview</h1>
-          <p className="mt-2 max-w-2xl text-muted">
-            Track operational counts and jump directly to management workflows.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/admin/programs"
-            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-          >
-            Manage programs
-          </Link>
-          <Link
-            href="/admin/chapters"
-            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-          >
-            Manage chapters
-          </Link>
-          <Link
-            href="/admin/opportunities"
-            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-          >
-            Manage opportunities
-          </Link>
-        </div>
-      </div>
+    <section className="space-y-8">
+      <PageHeader
+        label="Admin"
+        title="Overview"
+        subtitle="Track operational counts and jump directly to management workflows."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/programs"
+              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+            >
+              Manage programs
+            </Link>
+            <Link
+              href="/admin/chapters"
+              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+            >
+              Manage chapters
+            </Link>
+            <Link
+              href="/admin/opportunities"
+              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+            >
+              Manage opportunities
+            </Link>
+          </div>
+        }
+      />
 
       {hasDataIssue ? (
-        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Dashboard metrics are temporarily unavailable. Please confirm admin access and
           service connectivity.
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => (
-          <SummaryCard key={card.label} card={card} />
-        ))}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Programs"
+          value={programsCount}
+          helper={`${stats.projectsCount} public counter value`}
+          accent="orange"
+          icon={
+            <svg fill="none" viewBox="0 0 24 24" className="h-4 w-4">
+              <path d="M5 4h14a1 1 0 0 1 1 1v14l-4-2-4 2-4-2-4 2V5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.7" />
+            </svg>
+          }
+        />
+        <StatCard
+          label="Chapters"
+          value={chaptersCount}
+          helper={`${stats.chaptersCount} public counter value`}
+          accent="emerald"
+          icon={
+            <svg fill="none" viewBox="0 0 24 24" className="h-4 w-4">
+              <path d="M12 21s7-4.35 7-10a7 7 0 0 0-14 0c0 5.65 7 10 7 10Z" stroke="currentColor" strokeWidth="1.7" />
+              <circle cx="12" cy="11" r="2.5" stroke="currentColor" strokeWidth="1.7" />
+            </svg>
+          }
+        />
+        <StatCard
+          label="Opportunities"
+          value={opportunitiesCount}
+          helper={`${draftsCount} total drafts pending review`}
+          accent="sky"
+          icon={
+            <svg fill="none" viewBox="0 0 24 24" className="h-4 w-4">
+              <path d="M6 12h12M12 6v12" stroke="currentColor" strokeWidth="1.7" />
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7" />
+            </svg>
+          }
+        />
+        <StatCard
+          label="Members"
+          value={stats.membersCount}
+          helper="Configured in public site stats"
+          accent="amber"
+          icon={
+            <svg fill="none" viewBox="0 0 24 24" className="h-4 w-4">
+              <circle cx="12" cy="7.5" r="3.5" stroke="currentColor" strokeWidth="1.7" />
+              <path d="M4.5 20c.8-3.2 3.8-5.5 7.5-5.5 3.8 0 6.8 2.3 7.5 5.5" stroke="currentColor" strokeWidth="1.7" />
+            </svg>
+          }
+        />
       </div>
     </section>
   );
