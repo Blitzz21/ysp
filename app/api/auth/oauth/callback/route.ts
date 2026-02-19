@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { normalizeEndpoint, parseSessionExpiry, resolveSessionToken } from "../../_lib/appwriteAuth";
+import { normalizeEndpoint, parseSessionExpiry, resolveAppOrigin, resolveSessionToken } from "../../_lib/appwriteAuth";
 
 const SESSION_COOKIE = "ysp_session";
 const VALID_FLOWS = new Set(["login", "signup"]);
@@ -18,12 +18,12 @@ function fallbackAuthPath(flow: string | null): string {
 }
 
 function buildErrorRedirect(
-  requestUrl: URL,
+  origin: string,
   flow: string | null,
   nextPath: string,
   reason: string
 ): URL {
-  const redirectUrl = new URL(fallbackAuthPath(flow), requestUrl.origin);
+  const redirectUrl = new URL(fallbackAuthPath(flow), origin);
   redirectUrl.searchParams.set("error", "oauth");
   redirectUrl.searchParams.set("reason", reason);
   if (nextPath !== "/dashboard") {
@@ -34,13 +34,14 @@ function buildErrorRedirect(
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
+  const origin = resolveAppOrigin(request);
   const flow = requestUrl.searchParams.get("flow");
   const nextPath = sanitizeNextPath(requestUrl.searchParams.get("next"));
 
   if (flow !== null && !VALID_FLOWS.has(flow)) {
     console.error("[oauth/callback] Invalid flow param:", flow);
     return NextResponse.redirect(
-      buildErrorRedirect(requestUrl, flow, nextPath, "invalid_flow")
+      buildErrorRedirect(origin, flow, nextPath, "invalid_flow")
     );
   }
 
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
   if (!userId || !secret) {
     console.error("[oauth/callback] Missing userId or secret params");
     return NextResponse.redirect(
-      buildErrorRedirect(requestUrl, flow, nextPath, "missing_params")
+      buildErrorRedirect(origin, flow, nextPath, "missing_params")
     );
   }
 
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
   if (!endpoint || !projectId) {
     console.error("[oauth/callback] Appwrite env vars not configured");
     return NextResponse.redirect(
-      buildErrorRedirect(requestUrl, flow, nextPath, "misconfigured")
+      buildErrorRedirect(origin, flow, nextPath, "misconfigured")
     );
   }
 
@@ -80,7 +81,7 @@ export async function GET(request: Request) {
       body
     );
     return NextResponse.redirect(
-      buildErrorRedirect(requestUrl, flow, nextPath, "token_exchange")
+      buildErrorRedirect(origin, flow, nextPath, "token_exchange")
     );
   }
 
@@ -88,7 +89,7 @@ export async function GET(request: Request) {
   if (!resolvedToken) {
     console.error("[oauth/callback] resolveSessionToken returned null — no usable token in response");
     return NextResponse.redirect(
-      buildErrorRedirect(requestUrl, flow, nextPath, "no_token")
+      buildErrorRedirect(origin, flow, nextPath, "no_token")
     );
   }
 
@@ -101,5 +102,6 @@ export async function GET(request: Request) {
     expires: parseSessionExpiry(resolvedToken.expire),
   });
 
-  return NextResponse.redirect(new URL(nextPath, requestUrl.origin));
+  return NextResponse.redirect(new URL(nextPath, origin));
 }
+
