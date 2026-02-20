@@ -37,6 +37,7 @@ export interface VolunteerOpportunity {
   signupContactPhone?: string;
   capacity: number;
   currentVolunteers: number;
+  imageFileId?: string;
   waitlistEnabled: boolean;
   published: boolean;
   createdAt: string;
@@ -96,15 +97,22 @@ export interface OpportunitySignup {
   updatedAt: string;
 }
 
+export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
+
 export interface UserProfile {
   id: string;
   userId: string;
   role: Role;
   assignedChapterId?: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
   age?: number;
   avatarFileId?: string;
   email?: string;
+  phone?: string;
+  bio?: string;
+  gender?: Gender;
   createdAt: string;
   updatedAt: string;
 }

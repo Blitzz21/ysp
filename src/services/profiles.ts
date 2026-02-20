@@ -21,7 +21,7 @@ import {
 import { fromHttpStatus } from "./errorContract";
 import { getSession } from "./auth";
 import { requireSession } from "./rbac";
-import type { Role, UserProfile } from "./types";
+import type { Gender, Role, UserProfile } from "./types";
 
 const TABLE_ID = "user_profiles";
 
@@ -30,16 +30,26 @@ type UserProfileRow = {
   role: Role;
   assignedChapterId?: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
   age?: number;
   avatarFileId?: string;
   email?: string;
+  phone?: string;
+  bio?: string;
+  gender?: Gender;
 };
 
 const profileSchema = z.object({
   name: z.string().min(1).max(128).optional(),
+  firstName: z.string().min(1).max(64).optional(),
+  lastName: z.string().min(1).max(64).optional(),
   age: z.number().int().min(0).max(120).optional(),
   avatarFileId: z.string().min(1).max(128).optional(),
   email: z.string().email().optional(),
+  phone: z.string().min(1).max(32).optional(),
+  bio: z.string().max(1024).optional(),
+  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
 });
 
 const emailSchema = z.object({
@@ -61,9 +71,14 @@ function mapProfile(
     role: row.role,
     assignedChapterId: row.assignedChapterId ?? undefined,
     name: row.name ?? undefined,
+    firstName: row.firstName ?? undefined,
+    lastName: row.lastName ?? undefined,
     age: row.age ?? undefined,
     avatarFileId: row.avatarFileId ?? undefined,
     email: row.email ?? undefined,
+    phone: row.phone ?? undefined,
+    bio: row.bio ?? undefined,
+    gender: row.gender ?? undefined,
     createdAt: row.$createdAt,
     updatedAt: row.$updatedAt,
   };
@@ -74,6 +89,12 @@ async function getProfileRow(userId: string) {
     buildEqualQuery("userId", userId),
   ]);
   return rows[0] ?? null;
+}
+
+export async function getProfileByUserId(userId: string): Promise<UserProfile | null> {
+  const row = await getProfileRow(userId);
+  if (!row) return null;
+  return mapProfile(row);
 }
 
 export async function getMyProfile(): Promise<UserProfile> {
@@ -95,9 +116,14 @@ export async function getMyProfile(): Promise<UserProfile> {
 
 export async function updateProfile(input: {
   name?: string;
+  firstName?: string;
+  lastName?: string;
   age?: number;
   avatarFileId?: string;
   email?: string;
+  phone?: string;
+  bio?: string;
+  gender?: Gender;
 }): Promise<UserProfile> {
   const session = requireSession(await getSession());
   const parsed = profileSchema.safeParse(input);

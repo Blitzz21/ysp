@@ -3,9 +3,11 @@
  */
 
 export const SETTINGS_TABS = [
-    { key: "profile", label: "Profile" },
-    { key: "email", label: "Account Email" },
-    { key: "password", label: "Password" },
+    { key: "profile", label: "Profile", icon: "user" },
+    { key: "email", label: "Account Email", icon: "mail" },
+    { key: "password", label: "Password", icon: "lock" },
+    { key: "notifications", label: "Notifications", icon: "bell" },
+    { key: "account", label: "Account Settings", icon: "settings" },
 ] as const;
 
 export type SettingsTab = (typeof SETTINGS_TABS)[number]["key"];
