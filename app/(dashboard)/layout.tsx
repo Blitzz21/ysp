@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getSession, signOut } from "@/services/auth";
 import { DashboardShell, type DashboardNavItem } from "@/components/dashboard/DashboardShell";
+import { getProfileByUserId, isProfileComplete } from "@/services/profiles";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await getSession();
@@ -11,6 +12,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   }
   if (session.emailVerified === false) {
     redirect("/verify-email?next=/dashboard");
+  }
+
+  // Redirect to onboarding if profile is incomplete (e.g. Google OAuth users)
+  const profile = await getProfileByUserId(session.userId);
+  if (!isProfileComplete(profile)) {
+    redirect("/onboarding");
   }
 
   async function signOutAction() {

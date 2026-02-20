@@ -3,14 +3,19 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
+  approveMember,
   assignOfficer,
   createOfficerRole,
+  declineMember,
   listChapterMembers,
   listOfficerRoles,
+  listPendingMembers,
   removeMember,
   removeOfficer,
   updateOfficerPermissions,
 } from "@/services/memberships";
+import { getProfileByUserId } from "@/services/profiles";
+import type { ChapterMembership, UserProfile } from "@/services/types";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -34,11 +39,10 @@ function StatusBanner({ status, message }: { status?: string; message?: string }
   const isError = status === "error";
   return (
     <div
-      className={`rounded-2xl border px-4 py-3 text-sm ${
-        isError
+      className={`rounded-2xl border px-4 py-3 text-sm ${isError
           ? "border-red-200 bg-red-50 text-red-700"
           : "border-green-200 bg-green-50 text-green-700"
-      }`}
+        }`}
     >
       {message}
     </div>
@@ -117,20 +121,174 @@ async function removeMemberAction(formData: FormData): Promise<void> {
   buildRedirect("success", "Member removed.");
 }
 
+async function approveMemberAction(formData: FormData): Promise<void> {
+  "use server";
+  const userId = String(formData.get("userId") ?? "").trim();
+  try {
+    await approveMember({ userId });
+  } catch (error) {
+    const message = toPublicDomainError(error, "Unable to approve member.").message;
+    buildRedirect("error", message);
+  }
+
+  buildRedirect("success", "Member approved.");
+}
+
+async function declineMemberAction(formData: FormData): Promise<void> {
+  "use server";
+  const userId = String(formData.get("userId") ?? "").trim();
+  try {
+    await declineMember({ userId });
+  } catch (error) {
+    const message = toPublicDomainError(error, "Unable to decline member.").message;
+    buildRedirect("error", message);
+  }
+
+  buildRedirect("success", "Member request declined.");
+}
+
+type MemberWithProfile = ChapterMembership & {
+  profile?: UserProfile | null;
+};
+
+async function enrichWithProfiles(members: ChapterMembership[]): Promise<MemberWithProfile[]> {
+  const enriched = await Promise.all(
+    members.map(async (m) => {
+      let profile: UserProfile | null = null;
+      try {
+        profile = await getProfileByUserId(m.userId);
+      } catch {
+        // Profile may not exist
+      }
+      return { ...m, profile };
+    })
+  );
+  return enriched;
+}
+
+function MemberCard({
+  member,
+  officerRoles,
+  isPending,
+}: {
+  member: MemberWithProfile;
+  officerRoles: { id: string; roleId: string; label: string }[];
+  isPending?: boolean;
+}) {
+  const displayName = member.profile?.name ?? member.profile?.email ?? member.userId;
+  const displayEmail = member.profile?.email ?? "";
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-[#fdf6ef] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-ink">{displayName}</p>
+          {displayEmail && (
+            <p className="text-xs text-muted">{displayEmail}</p>
+          )}
+          <p className="text-xs text-muted">
+            Role: {member.role} · Status: {member.status}
+            {member.profile?.sector && ` · Sector: ${member.profile.sector}`}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {isPending ? (
+            <>
+              <form action={approveMemberAction}>
+                <input type="hidden" name="userId" value={member.userId} />
+                <button
+                  type="submit"
+                  className="rounded-full border border-green-200 bg-white px-3 py-1 text-xs font-semibold text-green-600 transition hover:bg-green-50"
+                >
+                  Approve
+                </button>
+              </form>
+              <form action={declineMemberAction}>
+                <input type="hidden" name="userId" value={member.userId} />
+                <button
+                  type="submit"
+                  className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                >
+                  Decline
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <form action={assignOfficerAction} className="flex items-center gap-2">
+                <input type="hidden" name="userId" value={member.userId} />
+                <select
+                  name="roleId"
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs"
+                  defaultValue={member.officerRoleId ?? ""}
+                >
+                  <option value="" disabled>
+                    Select role
+                  </option>
+                  {officerRoles.map((role) => (
+                    <option key={role.id} value={role.roleId}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold text-orange-600"
+                >
+                  Assign officer
+                </button>
+              </form>
+              <form action={removeOfficerAction}>
+                <input type="hidden" name="userId" value={member.userId} />
+                <button
+                  type="submit"
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-ink"
+                >
+                  Remove officer
+                </button>
+              </form>
+              <form action={removeMemberAction}>
+                <input type="hidden" name="userId" value={member.userId} />
+                <button
+                  type="submit"
+                  className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-semibold text-red-600"
+                >
+                  Remove member
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function ChapterHeadDashboard(props: {
   searchParams?: Promise<SearchParams>;
 }) {
   const searchParams = (await props.searchParams) ?? {};
   const status = readParam(searchParams, "status");
   const message = readParam(searchParams, "message");
+  const view = readParam(searchParams, "view") ?? "active";
 
   const session = await getSession();
   if (!session) {
     redirect("/login?next=/dashboard/chapter-head");
   }
 
-  const members = await listChapterMembers();
-  const officerRoles = await listOfficerRoles();
+  const [members, pendingMembers, officerRoles] = await Promise.all([
+    listChapterMembers(),
+    listPendingMembers(),
+    listOfficerRoles(),
+  ]);
+
+  // Filter active members (exclude pending and removed)
+  const activeMembers = members.filter((m) => m.status === "active");
+
+  // Enrich with profiles
+  const displayMembers = view === "pending" ? pendingMembers : activeMembers;
+  const enrichedMembers = await enrichWithProfiles(displayMembers);
 
   return (
     <div className="space-y-8">
@@ -160,73 +318,49 @@ export default async function ChapterHeadDashboard(props: {
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
-          <h2 className="font-manrope text-xl font-semibold text-ink">Members</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-manrope text-xl font-semibold text-ink">Members</h2>
+            <div className="flex rounded-full border border-gray-200 bg-gray-50 p-0.5">
+              <a
+                href="/dashboard/chapter-head?view=active"
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${view === "active"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-muted hover:text-ink"
+                  }`}
+              >
+                Active ({activeMembers.length})
+              </a>
+              <a
+                href="/dashboard/chapter-head?view=pending"
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${view === "pending"
+                    ? "bg-white text-orange-600 shadow-sm"
+                    : "text-muted hover:text-ink"
+                  }`}
+              >
+                Pending ({pendingMembers.length})
+              </a>
+            </div>
+          </div>
           <p className="mt-2 text-sm text-muted">
-            Assign officers or remove members from your chapter.
+            {view === "pending"
+              ? "Review and approve or decline membership requests."
+              : "Assign officers or remove members from your chapter."}
           </p>
           <div className="mt-6 space-y-4">
-            {members.length ? (
-              members.map((member) => (
-                <div
+            {enrichedMembers.length ? (
+              enrichedMembers.map((member) => (
+                <MemberCard
                   key={member.id}
-                  className="rounded-2xl border border-gray-100 bg-[#fdf6ef] p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-ink">{member.userId}</p>
-                      <p className="text-xs text-muted">
-                        Role: {member.role} · Status: {member.status}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <form action={assignOfficerAction} className="flex items-center gap-2">
-                        <input type="hidden" name="userId" value={member.userId} />
-                        <select
-                          name="roleId"
-                          className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs"
-                          defaultValue={member.officerRoleId ?? ""}
-                        >
-                          <option value="" disabled>
-                            Select role
-                          </option>
-                          {officerRoles.map((role) => (
-                            <option key={role.id} value={role.roleId}>
-                              {role.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="submit"
-                          className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold text-orange-600"
-                        >
-                          Assign officer
-                        </button>
-                      </form>
-                      <form action={removeOfficerAction}>
-                        <input type="hidden" name="userId" value={member.userId} />
-                        <button
-                          type="submit"
-                          className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-ink"
-                        >
-                          Remove officer
-                        </button>
-                      </form>
-                      <form action={removeMemberAction}>
-                        <input type="hidden" name="userId" value={member.userId} />
-                        <button
-                          type="submit"
-                          className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-semibold text-red-600"
-                        >
-                          Remove member
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
+                  member={member}
+                  officerRoles={officerRoles}
+                  isPending={view === "pending"}
+                />
               ))
             ) : (
               <p className="rounded-2xl border border-dashed border-gray-200 bg-[#fff7ea] p-4 text-sm text-muted">
-                No members found for this chapter yet.
+                {view === "pending"
+                  ? "No pending membership requests."
+                  : "No members found for this chapter yet."}
               </p>
             )}
           </div>

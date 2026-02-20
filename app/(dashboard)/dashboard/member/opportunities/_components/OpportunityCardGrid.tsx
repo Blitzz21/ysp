@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { VolunteerOpportunity } from "@/services/types";
 import { OpportunityModal } from "./OpportunityModal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 /* ── Helpers ── */
 function formatEventDate(value: string): string {
@@ -60,6 +61,11 @@ function CapacityBar({ current, total }: { current: number; total: number }) {
             </div>
             <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                 <div
+                    role="progressbar"
+                    aria-valuenow={current}
+                    aria-valuemin={0}
+                    aria-valuemax={total}
+                    aria-label={`${current} of ${total} volunteer spots filled`}
                     className={`h-full rounded-full transition-all ${isFull ? "bg-red-400" : "bg-orange-400"}`}
                     style={{ width: `${pct}%` }}
                 />
@@ -67,6 +73,12 @@ function CapacityBar({ current, total }: { current: number; total: number }) {
         </div>
     );
 }
+
+/* ── Types ── */
+type PendingJoin = {
+    opportunityId: string;
+    opportunityTitle: string;
+};
 
 /* ── Main Component ── */
 export function OpportunityCardGrid({
@@ -80,6 +92,7 @@ export function OpportunityCardGrid({
 }) {
     const [search, setSearch] = useState("");
     const [selectedOp, setSelectedOp] = useState<VolunteerOpportunity | null>(null);
+    const [pendingJoin, setPendingJoin] = useState<PendingJoin | null>(null);
 
     const filtered = opportunities.filter((op) => {
         if (!search) return true;
@@ -91,6 +104,14 @@ export function OpportunityCardGrid({
             op.sdgs?.some((s) => s.toLowerCase().includes(q))
         );
     });
+
+    const handleConfirmJoin = async () => {
+        if (!pendingJoin) return;
+        const fd = new FormData();
+        fd.set("opportunityId", pendingJoin.opportunityId);
+        await joinAction(fd);
+        setPendingJoin(null);
+    };
 
     return (
         <>
@@ -114,6 +135,7 @@ export function OpportunityCardGrid({
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search opportunities by title, chapter, or SDG…"
+                        aria-label="Search opportunities"
                         className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-gray-400 transition focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-100"
                     />
                 </div>
@@ -131,13 +153,16 @@ export function OpportunityCardGrid({
                     {filtered.map((op) => {
                         const chapterName = chapterNameById.get(op.chapterId) ?? "—";
                         const isFull = op.capacity > 0 && op.currentVolunteers >= op.capacity;
+                        const canJoin = !isFull || op.waitlistEnabled;
 
                         return (
-                            <button
+                            <div
                                 key={op.id}
-                                type="button"
+                                role="button"
+                                tabIndex={0}
                                 onClick={() => setSelectedOp(op)}
-                                className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:border-orange-200 hover:shadow-md overflow-hidden"
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedOp(op); } }}
+                                className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:border-orange-200 hover:shadow-md overflow-hidden cursor-pointer"
                             >
                                 {/* Image / Gradient header */}
                                 <div className={`relative h-28 w-full bg-gradient-to-br ${getSdgGradient(op.sdgs)} flex items-center justify-center`}>
@@ -199,20 +224,44 @@ export function OpportunityCardGrid({
                                     <div className="mt-auto pt-3">
                                         <CapacityBar current={op.currentVolunteers} total={op.capacity} />
                                     </div>
+
+                                    {/* Join Now button (visible on all viewports) */}
+                                    {canJoin && (
+                                        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPendingJoin({ opportunityId: op.id, opportunityTitle: op.title })}
+                                                className="w-full rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"
+                                            >
+                                                {isFull ? "Join Waitlist" : "Join Now"}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            </button>
+                            </div>
                         );
                     })}
                 </div>
             )}
 
-            {/* ── Modal ── */}
+            {/* ── Opportunity Detail Modal ── */}
             {selectedOp && (
                 <OpportunityModal
                     opportunity={selectedOp}
                     chapterName={chapterNameById.get(selectedOp.chapterId) ?? "—"}
                     joinAction={joinAction}
                     onClose={() => setSelectedOp(null)}
+                />
+            )}
+
+            {/* ── Confirm Modal ── */}
+            {pendingJoin && (
+                <ConfirmModal
+                    title="Join Opportunity"
+                    message={`Are you sure you want to join "${pendingJoin.opportunityTitle}"?`}
+                    confirmLabel="Join Now"
+                    onConfirm={handleConfirmJoin}
+                    onCancel={() => setPendingJoin(null)}
                 />
             )}
         </>

@@ -99,6 +99,8 @@ export interface OpportunitySignup {
 
 export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 
+export type Sector = "Youth" | "PWD" | "Farmers" | "Indigenous People" | "TODA" | "Others";
+
 export interface UserProfile {
   id: string;
   userId: string;
@@ -113,6 +115,15 @@ export interface UserProfile {
   phone?: string;
   bio?: string;
   gender?: Gender;
+  birthdate?: string;
+  facebookUrl?: string;
+  registeredVoter?: boolean;
+  householdSize?: number;
+  householdVoters?: number;
+  sector?: Sector;
+  sectorOther?: string;
+  newsletterSubscribed?: boolean;
+  privacyConsent?: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -15,7 +15,26 @@ import { fromHttpStatus } from "@/services/errorContract";
 
 const SESSION_COOKIE = "ysp_session";
 
-type SignupPayload = { email?: string; password?: string; confirmPassword?: string; name?: string; firstName?: string; lastName?: string };
+type SignupPayload = {
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  age?: number;
+  birthdate?: string;
+  chapterId?: string;
+  phone?: string;
+  facebookUrl?: string;
+  registeredVoter?: boolean;
+  householdSize?: number;
+  householdVoters?: number;
+  sector?: string;
+  sectorOther?: string;
+  newsletterSubscribed?: boolean;
+  privacyConsent?: boolean;
+};
 
 type AppwriteAccount = {
   $id?: string;
@@ -197,11 +216,48 @@ export async function POST(request: Request) {
     try {
       await createRow(
         "user_profiles",
-        { userId: accountId, role: "member", name, firstName, lastName, email },
+        {
+          userId: accountId,
+          role: "member",
+          name,
+          firstName,
+          lastName,
+          email,
+          age: body.age,
+          birthdate: body.birthdate,
+          phone: body.phone,
+          facebookUrl: body.facebookUrl,
+          registeredVoter: body.registeredVoter ?? false,
+          householdSize: body.householdSize,
+          householdVoters: body.householdVoters,
+          sector: body.sector,
+          sectorOther: body.sectorOther,
+          newsletterSubscribed: body.newsletterSubscribed ?? false,
+          privacyConsent: body.privacyConsent ?? false,
+        },
         userReadPermissions(accountId)
       );
     } catch {
       // Do not block signup if profile row creation fails.
+    }
+
+    // Create pending chapter membership if a chapter was selected
+    if (body.chapterId) {
+      try {
+        await createRow(
+          "chapter_memberships",
+          {
+            userId: accountId,
+            chapterId: body.chapterId,
+            role: "member",
+            status: "pending",
+            joinedAt: new Date().toISOString(),
+          },
+          userReadPermissions(accountId)
+        );
+      } catch {
+        // Do not block signup if chapter join fails.
+      }
     }
   }
 

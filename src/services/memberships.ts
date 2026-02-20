@@ -377,3 +377,71 @@ export async function removeMember(input: {
   });
   return mapMembership(updated);
 }
+
+export async function listPendingMembers(
+  chapterId?: string
+): Promise<ChapterMembership[]> {
+  const session = await getSession();
+  const targetChapterId = resolveChapterId(session, chapterId);
+  const rows = await listRows<MembershipRow>(TABLE_ID, [
+    buildEqualQuery("chapterId", targetChapterId),
+    buildEqualQuery("status", "pending"),
+  ]);
+  return rows.map(mapMembership);
+}
+
+export async function approveMember(input: {
+  userId: string;
+  chapterId?: string;
+}): Promise<ChapterMembership> {
+  const session = await getSession();
+  const targetChapterId = resolveChapterId(session, input.chapterId);
+  if (!input.userId) {
+    throw new ValidationError("User id is required");
+  }
+
+  const existing = await listRows<MembershipRow>(TABLE_ID, [
+    buildEqualQuery("userId", input.userId),
+    buildEqualQuery("chapterId", targetChapterId),
+  ]);
+  const current = existing[0];
+  if (!current) {
+    throw new NotFoundError("Membership not found");
+  }
+  if (current.status !== "pending") {
+    throw new ValidationError("Only pending memberships can be approved");
+  }
+
+  const updated = await updateRow<MembershipRow>(TABLE_ID, current.$id, {
+    status: "active",
+  });
+  return mapMembership(updated);
+}
+
+export async function declineMember(input: {
+  userId: string;
+  chapterId?: string;
+}): Promise<ChapterMembership> {
+  const session = await getSession();
+  const targetChapterId = resolveChapterId(session, input.chapterId);
+  if (!input.userId) {
+    throw new ValidationError("User id is required");
+  }
+
+  const existing = await listRows<MembershipRow>(TABLE_ID, [
+    buildEqualQuery("userId", input.userId),
+    buildEqualQuery("chapterId", targetChapterId),
+  ]);
+  const current = existing[0];
+  if (!current) {
+    throw new NotFoundError("Membership not found");
+  }
+  if (current.status !== "pending") {
+    throw new ValidationError("Only pending memberships can be declined");
+  }
+
+  const updated = await updateRow<MembershipRow>(TABLE_ID, current.$id, {
+    status: "removed",
+  });
+  return mapMembership(updated);
+}

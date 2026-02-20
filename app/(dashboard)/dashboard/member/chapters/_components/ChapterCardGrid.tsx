@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Chapter, ChapterMembership } from "@/services/types";
 import { ChapterModal } from "./ChapterModal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 /* ── Helpers ── */
 function StatusBadge({ membership }: { membership?: ChapterMembership }) {
@@ -44,6 +45,13 @@ const CARD_GRADIENTS = [
     "from-fuchsia-400 to-pink-300",
 ];
 
+/* ── Confirm action types ── */
+type PendingAction = {
+    type: "join" | "rejoin" | "leave";
+    chapterId: string;
+    chapterName: string;
+};
+
 /* ── Main Component ── */
 export function ChapterCardGrid({
     chapters,
@@ -62,6 +70,7 @@ export function ChapterCardGrid({
 }) {
     const [search, setSearch] = useState("");
     const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+    const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
     const filtered = chapters.filter((ch) => {
         if (!search) return true;
@@ -71,6 +80,42 @@ export function ChapterCardGrid({
             (ch.location?.toLowerCase().includes(q) ?? false)
         );
     });
+
+    const handleConfirmAction = () => {
+        if (!pendingAction) return;
+        const fd = new FormData();
+        fd.set("chapterId", pendingAction.chapterId);
+        if (pendingAction.type === "leave") {
+            leaveAction(fd);
+        } else {
+            joinAction(fd);
+        }
+        setPendingAction(null);
+    };
+
+    const getConfirmTitle = (action: PendingAction) => {
+        switch (action.type) {
+            case "join": return "Join Chapter";
+            case "rejoin": return "Rejoin Chapter";
+            case "leave": return "Leave Chapter";
+        }
+    };
+
+    const getConfirmMessage = (action: PendingAction) => {
+        switch (action.type) {
+            case "join": return `Are you sure you want to join ${action.chapterName}?`;
+            case "rejoin": return `Are you sure you want to rejoin ${action.chapterName}?`;
+            case "leave": return `Are you sure you want to leave ${action.chapterName}? You can rejoin later.`;
+        }
+    };
+
+    const getConfirmLabel = (action: PendingAction) => {
+        switch (action.type) {
+            case "join": return "Join Chapter";
+            case "rejoin": return "Rejoin Chapter";
+            case "leave": return "Leave Chapter";
+        }
+    };
 
     return (
         <>
@@ -94,6 +139,7 @@ export function ChapterCardGrid({
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search chapters by name or location…"
+                        aria-label="Search chapters"
                         className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-gray-400 transition focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-100"
                     />
                 </div>
@@ -173,35 +219,29 @@ export function ChapterCardGrid({
                                     {/* Action button */}
                                     <div className="mt-auto pt-4" onClick={(e) => e.stopPropagation()}>
                                         {!membership ? (
-                                            <form action={joinAction}>
-                                                <input type="hidden" name="chapterId" value={ch.id} />
-                                                <button
-                                                    type="submit"
-                                                    className="w-full rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"
-                                                >
-                                                    Join Chapter
-                                                </button>
-                                            </form>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPendingAction({ type: "join", chapterId: ch.id, chapterName: ch.name })}
+                                                className="w-full rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"
+                                            >
+                                                Join Chapter
+                                            </button>
                                         ) : membership.status === "removed" ? (
-                                            <form action={joinAction}>
-                                                <input type="hidden" name="chapterId" value={ch.id} />
-                                                <button
-                                                    type="submit"
-                                                    className="w-full rounded-xl border border-orange-200 bg-white px-4 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-50"
-                                                >
-                                                    Rejoin Chapter
-                                                </button>
-                                            </form>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPendingAction({ type: "rejoin", chapterId: ch.id, chapterName: ch.name })}
+                                                className="w-full rounded-xl border border-orange-200 bg-white px-4 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-50"
+                                            >
+                                                Rejoin Chapter
+                                            </button>
                                         ) : (
-                                            <form action={leaveAction}>
-                                                <input type="hidden" name="chapterId" value={ch.id} />
-                                                <button
-                                                    type="submit"
-                                                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-                                                >
-                                                    Leave Chapter
-                                                </button>
-                                            </form>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPendingAction({ type: "leave", chapterId: ch.id, chapterName: ch.name })}
+                                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+                                            >
+                                                Leave Chapter
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -211,7 +251,7 @@ export function ChapterCardGrid({
                 </div>
             )}
 
-            {/* ── Modal ── */}
+            {/* ── Chapter Detail Modal ── */}
             {selectedChapter && (
                 <ChapterModal
                     chapter={selectedChapter}
@@ -220,6 +260,18 @@ export function ChapterCardGrid({
                     joinAction={joinAction}
                     leaveAction={leaveAction}
                     onClose={() => setSelectedChapter(null)}
+                />
+            )}
+
+            {/* ── Confirm Modal ── */}
+            {pendingAction && (
+                <ConfirmModal
+                    title={getConfirmTitle(pendingAction)}
+                    message={getConfirmMessage(pendingAction)}
+                    confirmLabel={getConfirmLabel(pendingAction)}
+                    variant={pendingAction.type === "leave" ? "danger" : "primary"}
+                    onConfirm={handleConfirmAction}
+                    onCancel={() => setPendingAction(null)}
                 />
             )}
         </>

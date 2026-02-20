@@ -21,7 +21,7 @@ import {
 import { fromHttpStatus } from "./errorContract";
 import { getSession } from "./auth";
 import { requireSession } from "./rbac";
-import type { Gender, Role, UserProfile } from "./types";
+import type { Gender, Role, Sector, UserProfile } from "./types";
 
 const TABLE_ID = "user_profiles";
 
@@ -38,7 +38,18 @@ type UserProfileRow = {
   phone?: string;
   bio?: string;
   gender?: Gender;
+  birthdate?: string;
+  facebookUrl?: string;
+  registeredVoter?: boolean;
+  householdSize?: number;
+  householdVoters?: number;
+  sector?: Sector;
+  sectorOther?: string;
+  newsletterSubscribed?: boolean;
+  privacyConsent?: boolean;
 };
+
+const SECTOR_VALUES = ["Youth", "PWD", "Farmers", "Indigenous People", "TODA", "Others"] as const;
 
 const profileSchema = z.object({
   name: z.string().min(1).max(128).optional(),
@@ -50,6 +61,15 @@ const profileSchema = z.object({
   phone: z.string().min(1).max(32).optional(),
   bio: z.string().max(1024).optional(),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
+  birthdate: z.string().max(32).optional(),
+  facebookUrl: z.string().max(255).optional(),
+  registeredVoter: z.boolean().optional(),
+  householdSize: z.number().int().min(1).optional(),
+  householdVoters: z.number().int().min(0).optional(),
+  sector: z.enum(SECTOR_VALUES).optional(),
+  sectorOther: z.string().max(128).optional(),
+  newsletterSubscribed: z.boolean().optional(),
+  privacyConsent: z.boolean().optional(),
 });
 
 const emailSchema = z.object({
@@ -79,9 +99,33 @@ function mapProfile(
     phone: row.phone ?? undefined,
     bio: row.bio ?? undefined,
     gender: row.gender ?? undefined,
+    birthdate: row.birthdate ?? undefined,
+    facebookUrl: row.facebookUrl ?? undefined,
+    registeredVoter: row.registeredVoter ?? undefined,
+    householdSize: row.householdSize ?? undefined,
+    householdVoters: row.householdVoters ?? undefined,
+    sector: row.sector ?? undefined,
+    sectorOther: row.sectorOther ?? undefined,
+    newsletterSubscribed: row.newsletterSubscribed ?? undefined,
+    privacyConsent: row.privacyConsent ?? undefined,
     createdAt: row.$createdAt,
     updatedAt: row.$updatedAt,
   };
+}
+
+/**
+ * Checks whether a user profile has all the required membership fields filled in.
+ * Used to gate access to the dashboard — incomplete profiles are redirected to /onboarding.
+ */
+export function isProfileComplete(profile: UserProfile | null): boolean {
+  if (!profile) return false;
+  return !!(
+    profile.name &&
+    profile.age &&
+    profile.phone &&
+    profile.sector &&
+    profile.privacyConsent
+  );
 }
 
 async function getProfileRow(userId: string) {
