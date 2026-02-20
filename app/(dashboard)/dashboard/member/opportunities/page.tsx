@@ -1,14 +1,34 @@
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/services/auth";
-import { listPublishedOpportunities } from "@/services/opportunities";
+import { listPublishedOpportunities, joinOpportunity } from "@/services/opportunities";
 import { listPublicChapters } from "@/services/chapters";
 import { toPublicDomainError } from "@/services/errorContract";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { OpportunitiesTable } from "./_components/OpportunitiesTable";
+import { OpportunityCardGrid } from "./_components/OpportunityCardGrid";
 import type { VolunteerOpportunity, Chapter } from "@/services/types";
 
 export const dynamic = "force-dynamic";
+
+/* ── Server Action: Join an opportunity ── */
+async function joinOpportunityAction(formData: FormData): Promise<void> {
+    "use server";
+    const opportunityId = String(formData.get("opportunityId") ?? "").trim();
+    if (!opportunityId) {
+        throw new Error("Missing opportunity ID.");
+    }
+    try {
+        const status = await joinOpportunity(opportunityId);
+        if (status === "waitlisted") {
+            // Optionally handle waitlist state — for now we just revalidate
+        }
+    } catch (error) {
+        const message = toPublicDomainError(error, "Unable to join opportunity.").message;
+        throw new Error(message);
+    }
+    revalidatePath("/dashboard/member/opportunities");
+}
 
 export default async function MemberOpportunitiesPage() {
     const session = await getSession();
@@ -44,9 +64,10 @@ export default async function MemberOpportunitiesPage() {
                     {loadError}
                 </div>
             ) : (
-                <OpportunitiesTable
+                <OpportunityCardGrid
                     opportunities={opportunities}
                     chapterNameById={chapterNameById}
+                    joinAction={joinOpportunityAction}
                 />
             )}
         </div>

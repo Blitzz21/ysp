@@ -68,6 +68,7 @@ type OpportunityRow = {
   signupContactPhone?: string;
   capacity?: number;
   currentVolunteers?: number;
+  imageFileId?: string;
   waitlistEnabled?: boolean;
   pubished: boolean;
 };
@@ -106,6 +107,7 @@ function mapOpportunity(
     signupContactPhone: row.signupContactPhone ?? undefined,
     capacity: Math.max(0, row.capacity ?? 0),
     currentVolunteers: Math.max(0, row.currentVolunteers ?? 0),
+    imageFileId: row.imageFileId ?? undefined,
     waitlistEnabled: row.waitlistEnabled ?? false,
     published: row.pubished,
     createdAt: row.$createdAt,

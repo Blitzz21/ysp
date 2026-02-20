@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/services/auth";
 import { listPublicChapters } from "@/services/chapters";
 import { joinChapter, leaveChapter, listMyMemberships } from "@/services/memberships";
+import { listPublishedOpportunities } from "@/services/opportunities";
+import { getProfileByUserId } from "@/services/profiles";
 import { toPublicDomainError } from "@/services/errorContract";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { ChaptersTable } from "./_components/ChaptersTable";
+import { ChapterCardGrid } from "./_components/ChapterCardGrid";
 import type { Chapter, ChapterMembership } from "@/services/types";
 
 export const dynamic = "force-dynamic";
@@ -81,6 +83,40 @@ export default async function MemberChaptersPage(props: {
 
     const membershipMap = new Map(memberships.map((m) => [m.chapterId, m]));
 
+    /* ── Fetch opportunity counts per chapter ── */
+    const opportunityCounts = new Map<string, number>();
+    try {
+        const allOpportunities = await listPublishedOpportunities();
+        for (const op of allOpportunities) {
+            opportunityCounts.set(op.chapterId, (opportunityCounts.get(op.chapterId) ?? 0) + 1);
+        }
+    } catch {
+        // Non-critical — just show 0 counts
+    }
+
+    /* ── Fetch chapter head names ── */
+    const chapterHeadNames = new Map<string, string>();
+    const headUserIds = [
+        ...new Set(chapters.map((c) => c.chapterHeadUserId).filter(Boolean) as string[]),
+    ];
+    await Promise.all(
+        headUserIds.map(async (userId) => {
+            try {
+                const profile = await getProfileByUserId(userId);
+                if (profile?.name) {
+                    chapterHeadNames.set(userId, profile.name);
+                } else if (profile?.firstName) {
+                    chapterHeadNames.set(
+                        userId,
+                        [profile.firstName, profile.lastName].filter(Boolean).join(" ")
+                    );
+                }
+            } catch {
+                // Skip — name won't show in modal
+            }
+        })
+    );
+
     return (
         <div className="space-y-6">
             <PageHeader
@@ -92,8 +128,8 @@ export default async function MemberChaptersPage(props: {
             {message && (
                 <div
                     className={`rounded-2xl border px-4 py-3 text-sm ${status === "error"
-                            ? "border-red-200 bg-red-50 text-red-700"
-                            : "border-green-200 bg-green-50 text-green-700"
+                        ? "border-red-200 bg-red-50 text-red-700"
+                        : "border-green-200 bg-green-50 text-green-700"
                         }`}
                 >
                     {message}
@@ -105,11 +141,13 @@ export default async function MemberChaptersPage(props: {
                     {loadError}
                 </div>
             ) : (
-                <ChaptersTable
+                <ChapterCardGrid
                     chapters={chapters}
                     membershipMap={membershipMap}
                     joinAction={joinChapterAction}
                     leaveAction={leaveChapterAction}
+                    chapterHeadNames={chapterHeadNames}
+                    opportunityCounts={opportunityCounts}
                 />
             )}
         </div>
