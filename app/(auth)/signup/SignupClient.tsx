@@ -12,7 +12,8 @@ import { getAuthErrorMessage, type AuthErrorPayload } from "@/lib/authErrors";
 export default function SignupClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -85,7 +86,7 @@ export default function SignupClient() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password, confirmPassword, name }),
+        body: JSON.stringify({ email, password, confirmPassword, name: `${firstName} ${lastName}`.trim(), firstName, lastName }),
       });
 
       if (!response.ok) {
@@ -120,17 +121,30 @@ export default function SignupClient() {
           </div>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            <label className="block text-sm font-semibold text-navy">
-              Full name
-              <input
-                className="auth-input mt-2"
-                type="text"
-                placeholder="Jane Doe"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                required
-              />
-            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-sm font-semibold text-navy">
+                First name
+                <input
+                  className="auth-input mt-2"
+                  type="text"
+                  placeholder="Jane"
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                  required
+                />
+              </label>
+              <label className="block text-sm font-semibold text-navy">
+                Last name
+                <input
+                  className="auth-input mt-2"
+                  type="text"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                  required
+                />
+              </label>
+            </div>
             <label className="block text-sm font-semibold text-navy">
               Email
               <input

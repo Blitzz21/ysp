@@ -15,7 +15,7 @@ import { fromHttpStatus } from "@/services/errorContract";
 
 const SESSION_COOKIE = "ysp_session";
 
-type SignupPayload = { email?: string; password?: string; confirmPassword?: string; name?: string };
+type SignupPayload = { email?: string; password?: string; confirmPassword?: string; name?: string; firstName?: string; lastName?: string };
 
 type AppwriteAccount = {
   $id?: string;
@@ -26,7 +26,9 @@ export async function POST(request: Request) {
   const email = body.email?.trim();
   const password = body.password;
   const confirmPassword = body.confirmPassword;
-  const name = body.name?.trim();
+  const name = body.name?.trim() || [body.firstName, body.lastName].filter(Boolean).join(" ").trim();
+  const firstName = body.firstName?.trim();
+  const lastName = body.lastName?.trim();
   const ip = extractClientIp(request);
 
   const ipLimit = takeRateLimit({ key: `signup:ip:${ip}`, limit: 10, windowMs: 10 * 60 * 1000 });
@@ -195,7 +197,7 @@ export async function POST(request: Request) {
     try {
       await createRow(
         "user_profiles",
-        { userId: accountId, role: "member", name, email },
+        { userId: accountId, role: "member", name, firstName, lastName, email },
         userReadPermissions(accountId)
       );
     } catch {

@@ -1,7 +1,13 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { normalizeEndpoint, parseSessionExpiry, resolveRequestOrigin, resolveSessionToken } from "../../_lib/appwriteAuth";
+import {
+  normalizeEndpoint,
+  parseSessionExpiry,
+  resolveRequestOrigin,
+  resolveSessionToken,
+  buildTokenHeaders,
+} from "../../_lib/appwriteAuth";
 
 const SESSION_COOKIE = "ysp_session";
 const VALID_FLOWS = new Set(["login", "signup"]);
@@ -101,6 +107,105 @@ export async function GET(request: Request) {
     path: "/",
     expires: parseSessionExpiry(resolvedToken.expire),
   });
+
+  // ── Populate user profile from Google account data ──
+  try {
+    const accountHeaders = buildTokenHeaders(projectId, resolvedToken.token, "application/json");
+    const accountRes = await fetch(`${baseEndpoint}/account`, {
+      method: "GET",
+      headers: accountHeaders,
+      cache: "no-store",
+    });
+
+    if (accountRes.ok) {
+      const account = await accountRes.json();
+      const name = account.name ?? "";
+      const email = account.email ?? "";
+      const nameParts = name.split(" ");
+      const firstName = nameParts[0] ?? "";
+      const lastName = nameParts.slice(1).join(" ") ?? "";
+
+      // Use the admin API key to upsert user_profiles (server-side only)
+      const apiKey = process.env.APPWRITE_API_KEY;
+      const dbId = process.env.NEXT_PUBLIC_APPWRITE_DB_ID ?? "main";
+      if (apiKey && account.$id) {
+        const profileCollectionId = "user_profiles";
+
+        // Check if profile already exists
+        const listRes = await fetch(
+          `${baseEndpoint}/databases/${dbId}/collections/${profileCollectionId}/documents?queries[]=${encodeURIComponent(`equal("userId",["${account.$id}"])`)}`,
+          {
+            headers: {
+              "X-Appwrite-Project": projectId,
+              "X-Appwrite-Key": apiKey,
+              "Content-Type": "application/json",
+            },
+            cache: "no-store",
+          }
+        );
+
+        const listData = await listRes.json().catch(() => ({ total: 0, documents: [] }));
+
+        if (listData.total === 0) {
+          // Create new profile
+          await fetch(
+            `${baseEndpoint}/databases/${dbId}/collections/${profileCollectionId}/documents`,
+            {
+              method: "POST",
+              headers: {
+                "X-Appwrite-Project": projectId,
+                "X-Appwrite-Key": apiKey,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                documentId: "unique()",
+                data: {
+                  userId: account.$id,
+                  role: "member",
+                  name,
+                  firstName,
+                  lastName,
+                  email,
+                },
+                permissions: [
+                  `read("user:${account.$id}")`,
+                  `update("user:${account.$id}")`,
+                ],
+              }),
+              cache: "no-store",
+            }
+          );
+        } else {
+          // Update existing profile with latest Google info (only if fields are empty)
+          const existing = listData.documents[0];
+          const updates: Record<string, string> = {};
+          if (!existing.name && name) updates.name = name;
+          if (!existing.firstName && firstName) updates.firstName = firstName;
+          if (!existing.lastName && lastName) updates.lastName = lastName;
+          if (!existing.email && email) updates.email = email;
+
+          if (Object.keys(updates).length > 0) {
+            await fetch(
+              `${baseEndpoint}/databases/${dbId}/collections/${profileCollectionId}/documents/${existing.$id}`,
+              {
+                method: "PATCH",
+                headers: {
+                  "X-Appwrite-Project": projectId,
+                  "X-Appwrite-Key": apiKey,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ data: updates }),
+                cache: "no-store",
+              }
+            );
+          }
+        }
+      }
+    }
+  } catch (profileError) {
+    // Don't block the OAuth flow if profile population fails
+    console.error("[oauth/callback] Profile population failed:", profileError);
+  }
 
   return NextResponse.redirect(new URL(nextPath, origin));
 }
