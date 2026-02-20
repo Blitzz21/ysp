@@ -135,19 +135,16 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
     color: var(--ink);
-    background: radial-gradient(
-        circle at 10% 12%,
+    background: radial-gradient(circle at 10% 12%,
         rgba(255, 207, 61, 0.2),
-        transparent 40%
-      ),
-      radial-gradient(
-        circle at 90% 18%,
+        transparent 40%),
+      radial-gradient(circle at 90% 18%,
         rgba(255, 122, 26, 0.18),
-        transparent 36%
-      ),
+        transparent 36%),
       linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
     overflow-x: hidden;
   }
@@ -157,50 +154,60 @@
   .bg-shell {
     background-color: var(--shell);
   }
+
   .text-ink {
     color: var(--ink);
   }
+
   .text-muted {
     color: var(--muted-text);
   }
+
   .text-teal {
     color: var(--teal);
   }
+
   .text-navy {
     color: var(--navy);
   }
+
   .bg-navy {
     background-color: var(--navy);
   }
+
   .bg-teal {
     background-color: var(--teal);
   }
+
   .bg-yellow {
     background-color: var(--yellow);
   }
+
   .shadow-glow {
     box-shadow: 0 25px 60px rgba(255, 122, 26, 0.2);
   }
+
   .shadow-soft {
     box-shadow: 0 18px 40px rgba(12, 18, 48, 0.12);
   }
+
   .font-manrope {
     font-family: var(--font-manrope), "Manrope", sans-serif;
   }
+
   .font-inter {
     font-family: var(--font-inter), "Inter", sans-serif;
   }
+
   .chapters-curve {
     box-shadow: inset 0 2px 12px rgba(241, 101, 41, 0.37);
   }
 }
 
 .grid-pattern {
-  background-image: linear-gradient(
-      to right,
+  background-image: linear-gradient(to right,
       rgba(12, 18, 48, 0.08) 1px,
-      transparent 1px
-    ),
+      transparent 1px),
     linear-gradient(to bottom, rgba(12, 18, 48, 0.08) 1px, transparent 1px);
   background-size: 32px 32px;
   mask-image: radial-gradient(circle at center, black 40%, transparent 75%);
@@ -219,10 +226,12 @@
 }
 
 @keyframes float {
+
   0%,
   100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-12px);
   }
@@ -272,11 +281,9 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    120deg,
-    rgba(255, 255, 255, 0.08),
-    rgba(255, 255, 255, 0) 55%
-  );
+  background: linear-gradient(120deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0) 55%);
 }
 
 .stream-row::before,
@@ -292,28 +299,22 @@
 
 .stream-row::before {
   left: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0) 100%);
 }
 
 .stream-row::after {
   right: 0;
-  background: linear-gradient(
-    -90deg,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(-90deg,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0) 100%);
 }
 
 .stats-band {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 228, 189, 0.6) 0%,
-    rgba(255, 244, 230, 0.35) 100%
-  );
+  background: linear-gradient(180deg,
+      rgba(255, 228, 189, 0.6) 0%,
+      rgba(255, 244, 230, 0.35) 100%);
 }
 
 .stat-card {
@@ -385,11 +386,9 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    circle at 20% 20%,
-    rgba(255, 122, 26, 0.2),
-    transparent 55%
-  );
+  background: radial-gradient(circle at 20% 20%,
+      rgba(255, 122, 26, 0.2),
+      transparent 55%);
   opacity: 0.7;
 }
 
@@ -460,21 +459,17 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-      circle at 15% 10%,
+  background: radial-gradient(circle at 15% 10%,
       rgba(255, 207, 61, 0.2),
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 85% 5%,
+      transparent 55%),
+    radial-gradient(circle at 85% 5%,
       rgba(255, 122, 26, 0.18),
-      transparent 60%
-    );
+      transparent 60%);
   opacity: 0.7;
   pointer-events: none;
 }
 
-.advocacy-tiles-bento > .advocacy-tiles-grid {
+.advocacy-tiles-bento>.advocacy-tiles-grid {
   position: relative;
   z-index: 1;
 }
@@ -503,75 +498,7 @@
   transform: translateY(20%);
 }
 
-.auth-shell {
-  height: 100dvh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
 
-.auth-frame {
-  width: 100%;
-  height: 100dvh;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.auth-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.auth-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.auth-logo {
-  height: 42px;
-  width: 42px;
-  border-radius: 14px;
-  background: rgba(255, 122, 26, 0.15);
-  color: var(--orange-600);
-  font-weight: 700;
-  display: grid;
-  place-items: center;
-  font-family: var(--font-manrope), "Manrope", sans-serif;
-}
-
-.auth-return {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--orange-600);
-}
-
-.auth-return:hover {
-  text-decoration: underline;
-}
-
-.auth-panel {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  gap: clamp(1.5rem, 4vw, 3rem);
-  align-items: start;
-  align-content: start;
-  justify-items: center;
-  padding: clamp(0.75rem, 2vw, 1.25rem);
-  overflow-x: hidden;
-  overflow-y: auto;
-  animation: authPanelIn 0.6s ease both;
-}
-
-.auth-panel-single {
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
-}
 
 .auth-aside {
   position: relative;
@@ -589,11 +516,9 @@
   position: absolute;
   inset: -40% -10% auto;
   height: 240px;
-  background: radial-gradient(
-    circle,
-    rgba(255, 122, 26, 0.4),
-    rgba(255, 122, 26, 0) 60%
-  );
+  background: radial-gradient(circle,
+      rgba(255, 122, 26, 0.4),
+      rgba(255, 122, 26, 0) 60%);
 }
 
 .auth-aside-card {
@@ -718,6 +643,7 @@
     opacity: 0;
     transform: translateY(18px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -729,6 +655,7 @@
     opacity: 0;
     transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -740,6 +667,7 @@
     opacity: 0;
     transform: translateY(18px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -751,6 +679,7 @@
     opacity: 0;
     transform: translateY(-6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -790,6 +719,7 @@ button[data-submitting="true"]::after {
     opacity: 0;
     transform: translateY(8px) scale(0.996);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -806,6 +736,7 @@ button[data-submitting="true"]::after {
   from {
     transform: translateY(-50%) rotate(0deg);
   }
+
   to {
     transform: translateY(-50%) rotate(360deg);
   }
@@ -832,6 +763,7 @@ button[data-submitting="true"]::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .auth-panel,
   .auth-aside,
   .auth-card,
@@ -856,3 +788,64 @@ button[data-submitting="true"]::after {
   }
 }
 
+/* ── Privacy Advisory Modal ── */
+.privacy-modal {
+  border: none;
+  border-radius: 20px;
+  padding: 0;
+  max-width: 600px;
+  width: 90vw;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+  animation: authFadeIn 0.25s ease both;
+}
+
+.privacy-modal::backdrop {
+  background: rgba(12, 18, 48, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.privacy-modal__content {
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.privacy-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.privacy-modal__close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.privacy-modal__close:hover {
+  border-color: var(--orange-600);
+  color: var(--orange-600);
+}
+
+.privacy-modal__body {
+  margin-top: 1.25rem;
+}
+
+@keyframes authFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

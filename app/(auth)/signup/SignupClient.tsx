@@ -7,19 +7,51 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { GoogleIcon } from "@/components/auth/GoogleIcon";
 import { PasswordToggleIcon } from "@/components/auth/PasswordToggleIcon";
 import { LandingHeader } from "@/components/landing/LandingHeader";
+import { PrivacyAdvisoryModal } from "@/components/ui/PrivacyAdvisoryModal";
 import { getAuthErrorMessage, type AuthErrorPayload } from "@/lib/authErrors";
 
-export default function SignupClient() {
+const SECTOR_OPTIONS = [
+  "Youth",
+  "PWD",
+  "Farmers",
+  "Indigenous People",
+  "TODA",
+  "Others",
+] as const;
+
+interface SignupClientProps {
+  chapters: { id: string; name: string }[];
+}
+
+export default function SignupClient({ chapters }: SignupClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+
+  // Account fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
+
+  // Profile fields
+  const [fullName, setFullName] = useState("");
+  const [age, setAge] = useState("");
+  const [birthdate, setBirthdate] = useState("");
+  const [chapterId, setChapterId] = useState("");
+  const [phone, setPhone] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [registeredVoter, setRegisteredVoter] = useState(false);
+  const [householdSize, setHouseholdSize] = useState("1");
+  const [householdVoters, setHouseholdVoters] = useState("");
+  const [sector, setSector] = useState("");
+  const [sectorOther, setSectorOther] = useState("");
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
+
+  // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPasswords, setShowPasswords] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const errorRef = useRef<HTMLDivElement | null>(null);
   const submitLockRef = useRef(false);
 
@@ -37,11 +69,7 @@ export default function SignupClient() {
     const origin = window.location.origin;
     const success = `${origin}/api/auth/oauth/callback?flow=signup&next=${encodeURIComponent(redirectTo)}`;
     const failure = `${origin}/signup?error=oauth`;
-    const params = new URLSearchParams({
-      project: projectId,
-      success,
-      failure,
-    });
+    const params = new URLSearchParams({ project: projectId, success, failure });
     return `${base}/account/tokens/oauth2/google?${params.toString()}`;
   }, [endpoint, projectId, redirectTo]);
 
@@ -68,25 +96,55 @@ export default function SignupClient() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitLockRef.current) {
-      return;
-    }
+    if (submitLockRef.current) return;
     submitLockRef.current = true;
     setError(null);
+
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       submitLockRef.current = false;
       return;
     }
+    if (!privacyConsent) {
+      setError("You must agree to the Privacy Advisory and Data Consent.");
+      submitLockRef.current = false;
+      return;
+    }
+    if (!chapterId) {
+      setError("Please select a chapter.");
+      submitLockRef.current = false;
+      return;
+    }
+
+    const nameParts = fullName.trim().split(/\s+/);
+    const firstName = nameParts[0] ?? "";
+    const lastName = nameParts.slice(1).join(" ") || "";
 
     setLoading(true);
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password, confirmPassword, name: `${firstName} ${lastName}`.trim(), firstName, lastName }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          confirmPassword,
+          name: fullName.trim(),
+          firstName,
+          lastName,
+          age: age ? Number(age) : undefined,
+          birthdate: birthdate || undefined,
+          chapterId,
+          phone: phone || undefined,
+          facebookUrl: facebookUrl || undefined,
+          registeredVoter,
+          householdSize: householdSize ? Number(householdSize) : undefined,
+          householdVoters: householdVoters ? Number(householdVoters) : undefined,
+          sector: sector || undefined,
+          sectorOther: sector === "Others" ? sectorOther : undefined,
+          newsletterSubscribed,
+          privacyConsent,
+        }),
       });
 
       if (!response.ok) {
@@ -109,97 +167,269 @@ export default function SignupClient() {
   }
 
   return (
-    <div className="auth-frame">
+    <div className="min-h-screen flex flex-col w-full bg-slate-50 relative overflow-x-hidden">
       <LandingHeader fullWidth />
 
-      <div className="auth-panel auth-panel-single">
-        <section className="auth-card">
+      <div className="flex-1 w-full max-w-[540px] mx-auto px-4 py-8 md:py-12 z-10 flex flex-col">
+        <section className="auth-card w-full shadow-2xl rounded-2xl bg-white p-6 md:p-8">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.3em] text-orange-600">Create account</p>
-            <h2 className="font-manrope text-2xl font-semibold text-navy">Join Youth Service Philippines</h2>
-            <p className="text-sm text-muted">Create your member account to join chapters and opportunities.</p>
+            <h2 className="font-manrope text-2xl font-semibold text-navy">Become a Member</h2>
+            <p className="text-sm text-muted">
+              Join thousands of young Filipinos making a difference. Fill out the form below to start your journey with YSP.
+            </p>
           </div>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block text-sm font-semibold text-navy">
-                First name
-                <input
-                  className="auth-input mt-2"
-                  type="text"
-                  placeholder="Jane"
-                  value={firstName}
-                  onChange={(event) => setFirstName(event.target.value)}
-                  required
-                />
-              </label>
-              <label className="block text-sm font-semibold text-navy">
-                Last name
-                <input
-                  className="auth-input mt-2"
-                  type="text"
-                  placeholder="Doe"
-                  value={lastName}
-                  onChange={(event) => setLastName(event.target.value)}
-                  required
-                />
-              </label>
-            </div>
+            {/* Email & Password */}
             <label className="block text-sm font-semibold text-navy">
-              Email
+              Email *
               <input
                 className="auth-input mt-2"
                 type="email"
                 placeholder="you@domain.com"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-sm font-semibold text-navy">
+                Password *
+                <div className="relative mt-2">
+                  <input
+                    className="auth-input pr-12"
+                    type={showPasswords ? "text" : "password"}
+                    placeholder="Create a password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    className="auth-icon-button"
+                    type="button"
+                    onClick={() => setShowPasswords((p) => !p)}
+                    aria-label={showPasswords ? "Hide password" : "Show password"}
+                  >
+                    <PasswordToggleIcon visible={showPasswords} />
+                  </button>
+                </div>
+              </label>
+              <label className="block text-sm font-semibold text-navy">
+                Confirm password *
+                <div className="relative mt-2">
+                  <input
+                    className="auth-input pr-12"
+                    type={showPasswords ? "text" : "password"}
+                    placeholder="Confirm password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    className="auth-icon-button"
+                    type="button"
+                    onClick={() => setShowPasswords((p) => !p)}
+                    aria-label={showPasswords ? "Hide password" : "Show password"}
+                  >
+                    <PasswordToggleIcon visible={showPasswords} />
+                  </button>
+                </div>
+              </label>
+            </div>
+
+            <div className="mt-2 h-px bg-gray-200" />
+
+            {/* Profile Fields */}
             <label className="block text-sm font-semibold text-navy">
-              Password
-              <div className="relative mt-2">
+              Full Name *
+              <input
+                className="auth-input mt-2"
+                type="text"
+                placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-sm font-semibold text-navy">
+                Age *
                 <input
-                  className="auth-input pr-12"
-                  type={showPasswords ? "text" : "password"}
-                  placeholder="Create a password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  minLength={8}
+                  className="auth-input mt-2"
+                  type="number"
+                  placeholder="18"
+                  min={1}
+                  max={120}
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
                   required
                 />
-                <button
-                  className="auth-icon-button"
-                  type="button"
-                  onClick={() => setShowPasswords((prev) => !prev)}
-                  aria-label={showPasswords ? "Hide password" : "Show password"}
-                >
-                  <PasswordToggleIcon visible={showPasswords} />
-                </button>
-              </div>
-            </label>
-            <label className="block text-sm font-semibold text-navy">
-              Confirm password
-              <div className="relative mt-2">
+              </label>
+              <label className="block text-sm font-semibold text-navy">
+                Birthdate
                 <input
-                  className="auth-input pr-12"
-                  type={showPasswords ? "text" : "password"}
-                  placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  minLength={8}
+                  className="auth-input mt-2"
+                  type="date"
+                  value={birthdate}
+                  onChange={(e) => setBirthdate(e.target.value)}
+                />
+              </label>
+            </div>
+
+            <label className="block text-sm font-semibold text-navy">
+              Chapter *
+              <select
+                className="auth-input mt-2"
+                value={chapterId}
+                onChange={(e) => setChapterId(e.target.value)}
+                required
+              >
+                <option value="" disabled>Select your chapter</option>
+                {chapters.map((ch) => (
+                  <option key={ch.id} value={ch.id}>{ch.name}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block text-sm font-semibold text-navy">
+              Contact Number *
+              <input
+                className="auth-input mt-2"
+                type="tel"
+                placeholder="Enter your phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="block text-sm font-semibold text-navy">
+              Facebook Link (optional)
+              <input
+                className="auth-input mt-2"
+                type="url"
+                placeholder="https://facebook.com/yourprofile"
+                value={facebookUrl}
+                onChange={(e) => setFacebookUrl(e.target.value)}
+              />
+            </label>
+
+            {/* Voter toggle */}
+            <div className="flex items-center gap-3 py-1">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={registeredVoter}
+                onClick={() => setRegisteredVoter((v) => !v)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${registeredVoter ? "bg-orange-500" : "bg-gray-300"
+                  }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${registeredVoter ? "translate-x-5" : "translate-x-0"
+                    }`}
+                />
+              </button>
+              <span className="text-sm text-navy">Are you a registered voter?</span>
+            </div>
+
+            <p className="text-xs italic text-muted">
+              Comprehensive details are collected for our Annual Voter&apos;s Education.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-sm font-semibold text-navy">
+                How many are in your household? *
+                <input
+                  className="auth-input mt-2"
+                  type="number"
+                  min={1}
+                  value={householdSize}
+                  onChange={(e) => setHouseholdSize(e.target.value)}
                   required
                 />
-                <button
-                  className="auth-icon-button"
-                  type="button"
-                  onClick={() => setShowPasswords((prev) => !prev)}
-                  aria-label={showPasswords ? "Hide password" : "Show password"}
-                >
-                  <PasswordToggleIcon visible={showPasswords} />
-                </button>
-              </div>
+              </label>
+              <label className="block text-sm font-semibold text-navy">
+                Household registered voters? (Optional)
+                <input
+                  className="auth-input mt-2"
+                  type="number"
+                  min={0}
+                  placeholder=""
+                  value={householdVoters}
+                  onChange={(e) => setHouseholdVoters(e.target.value)}
+                />
+              </label>
+            </div>
+
+            <label className="block text-sm font-semibold text-navy">
+              Sector *
+              <select
+                className="auth-input mt-2"
+                value={sector}
+                onChange={(e) => setSector(e.target.value)}
+                required
+              >
+                <option value="" disabled>Select your sector</option>
+                {SECTOR_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{s === "Youth" ? "Youth (30 years old and under)" : s}</option>
+                ))}
+              </select>
             </label>
+
+            {sector === "Others" && (
+              <label className="block text-sm font-semibold text-navy">
+                Please specify your sector *
+                <input
+                  className="auth-input mt-2"
+                  type="text"
+                  placeholder="Enter your sector"
+                  value={sectorOther}
+                  onChange={(e) => setSectorOther(e.target.value)}
+                  required
+                />
+              </label>
+            )}
+
+            {/* Newsletter */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="flex-shrink-0 h-4 w-4 rounded border-gray-300 text-orange-500 accent-orange-500"
+                checked={newsletterSubscribed}
+                onChange={(e) => setNewsletterSubscribed(e.target.checked)}
+              />
+              <span className="text-sm text-navy">
+                Subscribe to our monthly newsletter for volunteer &amp; organization opportunities.
+              </span>
+            </label>
+
+            {/* Privacy consent */}
+            <div className="rounded-2xl bg-[#fef7ee] px-4 py-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="flex-shrink-0 h-5 w-5 rounded border-gray-300 text-orange-500 accent-orange-500"
+                  checked={privacyConsent}
+                  onChange={(e) => setPrivacyConsent(e.target.checked)}
+                  required
+                />
+                <span className="text-sm text-navy">
+                  I agree to the{" "}
+                  <button
+                    type="button"
+                    className="font-semibold text-orange-600 hover:underline hover:text-orange-700 hover:cursor-pointer"
+                    onClick={() => setShowPrivacyModal(true)}
+                  >
+                    Privacy Advisory and Data Consent
+                  </button>
+                </span>
+              </label>
+            </div>
 
             {error ? (
               <div
@@ -222,7 +452,7 @@ export default function SignupClient() {
             >
               <span className="inline-flex items-center justify-center gap-2">
                 {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
-                {loading ? "Creating account..." : "Create account"}
+                {loading ? "Submitting..." : "Submit Membership Application"}
               </span>
             </button>
           </form>
@@ -238,9 +468,7 @@ export default function SignupClient() {
             type="button"
             disabled={loading}
             onClick={() => {
-              if (submitLockRef.current || loading) {
-                return;
-              }
+              if (submitLockRef.current || loading) return;
               submitLockRef.current = true;
               if (!oauthUrl) {
                 setError("OAuth is not configured. Check Appwrite settings.");
@@ -264,6 +492,8 @@ export default function SignupClient() {
           </div>
         </section>
       </div>
+
+      <PrivacyAdvisoryModal open={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
     </div>
   );
 }
