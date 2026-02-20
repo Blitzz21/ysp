@@ -41,8 +41,8 @@ test("login page renders", async ({ page }) => {
 
 test("signup page renders", async ({ page }) => {
   await page.goto("/signup");
-  await expect(page.getByRole("heading", { name: "Join Youth Service Philippines" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Become a Member" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Submit Membership Application" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
 });
 
@@ -259,12 +259,23 @@ test("signup announces auth errors through live region", async ({ page }) => {
   });
 
   await page.goto("/signup");
-  await page.getByLabel("First name").fill("Jane");
-  await page.getByLabel("Last name").fill("Doe");
-  await page.getByLabel("Email").fill("jane@example.com");
+  await page.getByLabel("Email *").fill("jane@example.com");
   await page.getByPlaceholder("Create a password").fill("valid-password-123");
-  await page.getByPlaceholder("Confirm your password").fill("valid-password-123");
-  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByPlaceholder("Confirm password").fill("valid-password-123");
+  await page.getByLabel("Full Name *").fill("Jane Doe");
+  await page.getByLabel("Age *").fill("25");
+
+  // Select chapter and sector
+  await page.getByLabel("Chapter *").selectOption({ index: 1 });
+  await page.getByLabel("Sector *").selectOption("Youth");
+
+  await page.getByLabel("Contact Number *").fill("09123456789");
+  await page.getByLabel("How many are in your household? *").fill("4");
+
+  // Check the privacy consent checkbox (which is the last checkbox on the page)
+  await page.getByRole("checkbox").last().check();
+
+  await page.getByRole("button", { name: "Submit Membership Application" }).click();
 
   const authError = page.getByTestId("auth-error");
   await expect(authError).toBeVisible();
