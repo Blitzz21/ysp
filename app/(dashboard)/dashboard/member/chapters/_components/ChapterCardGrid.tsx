@@ -121,11 +121,13 @@ export function ChapterCardGrid({
                         const opCount = opportunityCounts?.get(ch.id) ?? 0;
 
                         return (
-                            <button
+                            <div
                                 key={ch.id}
-                                type="button"
+                                role="button"
+                                tabIndex={0}
                                 onClick={() => setSelectedChapter(ch)}
-                                className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-orange-200 hover:shadow-md text-left overflow-hidden"
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedChapter(ch); } }}
+                                className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-orange-200 hover:shadow-md text-left overflow-hidden cursor-pointer"
                             >
                                 {/* Gradient header */}
                                 <div className={`h-24 w-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
@@ -203,7 +205,7 @@ export function ChapterCardGrid({
                                         )}
                                     </div>
                                 </div>
-                            </button>
+                            </div>
                         );
                     })}
                 </div>
