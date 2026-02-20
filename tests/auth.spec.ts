@@ -259,7 +259,8 @@ test("signup announces auth errors through live region", async ({ page }) => {
   });
 
   await page.goto("/signup");
-  await page.getByLabel("Full name").fill("Jane Doe");
+  await page.getByLabel("First name").fill("Jane");
+  await page.getByLabel("Last name").fill("Doe");
   await page.getByLabel("Email").fill("jane@example.com");
   await page.getByPlaceholder("Create a password").fill("valid-password-123");
   await page.getByPlaceholder("Confirm your password").fill("valid-password-123");
