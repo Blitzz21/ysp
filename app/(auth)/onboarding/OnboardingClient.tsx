@@ -109,8 +109,8 @@ export default function OnboardingClient({ chapters: initialChapters, prefillNam
     }
 
     return (
-        <div className="min-h-screen flex flex-col w-full bg-slate-50 relative overflow-x-hidden">
-            <LandingHeader fullWidth />
+        <div className="flex flex-col h-dvh w-dvw bg-slate-50 relative overflow-x-hidden gradient">
+            <LandingHeader />
 
             <div className="flex-1 w-full max-w-[540px] mx-auto px-4 py-8 md:py-12 z-10 flex flex-col">
                 <section className="auth-card w-full shadow-2xl rounded-2xl bg-white p-6 md:p-8">

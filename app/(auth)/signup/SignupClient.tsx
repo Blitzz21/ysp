@@ -170,8 +170,8 @@ export default function SignupClient({ chapters: initialChapters }: SignupClient
   }
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-slate-50 relative overflow-x-hidden">
-      <LandingHeader fullWidth />
+    <div className="flex flex-col h-dvh w-dvw bg-slate-50 relative overflow-x-hidden gradient">
+      <LandingHeader />
 
       <div className="flex-1 w-full max-w-[540px] mx-auto px-4 py-8 md:py-12 z-10 flex flex-col">
         <section className="auth-card w-full shadow-2xl rounded-2xl bg-white p-6 md:p-8">
@@ -449,7 +449,7 @@ export default function SignupClient({ chapters: initialChapters }: SignupClient
             ) : null}
 
             <button
-              className="mt-2 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-orange-500"
+              className="mt-2 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white cursor-pointer transition hover:bg-orange-600 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-orange-500"
               type="submit"
               disabled={loading}
             >
@@ -467,7 +467,7 @@ export default function SignupClient({ chapters: initialChapters }: SignupClient
           </div>
 
           <button
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-navy shadow-soft transition hover:border-orange-300 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:border-gray-200"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-navy transition hover:border-orange-300 cursor-pointer disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:border-gray-200"
             type="button"
             disabled={loading}
             onClick={() => {

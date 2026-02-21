@@ -103,11 +103,11 @@ export default function LoginClient() {
   }
 
   return (
-    <div className="auth-frame">
-      <LandingHeader fullWidth />
+    <div className="auth-frame h-dvh w-dvw bg-slate-50 relative md:overflow-hidden gradient">
+      <LandingHeader />
 
-      <div className="auth-panel auth-panel-single">
-        <section className="auth-card">
+      <div className="auth-panel flex-1 w-full max-w-[540px] mx-auto px-4 pt-8 md:pt-12 z-10 flex flex-col auth-panel-single">
+        <section className="auth-card w-full shadow-2xl rounded-2xl bg-white p-6 md:p-8">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.3em] text-orange-600">Account login</p>
             <h2 className="font-manrope text-2xl font-semibold text-navy">Welcome back</h2>
@@ -177,7 +177,7 @@ export default function LoginClient() {
             ) : null}
 
             <button
-              className="mt-2 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-orange-500"
+              className="mt-2 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 cursor-pointer disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-orange-500"
               type="submit"
               disabled={loading}
             >
@@ -195,7 +195,7 @@ export default function LoginClient() {
           </div>
 
           <button
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-navy shadow-soft transition hover:border-orange-300 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:border-gray-200"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-navy shadow-soft transition hover:border-orange-300 cursor-pointer disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:border-gray-200"
             type="button"
             disabled={loading}
             onClick={() => {

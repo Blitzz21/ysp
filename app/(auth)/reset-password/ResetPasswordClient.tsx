@@ -51,9 +51,9 @@ export default function ResetPasswordClient() {
   }
 
   return (
-    <div className="auth-frame">
-      <LandingHeader fullWidth />
-      <div className="auth-panel auth-panel-single">
+    <div className="auth-frame h-dvh w-dvw bg-slate-50 gradient">
+      <LandingHeader />
+      <div className="auth-panel auth-panel-single h-full w-full flex justify-center items-center">
         <section className="auth-card">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.3em] text-orange-600">Password reset</p>
