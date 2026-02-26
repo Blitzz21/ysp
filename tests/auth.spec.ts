@@ -6,7 +6,7 @@ async function expectAdminPageOrLoginRedirect(
   ctaName?: string
 ) {
   const loginHeading = page.getByRole("heading", { name: "Welcome back" });
-  const targetHeading = page.getByRole("heading", { name: headingName });
+  const targetHeading = page.getByRole("heading", { name: headingName, exact: true });
 
   if ((await loginHeading.count()) > 0) {
     await expect(page).toHaveURL(/\/login/);
@@ -95,6 +95,17 @@ test("reset password page requires valid token params", async ({ page }) => {
 });
 
 test("verify email page can resend verification", async ({ page }) => {
+  // Keep emailVerified=false so the Resend button stays visible for the click.
+  // Without this mock, E2E_ADMIN_BYPASS causes the status endpoint to return
+  // emailVerified=true, hiding the button before the click can fire.
+  await page.route("**/api/auth/verify/status", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, emailVerified: false }),
+    });
+  });
+
   await page.route("**/api/auth/verify/start", async (route) => {
     await route.fulfill({
       status: 200,
@@ -316,10 +327,10 @@ test("admin dashboard uses sidebar navigation", async ({ page }) => {
   }
 
   await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Programs" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Chapters" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Opportunities" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Programs",      exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chapters",      exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Opportunities", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Settings",      exact: true })).toBeVisible();
 });
 
 test("member dashboard route is usable", async ({ page }) => {
@@ -384,7 +395,7 @@ test("chapter dashboard uses sidebar navigation", async ({ page }) => {
     return;
   }
 
-  await expect(page.getByRole("link", { name: "Chapter dashboard" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Chapter opportunities" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chapter dashboard",    exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chapter opportunities", exact: true })).toBeVisible();
   await expect(page.getByText("Chapter assignment required")).toBeVisible();
 });
