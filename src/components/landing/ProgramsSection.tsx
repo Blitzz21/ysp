@@ -1,4 +1,5 @@
 import { listPublishedPrograms } from "@/services/programs";
+import Link from "next/link";
 
 export async function ProgramsSection() {
   let programs: Awaited<ReturnType<typeof listPublishedPrograms>> = [];
@@ -21,12 +22,12 @@ export async function ProgramsSection() {
               adoption and measurable community impact.
             </p>
           </div>
-          <a
+          <Link
             className="rounded-full border border-orange-500 px-5 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white"
             href="/programs"
           >
             Browse all programs
-          </a>
+          </Link>
         </div>
 
         {programs.length === 0 ? (
