@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
