@@ -54,6 +54,8 @@ async function createProgramAction(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/admin/programs");
+  revalidatePath("/");
+  revalidatePath("/programs");
   buildRedirect("success", "Program created.");
 }
 
@@ -81,6 +83,8 @@ async function updateProgramAction(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/admin/programs");
+  revalidatePath("/");
+  revalidatePath("/programs");
   buildRedirect("success", "Program updated.");
 }
 
@@ -94,6 +98,8 @@ async function deleteProgramAction(formData: FormData): Promise<void> {
     buildRedirect("error", message);
   }
   revalidatePath("/admin/programs");
+  revalidatePath("/");
+  revalidatePath("/programs");
   buildRedirect("success", "Program deleted.");
 }
 
