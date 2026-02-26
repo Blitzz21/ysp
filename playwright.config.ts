@@ -6,8 +6,9 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   expect: {
     toHaveScreenshot: {
-      // Tolerate minor cross-OS sub-pixel font rendering differences.
-      maxDiffPixels: 150,
+      // Tolerate cross-OS font rendering differences (Windows ↔ Linux).
+      // ~3 % of pixels typically differ due to sub-pixel anti-aliasing.
+      maxDiffPixelRatio: 0.04,
       // Per-pixel colour difference tolerance (0–1 scale).
       threshold: 0.2,
       // Freeze CSS animations for deterministic snapshots.
