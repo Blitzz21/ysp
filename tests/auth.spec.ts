@@ -346,9 +346,9 @@ test("member dashboard uses sidebar navigation", async ({ page }) => {
     return;
   }
 
-  await expect(page.getByRole("link", { name: "Member dashboard" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Opportunities" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Opportunities", exact: true })).toBeVisible();
 });
 
 test("sidebar mobile drawer is keyboard accessible", async ({ page }) => {
@@ -377,14 +377,14 @@ test("sidebar active state matches current route", async ({ page }) => {
     return;
   }
 
-  await expect(page.getByRole("link", { name: "Member dashboard" })).toHaveClass(/bg-orange-50/);
+  await expect(page.getByRole("link", { name: "Overview" })).toHaveClass(/bg-orange-50/);
   await page.goto("/admin/settings");
   await expect(page.getByRole("link", { name: "Settings" })).toHaveClass(/bg-orange-50/);
 });
 
 test("member settings route is usable", async ({ page }) => {
   await page.goto("/settings");
-  await expectMemberPageOrLoginRedirect(page, "Account and profile");
+  await expectMemberPageOrLoginRedirect(page, "Account & Profile");
 });
 
 test("chapter dashboard uses sidebar navigation", async ({ page }) => {

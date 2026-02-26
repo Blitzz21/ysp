@@ -143,6 +143,20 @@ export async function getProfileByUserId(userId: string): Promise<UserProfile | 
 
 export async function getMyProfile(): Promise<UserProfile> {
   const session = requireSession(await getSession());
+  if (process.env.E2E_ADMIN_BYPASS === "1") {
+    return {
+      id: "e2e-profile",
+      userId: session.userId,
+      role: session.role ?? "admin",
+      name: "E2E Admin",
+      age: 30,
+      phone: "0000000000",
+      sector: "Youth",
+      privacyConsent: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as UserProfile;
+  }
   const existing = await getProfileRow(session.userId);
   if (existing) {
     return mapProfile(existing);

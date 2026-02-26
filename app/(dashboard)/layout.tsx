@@ -14,10 +14,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect("/verify-email?next=/dashboard");
   }
 
-  // Redirect to onboarding if profile is incomplete (e.g. Google OAuth users)
-  const profile = await getProfileByUserId(session.userId);
-  if (!isProfileComplete(profile)) {
-    redirect("/onboarding");
+  // Redirect to onboarding if profile is incomplete (e.g. Google OAuth users).
+  // Skip when running E2E tests — the synthetic "e2e-admin" user has no Appwrite profile.
+  if (process.env.E2E_ADMIN_BYPASS !== "1") {
+    const profile = await getProfileByUserId(session.userId);
+    if (!isProfileComplete(profile)) {
+      redirect("/onboarding");
+    }
   }
 
   async function signOutAction() {
