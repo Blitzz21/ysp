@@ -1,23 +1,13 @@
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { CountedInput } from "@/components/admin/CountedField";
+import { StatusBanner } from "@/components/dashboard/StatusBanner";
 import { toPublicDomainError } from "@/services/errorContract";
 import { getSiteSettings, updateSiteSettings } from "@/services/settings";
 import { getSiteStats, updateSiteStats } from "@/services/stats";
+import { type SearchParams, readParam, createRedirectBuilder } from "@/lib/pageHelpers";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function readParam(searchParams: SearchParams, key: string): string | undefined {
-  const value = searchParams[key];
-  if (Array.isArray(value)) return value[0];
-  return value;
-}
-
-function buildRedirect(status: "success" | "error", message: string): never {
-  const encoded = encodeURIComponent(message);
-  redirect(`/admin/settings?status=${status}&message=${encoded}`);
-}
+const buildRedirect = createRedirectBuilder("/admin/settings");
 
 function toOptionalString(value: FormDataEntryValue | null): string | undefined {
   const parsed = String(value ?? "").trim();
@@ -74,22 +64,6 @@ async function updateStatsAction(formData: FormData): Promise<void> {
   buildRedirect("success", "Site stats updated.");
 }
 
-function StatusBanner({ status, message }: { status?: string; message?: string }) {
-  if (!message) return null;
-  const isError = status === "error";
-  return (
-    <div
-      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
-        isError
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-green-200 bg-green-50 text-green-700"
-      }`}
-    >
-      {message}
-    </div>
-  );
-}
-
 export default async function AdminSettingsPage({
   searchParams,
 }: {
@@ -142,7 +116,7 @@ export default async function AdminSettingsPage({
         </p>
       </div>
 
-      <StatusBanner status={status} message={message} />
+      <StatusBanner status={status} message={message} className="mb-6" />
 
       {hasLoadError ? (
         <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { CountedInput, CountedTextarea } from "@/components/admin/CountedField";
+import { StatusBanner } from "@/components/dashboard/StatusBanner";
 import { adminListChapters } from "@/services/chapters";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
@@ -11,19 +11,9 @@ import {
   updateOpportunity,
 } from "@/services/opportunities";
 import type { Chapter, VolunteerOpportunity } from "@/services/types";
+import { type SearchParams, readParam, createRedirectBuilder } from "@/lib/pageHelpers";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function readParam(searchParams: SearchParams, key: string): string | undefined {
-  const value = searchParams[key];
-  if (Array.isArray(value)) return value[0];
-  return value;
-}
-
-function buildRedirect(status: "success" | "error", message: string): never {
-  const encoded = encodeURIComponent(message);
-  redirect(`/admin/opportunities?status=${status}&message=${encoded}`);
-}
+const buildRedirect = createRedirectBuilder("/admin/opportunities");
 
 function parseDateTime(value: string, fieldName: string): Date {
   const parsed = new Date(value);
@@ -167,22 +157,6 @@ async function deleteOpportunityAction(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/opportunities");
   buildRedirect("success", "Opportunity deleted.");
-}
-
-function StatusBanner({ status, message }: { status?: string; message?: string }) {
-  if (!message) return null;
-  const isError = status === "error";
-  return (
-    <div
-      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
-        isError
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-green-200 bg-green-50 text-green-700"
-      }`}
-    >
-      {message}
-    </div>
-  );
 }
 
 function OpportunityCard({
@@ -413,7 +387,7 @@ export default async function AdminOpportunitiesPage({
         </p>
       </div>
 
-      <StatusBanner status={status} message={message} />
+      <StatusBanner status={status} message={message} className="mb-6" />
 
       <form
         action={createOpportunityAction}

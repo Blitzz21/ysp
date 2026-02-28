@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { StatusBanner } from "@/components/dashboard/StatusBanner";
 import { getSession } from "@/services/auth";
 import { listPublicChapters } from "@/services/chapters";
 import { toPublicDomainError } from "@/services/errorContract";
@@ -10,30 +11,9 @@ import { getMyProfile } from "@/services/profiles";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import type { Chapter, ChapterMembership } from "@/services/types";
+import { type SearchParams, readParam } from "@/lib/pageHelpers";
 
 export const dynamic = "force-dynamic";
-
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function readParam(searchParams: SearchParams, key: string): string | undefined {
-  const value = searchParams[key];
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function StatusBanner({ status, message }: { status?: string; message?: string }) {
-  if (!message) return null;
-  const isError = status === "error";
-  return (
-    <div
-      className={`rounded-2xl border px-4 py-3 text-sm ${isError
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-green-200 bg-green-50 text-green-700"
-        }`}
-    >
-      {message}
-    </div>
-  );
-}
 
 export default async function MemberDashboardPage(props: {
   searchParams?: Promise<SearchParams>;

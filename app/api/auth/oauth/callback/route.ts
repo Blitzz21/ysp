@@ -117,8 +117,6 @@ export async function GET(request: Request) {
       cache: "no-store",
     });
 
-    console.log("[oauth/callback] Account fetch status:", accountRes.status);
-
     if (accountRes.ok) {
       const account = await accountRes.json();
       const name = account.name ?? "";
@@ -126,8 +124,6 @@ export async function GET(request: Request) {
       const nameParts = name.split(" ");
       const firstName = nameParts[0] ?? "";
       const lastName = nameParts.slice(1).join(" ") ?? "";
-
-      console.log("[oauth/callback] Google account data:", { id: account.$id, name, email });
 
       // Use the admin API key to upsert user_profiles via Appwrite Tables API
       const apiKey = process.env.APPWRITE_API_KEY;
@@ -147,17 +143,14 @@ export async function GET(request: Request) {
           { headers: adminHeaders, cache: "no-store" }
         );
 
-        console.log("[oauth/callback] Profile list status:", listRes.status);
         const listData = await listRes.json().catch(() => ({ total: 0, rows: [] }));
-        console.log("[oauth/callback] Profile list total:", listData.total, "rows:", listData.rows?.length ?? 0);
 
         const existing = listData.rows?.[0];
         if (!existing) {
           // Create new profile via Tables API
-          console.log("[oauth/callback] Creating NEW profile for user:", account.$id);
           const rowId = globalThis.crypto?.randomUUID?.().replace(/-/g, "").slice(0, 32)
             ?? `${Date.now()}${Math.random().toString(36).slice(2, 10)}`;
-          const createRes = await fetch(
+          await fetch(
             `${baseEndpoint}/tablesdb/${dbId}/tables/${tableId}/rows`,
             {
               method: "POST",
@@ -181,24 +174,16 @@ export async function GET(request: Request) {
               cache: "no-store",
             }
           );
-          const createBody = await createRes.text().catch(() => "(unreadable)");
-          console.log("[oauth/callback] Create profile result:", createRes.status, createBody);
         } else {
           // Update existing profile with latest Google info (only if fields are empty)
-          console.log("[oauth/callback] Found existing profile:", existing.$id, "current data:", {
-            name: existing.name, firstName: existing.firstName,
-            lastName: existing.lastName, email: existing.email,
-          });
           const updates: Record<string, string> = {};
           if (!existing.name && name) updates.name = name;
           if (!existing.firstName && firstName) updates.firstName = firstName;
           if (!existing.lastName && lastName) updates.lastName = lastName;
           if (!existing.email && email) updates.email = email;
 
-          console.log("[oauth/callback] Updates to apply:", updates);
-
           if (Object.keys(updates).length > 0) {
-            const patchRes = await fetch(
+            await fetch(
               `${baseEndpoint}/tablesdb/${dbId}/tables/${tableId}/rows/${existing.$id}`,
               {
                 method: "PATCH",
@@ -207,17 +192,9 @@ export async function GET(request: Request) {
                 cache: "no-store",
               }
             );
-            const patchBody = await patchRes.text().catch(() => "(unreadable)");
-            console.log("[oauth/callback] Patch profile result:", patchRes.status, patchBody);
-          } else {
-            console.log("[oauth/callback] No updates needed — all fields already populated");
           }
         }
-      } else {
-        console.log("[oauth/callback] Skipping profile upsert — missing env:", { apiKey: !!apiKey, dbId: !!dbId, accountId: account.$id });
       }
-    } else {
-      console.log("[oauth/callback] Account fetch failed:", accountRes.status, await accountRes.text().catch(() => ""));
     }
   } catch (profileError) {
     // Don't block the OAuth flow if profile population fails

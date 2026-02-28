@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { slugify } from "@/lib/slugify";
 import { getSession } from "./auth";
 import {
   addReadPermissions,
@@ -42,14 +43,6 @@ type ProgramRow = {
   imageField?: string | null;
   published: boolean;
 };
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "");
-}
 
 function mapProgram(row: ProgramRow & { $id: string; $createdAt: string; $updatedAt: string }): Program {
   return {

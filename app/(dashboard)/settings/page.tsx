@@ -1,6 +1,7 @@
 ﻿import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { StatusBanner } from "@/components/dashboard/StatusBanner";
 import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
@@ -16,40 +17,13 @@ import { resolveTab, type SettingsTab } from "@/lib/settingsTabs";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
 import type { Gender } from "@/services/types";
+import { type SearchParams, type StatusType, readParam } from "@/lib/pageHelpers";
 
 export const dynamic = "force-dynamic";
-
-type SearchParams = Record<string, string | string[] | undefined>;
-
-type StatusType = "success" | "error";
-
-function readParam(searchParams: SearchParams, key: string): string | undefined {
-  const value = searchParams[key];
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-}
 
 function buildRedirect(status: StatusType, message: string, tab: SettingsTab): never {
   const encoded = encodeURIComponent(message);
   redirect(`/settings?tab=${tab}&status=${status}&message=${encoded}`);
-}
-
-/* ── Status banner ── */
-function StatusBanner({ status, message }: { status?: string; message?: string }) {
-  if (!message) return null;
-  const isError = status === "error";
-  return (
-    <div
-      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${isError
-        ? "border-red-200 bg-red-50 text-red-700"
-        : "border-green-200 bg-green-50 text-green-700"
-        }`}
-    >
-      {message}
-    </div>
-  );
 }
 
 /* ── Form field styling ── */

@@ -8,7 +8,7 @@ import type { Role } from "./types";
 
 const SESSION_COOKIE = "ysp_session";
 
-function isJwt(value: string): boolean {
+export function isJwt(value: string): boolean {
   return value.split(".").length === 3;
 }
 
@@ -33,18 +33,18 @@ type UserProfileRow = {
   assignedChapterId?: string;
 };
 
-function requirePublicEnv(name: string, value?: string): string {
+export function requirePublicEnv(name: string, value?: string): string {
   if (!value) {
     throw new UnexpectedError(`${name} is not configured`);
   }
   return value;
 }
 
-function normalizeEndpoint(endpoint: string): string {
+export function normalizeEndpoint(endpoint: string): string {
   return endpoint.replace(/\/$/, "");
 }
 
-async function getCookieHeader(): Promise<string | null> {
+export async function getCookieHeader(): Promise<string | null> {
   const headerStore = await headers();
   const cookieHeader = headerStore.get("cookie");
   if (cookieHeader) {

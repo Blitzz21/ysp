@@ -1,6 +1,6 @@
 import "server-only";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { z } from "zod";
 
 import {
@@ -13,13 +13,19 @@ import {
   userReadWritePermissions,
 } from "./appwriteClient";
 import {
+  getSession,
+  getCookieHeader,
+  isJwt,
+  normalizeEndpoint,
+  requirePublicEnv,
+} from "./auth";
+import {
   ForbiddenError,
   UnauthorizedError,
   UnexpectedError,
   ValidationError,
 } from "./errors";
 import { fromHttpStatus } from "./errorContract";
-import { getSession } from "./auth";
 import { requireSession } from "./rbac";
 import type { Gender, Role, Sector, UserProfile } from "./types";
 
@@ -220,35 +226,6 @@ export async function updateAvatar(file: File): Promise<UserProfile> {
   const permissions = userReadWritePermissions(session.userId);
   const uploaded = await uploadFile(file, permissions);
   return updateProfile({ avatarFileId: uploaded.$id });
-}
-
-function requirePublicEnv(name: string, value?: string): string {
-  if (!value) {
-    throw new UnexpectedError(`${name} is not configured`);
-  }
-  return value;
-}
-
-function normalizeEndpoint(endpoint: string): string {
-  return endpoint.replace(/\/$/, "");
-}
-
-function isJwt(value: string): boolean {
-  return value.split(".").length === 3;
-}
-
-async function getCookieHeader(): Promise<string | null> {
-  const headerStore = await headers();
-  const cookieHeader = headerStore.get("cookie");
-  if (cookieHeader) {
-    return cookieHeader;
-  }
-  const cookieStore = await cookies();
-  const cookieList = cookieStore.getAll();
-  if (!cookieList.length) {
-    return null;
-  }
-  return cookieList.map(({ name, value }) => `${name}=${value}`).join("; ");
 }
 
 async function getSessionToken(): Promise<string | null> {

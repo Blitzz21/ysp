@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { slugify } from "@/lib/slugify";
 import { getSession } from "./auth";
 import {
   buildEqualQuery,
@@ -107,14 +108,6 @@ function resolveChapterId(
     return chapterId;
   }
   return requireAssignedChapter(active);
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "");
 }
 
 export async function listMyMemberships(): Promise<ChapterMembership[]> {

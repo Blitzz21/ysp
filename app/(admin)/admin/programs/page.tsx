@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { CountedInput, CountedTextarea } from "@/components/admin/CountedField";
+import { StatusBanner } from "@/components/dashboard/StatusBanner";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
   adminListPrograms,
@@ -10,19 +10,9 @@ import {
   updateProgram,
 } from "@/services/programs";
 import type { Program } from "@/services/types";
+import { type SearchParams, readParam, createRedirectBuilder } from "@/lib/pageHelpers";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function readParam(searchParams: SearchParams, key: string): string | undefined {
-  const value = searchParams[key];
-  if (Array.isArray(value)) return value[0];
-  return value;
-}
-
-function buildRedirect(status: "success" | "error", message: string): never {
-  const encoded = encodeURIComponent(message);
-  redirect(`/admin/programs?status=${status}&message=${encoded}`);
-}
+const buildRedirect = createRedirectBuilder("/admin/programs");
 
 function readFile(formData: FormData, key: string): File | undefined {
   const value = formData.get(key);
@@ -101,22 +91,6 @@ async function deleteProgramAction(formData: FormData): Promise<void> {
   revalidatePath("/");
   revalidatePath("/programs");
   buildRedirect("success", "Program deleted.");
-}
-
-function StatusBanner({ status, message }: { status?: string; message?: string }) {
-  if (!message) return null;
-  const isError = status === "error";
-  return (
-    <div
-      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
-        isError
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-green-200 bg-green-50 text-green-700"
-      }`}
-    >
-      {message}
-    </div>
-  );
 }
 
 function ProgramCard({ program }: { program: Program }) {
@@ -277,7 +251,7 @@ export default async function AdminProgramsPage({
         </div>
       </div>
 
-      <StatusBanner status={status} message={message} />
+      <StatusBanner status={status} message={message} className="mb-6" />
 
       <form
         action={createProgramAction}

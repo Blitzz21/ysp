@@ -1,26 +1,16 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-
+import { StatusBanner } from "@/components/dashboard/StatusBanner";
 import { getSession } from "@/services/auth";
 import { listPublicChapters } from "@/services/chapters";
 import { listPublicOpportunities, joinOpportunity } from "@/services/opportunities";
 import { toPublicDomainError } from "@/services/errorContract";
 import type { VolunteerOpportunity } from "@/services/types";
+import { type SearchParams, readParam, createRedirectBuilder } from "@/lib/pageHelpers";
 
 const MANILA_TIMEZONE = "Asia/Manila";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
 type StatusFilter = "all" | "upcoming" | "past";
-
-function readParam(searchParams: SearchParams, key: string): string | undefined {
-  const value = searchParams[key];
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-}
 
 function parseDateValue(value?: string): Date | undefined {
   if (!value) return undefined;
@@ -58,10 +48,7 @@ function getSdgColor(tag: string): string {
   return "bg-orange-500";
 }
 
-function buildRedirect(status: "success" | "error", message: string): never {
-  const encoded = encodeURIComponent(message);
-  redirect(`/volunteer-opportunities?status=${status}&message=${encoded}`);
-}
+const buildRedirect = createRedirectBuilder("/volunteer-opportunities");
 
 async function joinOpportunityAction(formData: FormData): Promise<void> {
   "use server";
@@ -83,21 +70,6 @@ async function joinOpportunityAction(formData: FormData): Promise<void> {
   }
 }
 
-function StatusBanner({ status, message }: { status?: string; message?: string }) {
-  if (!message) return null;
-  const isError = status === "error";
-  return (
-    <div
-      className={`mt-6 rounded-2xl border px-4 py-3 text-sm ${
-        isError
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-green-200 bg-green-50 text-green-700"
-      }`}
-    >
-      {message}
-    </div>
-  );
-}
 
 export const dynamic = "force-dynamic";
 
@@ -257,7 +229,7 @@ export default async function VolunteerOpportunitiesPage(props: {
             </div>
           ) : null}
 
-          <StatusBanner status={statusMessage} message={message} />
+          <StatusBanner status={statusMessage} message={message} className="mt-6" />
 
           {!hasLoadError && opportunities.length === 0 ? (
             <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">

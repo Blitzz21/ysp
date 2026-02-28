@@ -10,6 +10,7 @@ import { toPublicDomainError } from "@/services/errorContract";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { ChapterCardGrid } from "./_components/ChapterCardGrid";
 import type { Chapter, ChapterMembership } from "@/services/types";
+import { type SearchParams, createRedirectBuilder } from "@/lib/pageHelpers";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +18,7 @@ export const dynamic = "force-dynamic";
 /*  Server actions                                                    */
 /* ------------------------------------------------------------------ */
 
-function buildRedirect(status: "success" | "error", message: string): never {
-    const encoded = encodeURIComponent(message);
-    redirect(`/dashboard/member/chapters?status=${status}&message=${encoded}`);
-}
+const buildRedirect = createRedirectBuilder("/dashboard/member/chapters");
 
 async function joinChapterAction(formData: FormData): Promise<void> {
     "use server";
@@ -53,8 +51,6 @@ async function leaveChapterAction(formData: FormData): Promise<void> {
 /* ------------------------------------------------------------------ */
 /*  Page                                                              */
 /* ------------------------------------------------------------------ */
-
-type SearchParams = Record<string, string | string[] | undefined>;
 
 export default async function MemberChaptersPage(props: {
     searchParams?: Promise<SearchParams>;

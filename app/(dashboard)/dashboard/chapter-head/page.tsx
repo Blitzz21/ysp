@@ -1,7 +1,8 @@
-import { redirect } from "next/navigation";
-
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
+
+import { StatusBanner } from "@/components/dashboard/StatusBanner";
 import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
@@ -18,38 +19,9 @@ import {
 } from "@/services/memberships";
 import { getProfileByUserId } from "@/services/profiles";
 import type { ChapterMembership, UserProfile } from "@/services/types";
+import { type SearchParams, readParam, createRedirectBuilder } from "@/lib/pageHelpers";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-type StatusType = "success" | "error";
-
-function readParam(searchParams: SearchParams, key: string): string | undefined {
-  const value = searchParams[key];
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-}
-
-function buildRedirect(status: StatusType, message: string): never {
-  const encoded = encodeURIComponent(message);
-  redirect(`/dashboard/chapter-head?status=${status}&message=${encoded}`);
-}
-
-function StatusBanner({ status, message }: { status?: string; message?: string }) {
-  if (!message) return null;
-  const isError = status === "error";
-  return (
-    <div
-      className={`rounded-2xl border px-4 py-3 text-sm ${isError
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-green-200 bg-green-50 text-green-700"
-        }`}
-    >
-      {message}
-    </div>
-  );
-}
+const buildRedirect = createRedirectBuilder("/dashboard/chapter-head");
 
 async function createRoleAction(formData: FormData): Promise<void> {
   "use server";
