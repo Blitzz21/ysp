@@ -27,6 +27,14 @@ export default defineConfig({
     env: {
       ...process.env,
       E2E_ADMIN_BYPASS: "1",
+      // Forward NEXT_PUBLIC_* vars as their server-side equivalents so
+      // appwriteClient.ts can read them at runtime in the production bundle.
+      ...(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT && !process.env.APPWRITE_ENDPOINT
+        ? { APPWRITE_ENDPOINT: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT }
+        : {}),
+      ...(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID && !process.env.APPWRITE_PROJECT_ID
+        ? { APPWRITE_PROJECT_ID: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID }
+        : {}),
     },
     reuseExistingServer: false,
     timeout: 120_000,
