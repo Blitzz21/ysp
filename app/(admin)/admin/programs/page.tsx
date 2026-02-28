@@ -39,6 +39,7 @@ async function createProgramAction(formData: FormData): Promise<void> {
       imageFile,
     });
   } catch (error) {
+    console.error("[createProgramAction] failed:", error);
     const message = toPublicDomainError(error, "Failed to create program").message;
     buildRedirect("error", message);
   }
@@ -68,6 +69,7 @@ async function updateProgramAction(formData: FormData): Promise<void> {
       imageFile: removeImage ? null : imageFile,
     });
   } catch (error) {
+    console.error("[updateProgramAction] failed:", error);
     const message = toPublicDomainError(error, "Failed to update program").message;
     buildRedirect("error", message);
   }
@@ -84,6 +86,7 @@ async function deleteProgramAction(formData: FormData): Promise<void> {
   try {
     await deleteProgram(id);
   } catch (error) {
+    console.error("[deleteProgramAction] failed:", error);
     const message = toPublicDomainError(error, "Failed to delete program").message;
     buildRedirect("error", message);
   }
@@ -103,11 +106,10 @@ function ProgramCard({ program }: { program: Program }) {
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              program.published
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${program.published
                 ? "bg-green-100 text-green-700"
                 : "bg-gray-100 text-muted"
-            }`}
+              }`}
           >
             {program.published ? "Published" : "Draft"}
           </span>

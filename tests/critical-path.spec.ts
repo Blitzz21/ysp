@@ -11,7 +11,7 @@ const PNG_1X1_B64 =
 
 // Fixed title keeps the visual regression snapshot identical across runs.
 // beforeEach/afterEach hooks ensure no stale programs accumulate in the DB.
-const PROGRAM_TITLE = "E2E YSP Program (Automated)";
+const PROGRAM_TITLE = `E2E YSP Program ${Date.now()}`;
 const PROGRAM_DESC = "Automated E2E test program — safe to delete.";
 
 test.describe("P0: Admin Program Lifecycle + Visual Regression", () => {
