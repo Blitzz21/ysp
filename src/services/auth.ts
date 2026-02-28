@@ -63,7 +63,7 @@ async function getSessionToken(): Promise<string | null> {
   return cookieStore.get(SESSION_COOKIE)?.value ?? null;
 }
 
-async function fetchAccount(): Promise<AccountResponse | null> {
+async function buildAccountHeaders(): Promise<Record<string, string> | null> {
   const endpoint = requirePublicEnv(
     "NEXT_PUBLIC_APPWRITE_ENDPOINT",
     process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT
@@ -75,80 +75,81 @@ async function fetchAccount(): Promise<AccountResponse | null> {
   const token = await getSessionToken();
   const headersInit: Record<string, string> = {
     "X-Appwrite-Project": projectId,
+    __endpoint: normalizeEndpoint(endpoint),
   };
   if (token) {
     headersInit[isJwt(token) ? "X-Appwrite-JWT" : "X-Appwrite-Session"] = token;
-  } else {
-    const cookieHeader = await getCookieHeader();
-    if (!cookieHeader) {
-      return null;
-    }
-    headersInit.cookie = cookieHeader;
+    return headersInit;
   }
-
-  const requestAccount = () =>
-    fetch(`${normalizeEndpoint(endpoint)}/account`, {
-      headers: headersInit,
-      cache: "no-store",
-    });
-
-  async function readAccount(response: Response): Promise<AccountResponse | null> {
-    if (!response.ok) {
-      return null;
-    }
-    const data = (await response.json()) as AccountResponse;
-    return data?.$id ? data : null;
+  const cookieHeader = await getCookieHeader();
+  if (!cookieHeader) {
+    return null;
   }
+  headersInit.cookie = cookieHeader;
+  return headersInit;
+}
 
-  function isUnauthenticatedStatus(status: number): boolean {
-    return status === 401 || status === 403;
-  }
+function isUnauthenticatedStatus(status: number): boolean {
+  return status === 401 || status === 403;
+}
 
-  function isTransientStatus(status: number): boolean {
-    return status === 429 || status >= 500;
-  }
+function isTransientStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
 
-  let response: Response;
+async function fetchWithRetry(url: string, headers: Record<string, string>): Promise<Response> {
   try {
-    response = await requestAccount();
+    return await fetch(url, { headers, cache: "no-store" });
   } catch {
     try {
-      response = await requestAccount();
+      return await fetch(url, { headers, cache: "no-store" });
     } catch {
       throw new UnexpectedError("Authentication service is temporarily unavailable");
     }
   }
+}
 
+async function readAccount(response: Response): Promise<AccountResponse | null> {
+  if (!response.ok) {
+    return null;
+  }
+  const data = (await response.json()) as AccountResponse;
+  return data?.$id ? data : null;
+}
+
+async function fetchAccount(): Promise<AccountResponse | null> {
+  const headersInit = await buildAccountHeaders();
+  if (!headersInit) {
+    return null;
+  }
+
+  const baseEndpoint = headersInit.__endpoint;
+  delete headersInit.__endpoint;
+  const url = `${baseEndpoint}/account`;
+
+  const response = await fetchWithRetry(url, headersInit);
   if (response.ok) {
     return readAccount(response);
   }
-
   if (isUnauthenticatedStatus(response.status)) {
     return null;
   }
-
-  if (isTransientStatus(response.status)) {
-    let retryResponse: Response;
-    try {
-      retryResponse = await requestAccount();
-    } catch {
-      throw new UnexpectedError("Authentication service is temporarily unavailable");
-    }
-
-    if (retryResponse.ok) {
-      return readAccount(retryResponse);
-    }
-    if (isUnauthenticatedStatus(retryResponse.status)) {
-      return null;
-    }
-    if (isTransientStatus(retryResponse.status)) {
-      throw new UnexpectedError(
-        `Authentication service returned ${retryResponse.status} during session validation`
-      );
-    }
+  if (!isTransientStatus(response.status)) {
     return null;
   }
 
+  const retryResponse = await fetchWithRetry(url, headersInit);
+  if (retryResponse.ok) {
+    return readAccount(retryResponse);
+  }
+  if (isUnauthenticatedStatus(retryResponse.status)) {
+    return null;
+  }
+  if (isTransientStatus(retryResponse.status)) {
+    throw new UnexpectedError(
+      `Authentication service returned ${retryResponse.status} during session validation`
+    );
+  }
   return null;
 }
 
@@ -159,9 +160,7 @@ async function fetchUserProfile(userId: string): Promise<UserProfileRow | null> 
   return rows[0] ?? null;
 }
 
-export async function signIn(email: string, password: string): Promise<void> {
-  void email;
-  void password;
+export async function signIn(_email: string, _password: string): Promise<void> {
   throw new Error("Use the client login page to create Appwrite sessions.");
 }
 

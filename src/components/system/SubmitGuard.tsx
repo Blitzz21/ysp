@@ -6,7 +6,7 @@ function markButtonPending(button: HTMLButtonElement | HTMLInputElement) {
   if (button.disabled) return;
   button.disabled = true;
   button.setAttribute("aria-busy", "true");
-  button.setAttribute("data-submitting", "true");
+  button.dataset.submitting = "true";
 }
 
 export function SubmitGuard() {
@@ -14,7 +14,7 @@ export function SubmitGuard() {
     const onSubmit = (event: Event) => {
       const form = event.target;
       if (!(form instanceof HTMLFormElement)) return;
-      if (form.hasAttribute("data-no-submit-guard")) return;
+      if (form.dataset.noSubmitGuard !== undefined) return;
 
       const buttons = form.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
         "button[type='submit'], button:not([type]), input[type='submit']"

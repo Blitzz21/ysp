@@ -110,228 +110,228 @@ export default async function VolunteerOpportunitiesPage(props: {
     ]);
     opportunities = result;
     chapters = chapterList;
-    sdgOptions = [...new Set(allOpportunities.flatMap((item) => item.sdgs))].sort();
+    sdgOptions = [...new Set(allOpportunities.flatMap((item) => item.sdgs))].sort((a, b) => a.localeCompare(b));
   } catch {
     hasLoadError = true;
   }
 
   return (
     <main className="pb-20">
-        <section className="relative overflow-hidden pb-14 pt-12">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#fff4da_0%,#ffffff_45%,#fdf6ef_100%)]"></div>
-          <div className="grid-pattern pointer-events-none absolute inset-0 opacity-40"></div>
-          <div className="mx-auto w-[92%] max-w-6xl">
-            <div className="reveal inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-orange-600 shadow-soft">
-              Opportunities
-            </div>
-            <h1 className="reveal mt-6 font-manrope text-[clamp(2.4rem,5vw,3.8rem)] leading-[1.08]">
-              Volunteer opportunities you can join
-            </h1>
-            <p className="reveal mt-4 max-w-2xl text-muted">
-              Browse active opportunities by chapter, SDG focus, and date range.
-              Dates are shown in Philippine time ({MANILA_TIMEZONE}).
-            </p>
+      <section className="relative overflow-hidden pb-14 pt-12">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#fff4da_0%,#ffffff_45%,#fdf6ef_100%)]"></div>
+        <div className="grid-pattern pointer-events-none absolute inset-0 opacity-40"></div>
+        <div className="mx-auto w-[92%] max-w-6xl">
+          <div className="reveal inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-orange-600 shadow-soft">
+            Opportunities
           </div>
-        </section>
+          <h1 className="reveal mt-6 font-manrope text-[clamp(2.4rem,5vw,3.8rem)] leading-[1.08]">
+            Volunteer opportunities you can join
+          </h1>
+          <p className="reveal mt-4 max-w-2xl text-muted">
+            Browse active opportunities by chapter, SDG focus, and date range.
+            Dates are shown in Philippine time ({MANILA_TIMEZONE}).
+          </p>
+        </div>
+      </section>
 
-        <section className="mx-auto w-[92%] max-w-6xl">
-          <form
-            className="rounded-3xl border border-gray-200 bg-white p-5 shadow-soft md:p-6"
-            method="get"
-          >
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-              <label className="text-sm font-semibold text-ink">
-                Chapter
-                <select
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
-                  name="chapterId"
-                  defaultValue={chapterId ?? ""}
-                >
-                  <option value="">All chapters</option>
-                  {chapters.map((chapter) => (
-                    <option key={chapter.id} value={chapter.id}>
-                      {chapter.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="text-sm font-semibold text-ink">
-                SDG tag
-                <input
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
-                  name="sdg"
-                  defaultValue={sdg ?? ""}
-                  list="sdg-options"
-                  placeholder="e.g. Quality Education"
-                />
-                <datalist id="sdg-options">
-                  {sdgOptions.map((option) => (
-                    <option key={option} value={option} />
-                  ))}
-                </datalist>
-              </label>
-
-              <label className="text-sm font-semibold text-ink">
-                From date
-                <input
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
-                  name="fromDate"
-                  type="date"
-                  defaultValue={fromDateRaw ?? ""}
-                />
-              </label>
-
-              <label className="text-sm font-semibold text-ink">
-                To date
-                <input
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
-                  name="toDate"
-                  type="date"
-                  defaultValue={toDateRaw ?? ""}
-                />
-              </label>
-
-              <label className="text-sm font-semibold text-ink">
-                Status
-                <select
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
-                  name="status"
-                  defaultValue={status}
-                >
-                  <option value="all">All</option>
-                  <option value="upcoming">Upcoming</option>
-                  <option value="past">Past</option>
-                </select>
-              </label>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <button
-                className="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600"
-                type="submit"
+      <section className="mx-auto w-[92%] max-w-6xl">
+        <form
+          className="rounded-3xl border border-gray-200 bg-white p-5 shadow-soft md:p-6"
+          method="get"
+        >
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <label className="text-sm font-semibold text-ink">
+              Chapter
+              <select
+                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
+                name="chapterId"
+                defaultValue={chapterId ?? ""}
               >
-                Apply filters
-              </button>
-              <Link
-                className="rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-                href="/volunteer-opportunities"
+                <option value="">All chapters</option>
+                {chapters.map((chapter) => (
+                  <option key={chapter.id} value={chapter.id}>
+                    {chapter.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-sm font-semibold text-ink">
+              SDG tag
+              <input
+                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
+                name="sdg"
+                defaultValue={sdg ?? ""}
+                list="sdg-options"
+                placeholder="e.g. Quality Education"
+              />
+              <datalist id="sdg-options">
+                {sdgOptions.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
+            </label>
+
+            <label className="text-sm font-semibold text-ink">
+              From date
+              <input
+                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
+                name="fromDate"
+                type="date"
+                defaultValue={fromDateRaw ?? ""}
+              />
+            </label>
+
+            <label className="text-sm font-semibold text-ink">
+              To date
+              <input
+                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
+                name="toDate"
+                type="date"
+                defaultValue={toDateRaw ?? ""}
+              />
+            </label>
+
+            <label className="text-sm font-semibold text-ink">
+              Status
+              <select
+                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink"
+                name="status"
+                defaultValue={status}
               >
-                Reset
-              </Link>
-            </div>
-          </form>
+                <option value="all">All</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="past">Past</option>
+              </select>
+            </label>
+          </div>
 
-          {hasLoadError ? (
-            <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-              Opportunities are temporarily unavailable. Please try again in a
-              few minutes.
-            </div>
-          ) : null}
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <button
+              className="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600"
+              type="submit"
+            >
+              Apply filters
+            </button>
+            <Link
+              className="rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+              href="/volunteer-opportunities"
+            >
+              Reset
+            </Link>
+          </div>
+        </form>
 
-          <StatusBanner status={statusMessage} message={message} className="mt-6" />
+        {hasLoadError ? (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+            Opportunities are temporarily unavailable. Please try again in a
+            few minutes.
+          </div>
+        ) : null}
 
-          {!hasLoadError && opportunities.length === 0 ? (
-            <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">
-              No opportunities match your current filters.
-            </div>
-          ) : null}
+        <StatusBanner status={statusMessage} message={message} className="mt-6" />
 
-          {!hasLoadError && opportunities.length > 0 ? (
-            <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {opportunities.map((opportunity) => (
-                <article
-                  key={opportunity.id}
-                  className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
-                >
-                  <div className="h-28 rounded-2xl bg-[linear-gradient(135deg,#FFE9C7_0%,#FF7A1A_90%)]"></div>
-                  <h2 className="mt-4 font-manrope text-xl font-semibold">
-                    {opportunity.title}
-                  </h2>
-                  <p className="mt-2 text-sm text-muted">{opportunity.description}</p>
-                  <p className="mt-3 text-xs font-semibold uppercase tracking-[0.08em] text-orange-600">
-                    {formatEventDate(opportunity.eventDate)}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-white">
-                    {opportunity.sdgs.length > 0 ? (
-                      opportunity.sdgs.map((tag) => (
-                        <span
-                          key={`${opportunity.id}-${tag}`}
-                          className={`rounded-full px-2 py-1 ${getSdgColor(tag)}`}
-                        >
-                          {tag}
+        {!hasLoadError && opportunities.length === 0 ? (
+          <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">
+            No opportunities match your current filters.
+          </div>
+        ) : null}
+
+        {!hasLoadError && opportunities.length > 0 ? (
+          <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {opportunities.map((opportunity) => (
+              <article
+                key={opportunity.id}
+                className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
+              >
+                <div className="h-28 rounded-2xl bg-[linear-gradient(135deg,#FFE9C7_0%,#FF7A1A_90%)]"></div>
+                <h2 className="mt-4 font-manrope text-xl font-semibold">
+                  {opportunity.title}
+                </h2>
+                <p className="mt-2 text-sm text-muted">{opportunity.description}</p>
+                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.08em] text-orange-600">
+                  {formatEventDate(opportunity.eventDate)}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-white">
+                  {opportunity.sdgs.length > 0 ? (
+                    opportunity.sdgs.map((tag) => (
+                      <span
+                        key={`${opportunity.id}-${tag}`}
+                        className={`rounded-full px-2 py-1 ${getSdgColor(tag)}`}
+                      >
+                        {tag}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="rounded-full bg-gray-400 px-2 py-1">No SDG tags</span>
+                  )}
+                </div>
+                {(() => {
+                  const capacity = Math.max(0, opportunity.capacity);
+                  const current = Math.max(0, opportunity.currentVolunteers);
+                  const hasCapacity = capacity > 0;
+                  const isFull = hasCapacity && current >= capacity;
+                  const ratio = hasCapacity ? Math.min(current / capacity, 1) : 0;
+                  return (
+                    <div className="mt-5">
+                      <div className="flex items-center justify-between text-xs font-semibold text-ink">
+                        <span>
+                          {hasCapacity
+                            ? `${current} / ${capacity} volunteers`
+                            : `${current} volunteers`}
                         </span>
-                      ))
-                    ) : (
-                      <span className="rounded-full bg-gray-400 px-2 py-1">No SDG tags</span>
-                    )}
-                  </div>
-                  {(() => {
-                    const capacity = Math.max(0, opportunity.capacity);
-                    const current = Math.max(0, opportunity.currentVolunteers);
-                    const hasCapacity = capacity > 0;
-                    const isFull = hasCapacity && current >= capacity;
-                    const ratio = hasCapacity ? Math.min(current / capacity, 1) : 0;
-                    return (
-                      <div className="mt-5">
-                        <div className="flex items-center justify-between text-xs font-semibold text-ink">
-                          <span>
-                            {hasCapacity
-                              ? `${current} / ${capacity} volunteers`
-                              : `${current} volunteers`}
-                          </span>
-                          <span className="text-muted">
-                            {hasCapacity
-                              ? isFull
-                                ? opportunity.waitlistEnabled
-                                  ? "Waitlist open"
-                                  : "Full"
-                                : `${capacity - current} spots left`
-                              : "Open"}
-                          </span>
-                        </div>
-                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
-                          <div
-                            className="h-full rounded-full bg-orange-500 transition-all"
-                            style={{ width: `${Math.round(ratio * 100)}%` }}
-                          />
-                        </div>
-                        {isAuthenticated ? (
-                          <form action={joinOpportunityAction} className="mt-4">
-                            <input type="hidden" name="id" value={opportunity.id} />
-                            <button
-                              type="submit"
-                              className="w-full rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
-                              disabled={isFull && !opportunity.waitlistEnabled}
-                            >
-                              {isFull
-                                ? opportunity.waitlistEnabled
-                                  ? "Join waitlist"
-                                  : "Full"
-                                : "Join opportunity"}
-                            </button>
-                          </form>
-                        ) : (
-                          <div className="mt-4">
-                            <Link
-                              href="/login"
-                              className="block w-full rounded-full border border-orange-200 bg-white px-4 py-2 text-center text-sm font-semibold text-orange-600 shadow-soft transition hover:border-orange-300 hover:text-orange-700"
-                            >
-                              Sign in to join
-                            </Link>
-                            <p className="mt-2 text-center text-xs text-muted">
-                              Create an account to join opportunities.
-                            </p>
-                          </div>
-                        )}
+                        <span className="text-muted">
+                          {hasCapacity
+                            ? isFull
+                              ? opportunity.waitlistEnabled
+                                ? "Waitlist open"
+                                : "Full"
+                              : `${capacity - current} spots left`
+                            : "Open"}
+                        </span>
                       </div>
-                    );
-                  })()}
-                </article>
-              ))}
-            </div>
-          ) : null}
-        </section>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className="h-full rounded-full bg-orange-500 transition-all"
+                          style={{ width: `${Math.round(ratio * 100)}%` }}
+                        />
+                      </div>
+                      {isAuthenticated ? (
+                        <form action={joinOpportunityAction} className="mt-4">
+                          <input type="hidden" name="id" value={opportunity.id} />
+                          <button
+                            type="submit"
+                            className="w-full rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+                            disabled={isFull && !opportunity.waitlistEnabled}
+                          >
+                            {isFull
+                              ? opportunity.waitlistEnabled
+                                ? "Join waitlist"
+                                : "Full"
+                              : "Join opportunity"}
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="mt-4">
+                          <Link
+                            href="/login"
+                            className="block w-full rounded-full border border-orange-200 bg-white px-4 py-2 text-center text-sm font-semibold text-orange-600 shadow-soft transition hover:border-orange-300 hover:text-orange-700"
+                          >
+                            Sign in to join
+                          </Link>
+                          <p className="mt-2 text-center text-xs text-muted">
+                            Create an account to join opportunities.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </section>
     </main>
   );
 }

@@ -15,6 +15,24 @@ type ChapterModalProps = {
 
 type PendingAction = "join" | "rejoin" | "leave" | null;
 
+function getConfirmTitle(action: PendingAction): string {
+    if (action === "leave") return "Leave Chapter";
+    if (action === "rejoin") return "Rejoin Chapter";
+    return "Join Chapter";
+}
+
+function getConfirmMessage(action: PendingAction, chapterName: string): string {
+    if (action === "leave") return `Are you sure you want to leave ${chapterName}? You can rejoin later.`;
+    if (action === "rejoin") return `Are you sure you want to rejoin ${chapterName}?`;
+    return `Are you sure you want to join ${chapterName}?`;
+}
+
+function getStatusColor(status: string): string {
+    if (status === "active") return "text-emerald-600";
+    if (status === "pending") return "text-amber-600";
+    return "text-red-500";
+}
+
 export function ChapterModal({
     chapter,
     membership,
@@ -171,12 +189,7 @@ export function ChapterModal({
                         {membership && (
                             <div className="mt-4 text-xs text-muted">
                                 Status:{" "}
-                                <span className={`font-semibold ${membership.status === "active"
-                                    ? "text-emerald-600"
-                                    : membership.status === "pending"
-                                        ? "text-amber-600"
-                                        : "text-red-500"
-                                    }`}>
+                                <span className={`font-semibold ${getStatusColor(membership.status)}`}>
                                     {membership.status.charAt(0).toUpperCase() + membership.status.slice(1)}
                                 </span>
                                 {" · "}
@@ -226,15 +239,9 @@ export function ChapterModal({
             {/* ── Confirm Modal ── */}
             {pendingAction && (
                 <ConfirmModal
-                    title={pendingAction === "leave" ? "Leave Chapter" : pendingAction === "rejoin" ? "Rejoin Chapter" : "Join Chapter"}
-                    message={
-                        pendingAction === "leave"
-                            ? `Are you sure you want to leave ${chapter.name}? You can rejoin later.`
-                            : pendingAction === "rejoin"
-                                ? `Are you sure you want to rejoin ${chapter.name}?`
-                                : `Are you sure you want to join ${chapter.name}?`
-                    }
-                    confirmLabel={pendingAction === "leave" ? "Leave Chapter" : pendingAction === "rejoin" ? "Rejoin Chapter" : "Join Chapter"}
+                    title={getConfirmTitle(pendingAction)}
+                    message={getConfirmMessage(pendingAction, chapter.name)}
+                    confirmLabel={getConfirmTitle(pendingAction)}
                     variant={pendingAction === "leave" ? "danger" : "primary"}
                     onConfirm={handleConfirm}
                     onCancel={() => setPendingAction(null)}

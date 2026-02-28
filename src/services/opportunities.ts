@@ -139,6 +139,58 @@ function sortDeterministically(values: VolunteerOpportunity[]): VolunteerOpportu
   });
 }
 
+type DateBounds = { fromDate?: Date; toDate?: Date };
+
+function resolveDateBounds(
+  status: "all" | "upcoming" | "past",
+  fromDate?: Date,
+  toDate?: Date
+): DateBounds {
+  const now = new Date();
+  let resolved: DateBounds = { fromDate, toDate };
+  if (status === "upcoming") {
+    resolved.fromDate = fromDate && fromDate.getTime() > now.getTime() ? fromDate : now;
+  } else if (status === "past") {
+    resolved.toDate = toDate && toDate.getTime() < now.getTime() ? toDate : now;
+  }
+  return resolved;
+}
+
+function matchesOpportunityFilter(
+  item: VolunteerOpportunity,
+  chapterId?: string,
+  normalizedSdg?: string,
+  fromTime?: number,
+  toTime?: number
+): boolean {
+  if (!item.published) return false;
+  if (chapterId && item.chapterId !== chapterId) return false;
+  if (normalizedSdg && !item.sdgs.some((tag) => tag.toLowerCase().includes(normalizedSdg))) {
+    return false;
+  }
+  const eventTime = new Date(item.eventDate).getTime();
+  if (Number.isNaN(eventTime)) return false;
+  if (fromTime !== undefined && eventTime < fromTime) return false;
+  if (toTime !== undefined && eventTime > toTime) return false;
+  return true;
+}
+
+function buildPublishedQueries(
+  chapterId?: string,
+  fromDate?: Date,
+  toDate?: Date,
+  sdg?: string
+): string[] {
+  const queries = [buildEqualQuery(PUBLISHED_FIELD, true)];
+  if (chapterId) queries.push(buildEqualQuery("chapterId", chapterId));
+  if (fromDate) queries.push(buildGreaterThanEqualQuery("eventData", fromDate.toISOString()));
+  if (toDate) queries.push(buildLessThanEqualQuery("eventData", toDate.toISOString()));
+  if (sdg) queries.push(buildSearchQuery("sdgs", sdg));
+  queries.push(buildOrderAsc("eventData"));
+  queries.push(buildOrderAsc("$createdAt"));
+  return queries;
+}
+
 export async function listPublishedOpportunities(params?: {
   chapterId?: string;
   fromDate?: Date;
@@ -151,37 +203,14 @@ export async function listPublishedOpportunities(params?: {
     throw new ValidationError("Invalid opportunity query");
   }
 
-  const now = new Date();
   const status = parsed.data.status ?? "all";
-  let fromDate = parsed.data.fromDate;
-  let toDate = parsed.data.toDate;
-
-  if (status === "upcoming") {
-    fromDate =
-      fromDate && fromDate.getTime() > now.getTime() ? fromDate : now;
-  } else if (status === "past") {
-    toDate = toDate && toDate.getTime() < now.getTime() ? toDate : now;
-  }
+  const { fromDate, toDate } = resolveDateBounds(status, parsed.data.fromDate, parsed.data.toDate);
 
   if (fromDate && toDate && fromDate.getTime() > toDate.getTime()) {
     return [];
   }
 
-  const queries = [buildEqualQuery(PUBLISHED_FIELD, true)];
-  if (parsed.data.chapterId) {
-    queries.push(buildEqualQuery("chapterId", parsed.data.chapterId));
-  }
-  if (fromDate) {
-    queries.push(buildGreaterThanEqualQuery("eventData", fromDate.toISOString()));
-  }
-  if (toDate) {
-    queries.push(buildLessThanEqualQuery("eventData", toDate.toISOString()));
-  }
-  if (parsed.data.sdg) {
-    queries.push(buildSearchQuery("sdgs", parsed.data.sdg));
-  }
-  queries.push(buildOrderAsc("eventData"));
-  queries.push(buildOrderAsc("$createdAt"));
+  const queries = buildPublishedQueries(parsed.data.chapterId, fromDate, toDate, parsed.data.sdg);
 
   try {
     const rows = await listRows<OpportunityRow>(TABLE_ID, queries);
@@ -201,24 +230,7 @@ export async function listPublishedOpportunities(params?: {
     return sortDeterministically(
       rows
         .map(mapOpportunity)
-        .filter((item) => {
-          if (!item.published) return false;
-          if (parsed.data.chapterId && item.chapterId !== parsed.data.chapterId) {
-            return false;
-          }
-          if (
-            normalizedSdg &&
-            !item.sdgs.some((tag) => tag.toLowerCase().includes(normalizedSdg))
-          ) {
-            return false;
-          }
-
-          const eventTime = new Date(item.eventDate).getTime();
-          if (Number.isNaN(eventTime)) return false;
-          if (fromTime !== undefined && eventTime < fromTime) return false;
-          if (toTime !== undefined && eventTime > toTime) return false;
-          return true;
-        })
+        .filter((item) => matchesOpportunityFilter(item, parsed.data.chapterId, normalizedSdg, fromTime, toTime))
     );
   }
 }

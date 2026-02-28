@@ -109,98 +109,118 @@ export async function GET(request: Request) {
   });
 
   // ── Populate user profile from Google account data ──
+  await populateUserProfile(baseEndpoint, projectId, resolvedToken.token);
+
+  return NextResponse.redirect(new URL(nextPath, origin));
+}
+
+async function populateUserProfile(
+  baseEndpoint: string,
+  projectId: string,
+  token: string
+): Promise<void> {
   try {
-    const accountHeaders = buildTokenHeaders(projectId, resolvedToken.token, "application/json");
+    const accountHeaders = buildTokenHeaders(projectId, token, "application/json");
     const accountRes = await fetch(`${baseEndpoint}/account`, {
       method: "GET",
       headers: accountHeaders,
       cache: "no-store",
     });
 
-    if (accountRes.ok) {
-      const account = await accountRes.json();
-      const name = account.name ?? "";
-      const email = account.email ?? "";
-      const nameParts = name.split(" ");
-      const firstName = nameParts[0] ?? "";
-      const lastName = nameParts.slice(1).join(" ") ?? "";
+    if (!accountRes.ok) return;
 
-      // Use the admin API key to upsert user_profiles via Appwrite Tables API
-      const apiKey = process.env.APPWRITE_API_KEY;
-      const dbId = process.env.APPWRITE_DATABASE_ID;
-      if (apiKey && dbId && account.$id) {
-        const tableId = "user_profiles";
-        const adminHeaders = {
-          "X-Appwrite-Project": projectId,
-          "X-Appwrite-Key": apiKey,
-          "Content-Type": "application/json",
-        };
+    const account = await accountRes.json();
+    const name: string = account.name ?? "";
+    const email: string = account.email ?? "";
+    const nameParts = name.split(" ");
+    const firstName = nameParts[0] ?? "";
+    const lastName = nameParts.slice(1).join(" ") ?? "";
 
-        // Check if profile already exists using the Tables API query format
-        const query = JSON.stringify({ method: "equal", attribute: "userId", values: [account.$id] });
-        const listRes = await fetch(
-          `${baseEndpoint}/tablesdb/${dbId}/tables/${tableId}/rows?queries[]=${encodeURIComponent(query)}`,
-          { headers: adminHeaders, cache: "no-store" }
-        );
+    const apiKey = process.env.APPWRITE_API_KEY;
+    const dbId = process.env.APPWRITE_DATABASE_ID;
+    if (!apiKey || !dbId || !account.$id) return;
 
-        const listData = await listRes.json().catch(() => ({ total: 0, rows: [] }));
+    const tableId = "user_profiles";
+    const adminHeaders = {
+      "X-Appwrite-Project": projectId,
+      "X-Appwrite-Key": apiKey,
+      "Content-Type": "application/json",
+    };
 
-        const existing = listData.rows?.[0];
-        if (!existing) {
-          // Create new profile via Tables API
-          const rowId = globalThis.crypto?.randomUUID?.().replace(/-/g, "").slice(0, 32)
-            ?? `${Date.now()}${Math.random().toString(36).slice(2, 10)}`;
-          await fetch(
-            `${baseEndpoint}/tablesdb/${dbId}/tables/${tableId}/rows`,
-            {
-              method: "POST",
-              headers: adminHeaders,
-              body: JSON.stringify({
-                rowId,
-                row_id: rowId,
-                data: {
-                  userId: account.$id,
-                  role: "member",
-                  name,
-                  firstName,
-                  lastName,
-                  email,
-                },
-                permissions: [
-                  `read("user:${account.$id}")`,
-                  `update("user:${account.$id}")`,
-                ],
-              }),
-              cache: "no-store",
-            }
-          );
-        } else {
-          // Update existing profile with latest Google info (only if fields are empty)
-          const updates: Record<string, string> = {};
-          if (!existing.name && name) updates.name = name;
-          if (!existing.firstName && firstName) updates.firstName = firstName;
-          if (!existing.lastName && lastName) updates.lastName = lastName;
-          if (!existing.email && email) updates.email = email;
+    const query = JSON.stringify({ method: "equal", attribute: "userId", values: [account.$id] });
+    const listRes = await fetch(
+      `${baseEndpoint}/tablesdb/${dbId}/tables/${tableId}/rows?queries[]=${encodeURIComponent(query)}`,
+      { headers: adminHeaders, cache: "no-store" }
+    );
+    const listData = await listRes.json().catch(() => ({ total: 0, rows: [] }));
+    const existing = listData.rows?.[0];
 
-          if (Object.keys(updates).length > 0) {
-            await fetch(
-              `${baseEndpoint}/tablesdb/${dbId}/tables/${tableId}/rows/${existing.$id}`,
-              {
-                method: "PATCH",
-                headers: adminHeaders,
-                body: JSON.stringify({ data: updates }),
-                cache: "no-store",
-              }
-            );
-          }
-        }
-      }
+    if (!existing) {
+      await createNewProfile(baseEndpoint, dbId, tableId, adminHeaders, account.$id, { name, firstName, lastName, email });
+    } else {
+      await updateExistingProfile(baseEndpoint, dbId, tableId, adminHeaders, existing, { name, firstName, lastName, email });
     }
   } catch (profileError) {
-    // Don't block the OAuth flow if profile population fails
     console.error("[oauth/callback] Profile population failed:", profileError);
   }
-
-  return NextResponse.redirect(new URL(nextPath, origin));
 }
 
+async function createNewProfile(
+  baseEndpoint: string,
+  dbId: string,
+  tableId: string,
+  adminHeaders: Record<string, string>,
+  accountId: string,
+  profile: { name: string; firstName: string; lastName: string; email: string }
+): Promise<void> {
+  const rowId = globalThis.crypto?.randomUUID?.().replace(/-/g, "").slice(0, 32)
+    ?? `${Date.now()}${Math.random().toString(36).slice(2, 10)}`;
+  await fetch(
+    `${baseEndpoint}/tablesdb/${dbId}/tables/${tableId}/rows`,
+    {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({
+        rowId,
+        row_id: rowId,
+        data: {
+          userId: accountId,
+          role: "member",
+          ...profile,
+        },
+        permissions: [
+          `read("user:${accountId}")`,
+          `update("user:${accountId}")`,
+        ],
+      }),
+      cache: "no-store",
+    }
+  );
+}
+
+async function updateExistingProfile(
+  baseEndpoint: string,
+  dbId: string,
+  tableId: string,
+  adminHeaders: Record<string, string>,
+  existing: Record<string, string>,
+  profile: { name: string; firstName: string; lastName: string; email: string }
+): Promise<void> {
+  const updates: Record<string, string> = {};
+  if (!existing.name && profile.name) updates.name = profile.name;
+  if (!existing.firstName && profile.firstName) updates.firstName = profile.firstName;
+  if (!existing.lastName && profile.lastName) updates.lastName = profile.lastName;
+  if (!existing.email && profile.email) updates.email = profile.email;
+
+  if (Object.keys(updates).length > 0) {
+    await fetch(
+      `${baseEndpoint}/tablesdb/${dbId}/tables/${tableId}/rows/${existing.$id}`,
+      {
+        method: "PATCH",
+        headers: adminHeaders,
+        body: JSON.stringify({ data: updates }),
+        cache: "no-store",
+      }
+    );
+  }
+}

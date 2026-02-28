@@ -40,6 +40,89 @@ type AppwriteAccount = {
   $id?: string;
 };
 
+async function auditAndFail(
+  ip: string,
+  email: string | undefined,
+  reason: string,
+  error: string,
+  code: string,
+  status: number,
+  headers?: Record<string, string>
+): Promise<Response> {
+  await writeAuthAudit({ event: "signup", status: "failure", ip, email, reason });
+  return NextResponse.json({ error, code }, { status, headers });
+}
+
+function checkRateLimit(
+  key: string,
+  limit: number,
+  windowMs: number
+): { allowed: boolean; retryHeaders?: Record<string, string> } {
+  const result = takeRateLimit({ key, limit, windowMs });
+  if (result.allowed) return { allowed: true };
+  return {
+    allowed: false,
+    retryHeaders: result.retryAfterSeconds
+      ? { "Retry-After": String(result.retryAfterSeconds) }
+      : undefined,
+  };
+}
+
+async function createSignupProfile(
+  accountId: string,
+  body: SignupPayload,
+  name: string,
+  firstName: string | undefined,
+  lastName: string | undefined,
+  email: string
+): Promise<void> {
+  try {
+    await createRow(
+      "user_profiles",
+      {
+        userId: accountId,
+        role: "member",
+        name,
+        firstName,
+        lastName,
+        email,
+        age: body.age,
+        birthdate: body.birthdate,
+        phone: body.phone,
+        facebookUrl: body.facebookUrl,
+        registeredVoter: body.registeredVoter ?? false,
+        householdSize: body.householdSize,
+        householdVoters: body.householdVoters,
+        sector: body.sector,
+        sectorOther: body.sectorOther,
+        newsletterSubscribed: body.newsletterSubscribed ?? false,
+        privacyConsent: body.privacyConsent ?? false,
+      },
+      userReadPermissions(accountId)
+    );
+  } catch {
+    // Do not block signup if profile row creation fails.
+  }
+
+  if (body.chapterId) {
+    try {
+      await createRow(
+        "chapter_memberships",
+        {
+          userId: accountId,
+          chapterId: body.chapterId,
+          role: "member",
+          status: "pending",
+          joinedAt: new Date().toISOString(),
+        },
+        userReadPermissions(accountId)
+      );
+    } catch {
+      // Do not block signup if chapter join fails.
+    }
+  }
+}
+
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as SignupPayload;
   const email = body.email?.trim();
@@ -50,87 +133,29 @@ export async function POST(request: Request) {
   const lastName = body.lastName?.trim();
   const ip = extractClientIp(request);
 
-  const ipLimit = takeRateLimit({ key: `signup:ip:${ip}`, limit: 10, windowMs: 10 * 60 * 1000 });
-  if (!ipLimit.allowed) {
-    await writeAuthAudit({
-      event: "signup",
-      status: "failure",
-      ip,
-      email,
-      reason: "rate_limit_ip",
-    });
-    return NextResponse.json(
-      { error: "Too many signup attempts. Please wait and try again.", code: "rate_limited" },
-      {
-        status: 429,
-        headers: ipLimit.retryAfterSeconds
-          ? { "Retry-After": String(ipLimit.retryAfterSeconds) }
-          : undefined,
-      }
-    );
+  const ipCheck = checkRateLimit(`signup:ip:${ip}`, 10, 10 * 60 * 1000);
+  if (!ipCheck.allowed) {
+    return auditAndFail(ip, email, "rate_limit_ip", "Too many signup attempts. Please wait and try again.", "rate_limited", 429, ipCheck.retryHeaders);
   }
 
   if (email) {
-    const emailLimit = takeRateLimit({
-      key: `signup:email:${email.toLowerCase()}`,
-      limit: 4,
-      windowMs: 10 * 60 * 1000,
-    });
-    if (!emailLimit.allowed) {
-      await writeAuthAudit({
-        event: "signup",
-        status: "failure",
-        ip,
-        email,
-        reason: "rate_limit_email",
-      });
-      return NextResponse.json(
-        { error: "Too many signup attempts. Please wait and try again.", code: "rate_limited" },
-        {
-          status: 429,
-          headers: emailLimit.retryAfterSeconds
-            ? { "Retry-After": String(emailLimit.retryAfterSeconds) }
-            : undefined,
-        }
-      );
+    const emailCheck = checkRateLimit(`signup:email:${email.toLowerCase()}`, 4, 10 * 60 * 1000);
+    if (!emailCheck.allowed) {
+      return auditAndFail(ip, email, "rate_limit_email", "Too many signup attempts. Please wait and try again.", "rate_limited", 429, emailCheck.retryHeaders);
     }
   }
 
   if (!email || !password || !confirmPassword || !name) {
-    await writeAuthAudit({
-      event: "signup",
-      status: "failure",
-      ip,
-      email,
-      reason: "missing_fields",
-    });
-    return NextResponse.json(
-      { error: "Name, email, password, and confirm password are required", code: "validation" },
-      { status: 400 }
-    );
+    return auditAndFail(ip, email, "missing_fields", "Name, email, password, and confirm password are required", "validation", 400);
   }
   if (password !== confirmPassword) {
-    await writeAuthAudit({
-      event: "signup",
-      status: "failure",
-      ip,
-      email,
-      reason: "password_mismatch",
-    });
-    return NextResponse.json({ error: "Passwords do not match", code: "validation" }, { status: 400 });
+    return auditAndFail(ip, email, "password_mismatch", "Passwords do not match", "validation", 400);
   }
 
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   if (!endpoint || !projectId) {
-    await writeAuthAudit({
-      event: "signup",
-      status: "failure",
-      ip,
-      email,
-      reason: "appwrite_not_configured",
-    });
-    return NextResponse.json({ error: "Appwrite is not configured", code: "unexpected" }, { status: 500 });
+    return auditAndFail(ip, email, "appwrite_not_configured", "Appwrite is not configured", "unexpected", 500);
   }
 
   const baseEndpoint = normalizeEndpoint(endpoint);
@@ -140,125 +165,43 @@ export async function POST(request: Request) {
       "Content-Type": "application/json",
       "X-Appwrite-Project": projectId,
     },
-    body: JSON.stringify({
-      userId: "unique()",
-      email,
-      password,
-      name,
-    }),
+    body: JSON.stringify({ userId: "unique()", email, password, name }),
   });
 
   if (!createResponse.ok) {
     const payload = await createResponse.json().catch(() => null);
     const normalized = fromHttpStatus(createResponse.status, payload?.message);
-    await writeAuthAudit({
-      event: "signup",
-      status: "failure",
-      ip,
-      email,
-      reason: normalized.code,
-    });
-    return NextResponse.json(
-      { error: normalized.message, code: normalized.code },
-      { status: createResponse.status }
-    );
+    return auditAndFail(ip, email, normalized.code, normalized.message, normalized.code, createResponse.status);
   }
 
   const sessionResponse = await fetch(`${baseEndpoint}/account/sessions/email`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Appwrite-Project": projectId,
-    },
+    headers: { "Content-Type": "application/json", "X-Appwrite-Project": projectId },
     body: JSON.stringify({ email, password }),
   });
 
   if (!sessionResponse.ok) {
     const payload = await sessionResponse.json().catch(() => null);
     const normalized = fromHttpStatus(sessionResponse.status, payload?.message);
-    await writeAuthAudit({
-      event: "signup",
-      status: "failure",
-      ip,
-      email,
-      reason: `session_${normalized.code}`,
-    });
-    return NextResponse.json(
-      { error: normalized.message, code: normalized.code },
-      { status: sessionResponse.status }
-    );
+    return auditAndFail(ip, email, `session_${normalized.code}`, normalized.message, normalized.code, sessionResponse.status);
   }
 
   const resolvedToken = await resolveSessionToken(sessionResponse, baseEndpoint, projectId);
   if (!resolvedToken) {
-    await writeAuthAudit({
-      event: "signup",
-      status: "failure",
-      ip,
-      email,
-      reason: "missing_session_token",
-    });
-    return NextResponse.json({ error: "Session token missing", code: "unexpected" }, { status: 500 });
+    return auditAndFail(ip, email, "missing_session_token", "Session token missing", "unexpected", 500);
   }
 
   const verificationUrl = `${resolveCanonicalOrigin(request)}/verify-email`;
   const verificationResponse = await fetch(`${baseEndpoint}/account/verification`, {
     method: "POST",
     headers: buildTokenHeaders(projectId, resolvedToken.token, "application/json"),
-    body: JSON.stringify({
-      url: verificationUrl,
-    }),
+    body: JSON.stringify({ url: verificationUrl }),
   });
 
   const createdAccount = (await createResponse.json().catch(() => null)) as AppwriteAccount | null;
   const accountId = createdAccount?.$id ?? null;
   if (accountId) {
-    try {
-      await createRow(
-        "user_profiles",
-        {
-          userId: accountId,
-          role: "member",
-          name,
-          firstName,
-          lastName,
-          email,
-          age: body.age,
-          birthdate: body.birthdate,
-          phone: body.phone,
-          facebookUrl: body.facebookUrl,
-          registeredVoter: body.registeredVoter ?? false,
-          householdSize: body.householdSize,
-          householdVoters: body.householdVoters,
-          sector: body.sector,
-          sectorOther: body.sectorOther,
-          newsletterSubscribed: body.newsletterSubscribed ?? false,
-          privacyConsent: body.privacyConsent ?? false,
-        },
-        userReadPermissions(accountId)
-      );
-    } catch {
-      // Do not block signup if profile row creation fails.
-    }
-
-    // Create pending chapter membership if a chapter was selected
-    if (body.chapterId) {
-      try {
-        await createRow(
-          "chapter_memberships",
-          {
-            userId: accountId,
-            chapterId: body.chapterId,
-            role: "member",
-            status: "pending",
-            joinedAt: new Date().toISOString(),
-          },
-          userReadPermissions(accountId)
-        );
-      } catch {
-        // Do not block signup if chapter join fails.
-      }
-    }
+    await createSignupProfile(accountId, body, name, firstName, lastName, email);
   }
 
   const cookieStore = await cookies();

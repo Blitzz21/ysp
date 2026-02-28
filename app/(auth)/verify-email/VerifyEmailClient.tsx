@@ -69,7 +69,7 @@ export default function VerifyEmailClient() {
     if (hasLinkParams) {
       return;
     }
-    void syncVerificationStatus();
+    syncVerificationStatus().then(() => { });
   }, [hasLinkParams, syncVerificationStatus]);
 
   useEffect(() => {
@@ -78,17 +78,17 @@ export default function VerifyEmailClient() {
     }
 
     const onFocus = () => {
-      void syncVerificationStatus();
+      syncVerificationStatus().then(() => { });
     };
 
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        void syncVerificationStatus();
+        syncVerificationStatus().then(() => { });
       }
     };
 
     const intervalId = window.setInterval(() => {
-      void syncVerificationStatus();
+      syncVerificationStatus().then(() => { });
     }, 2500);
 
     window.addEventListener("focus", onFocus);
@@ -147,7 +147,7 @@ export default function VerifyEmailClient() {
       }
     };
 
-    void run();
+    run().then(() => { });
   }, [hasLinkParams, secret, userId]);
 
   async function handleResend() {

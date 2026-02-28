@@ -20,27 +20,27 @@ export default function ResetPasswordClient() {
   const userId = searchParams.get("userId") ?? "";
   const secret = searchParams.get("secret") ?? "";
 
+  async function submitPasswordReset(): Promise<string> {
+    const response = await fetch("/api/auth/recovery/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, secret, password, confirmPassword }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error ?? "Could not reset password.");
+    }
+    return "Password updated successfully. Redirecting to login...";
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
     setMessage(null);
     try {
-      const response = await fetch("/api/auth/recovery/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          secret,
-          password,
-          confirmPassword,
-        }),
-      });
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error ?? "Could not reset password.");
-      }
-      setMessage("Password updated successfully. Redirecting to login...");
+      const successMessage = await submitPasswordReset();
+      setMessage(successMessage);
       setTimeout(() => router.replace("/login"), 1200);
     } catch (err: unknown) {
       const reason = err instanceof Error ? err.message : "Could not reset password.";
