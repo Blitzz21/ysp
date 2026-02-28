@@ -54,5 +54,11 @@ jobs:
             tests/__snapshots__/
           retention-days: 14
 
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
       - name: Build
         run: npm run build
