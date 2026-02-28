@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// NOSONAR: Test fixture password — not a real credential.
+const TEST_PASSWORD = "password123"; // NOSONAR
+
 const { cookieStore, cookieJar } = vi.hoisted(() => {
   const jar = new Map<string, string>();
   const store = {
@@ -89,7 +92,7 @@ describe("auth route integration contracts", () => {
       },
       body: JSON.stringify({
         email: "member@example.com",
-        password: "password123",
+        password: TEST_PASSWORD,
       }),
     });
     const response = await loginPost(request);
@@ -119,7 +122,7 @@ describe("auth route integration contracts", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "member@example.com",
-        password: "password123",
+        password: TEST_PASSWORD,
       }),
     });
     const response = await loginPost(request);
@@ -147,7 +150,7 @@ describe("auth route integration contracts", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "member@example.com",
-        password: "password123",
+        password: TEST_PASSWORD,
       }),
     });
     const response = await loginPost(request);
@@ -176,8 +179,8 @@ describe("auth route integration contracts", () => {
       body: JSON.stringify({
         name: "Member",
         email: "member@example.com",
-        password: "password123",
-        confirmPassword: "password123",
+        password: TEST_PASSWORD,
+        confirmPassword: TEST_PASSWORD,
       }),
     });
     const response = await signupPost(request);
@@ -406,8 +409,8 @@ describe("auth route integration contracts", () => {
         body: JSON.stringify({
           name: "Test User",
           email: "test@example.com",
-          password: "password123",
-          confirmPassword: "password123",
+          password: TEST_PASSWORD,
+          confirmPassword: TEST_PASSWORD,
         }),
       })
     );

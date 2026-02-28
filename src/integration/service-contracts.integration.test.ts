@@ -2,6 +2,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 
+// NOSONAR: Test fixture passwords — not real credentials.
+const TEST_PASSWORD = "password123"; // NOSONAR
+const TEST_SHORT_PASSWORD = "short"; // NOSONAR
+const TEST_NEW_PASSWORD = "new-password123"; // NOSONAR
+
 const { cookieStore, cookieJar } = vi.hoisted(() => {
   const jar = new Map<string, string>();
   const store = {
@@ -114,7 +119,7 @@ describe("service integration contracts", () => {
     await expect(
       updateAccountEmail({
         email: "new@example.com",
-        password: "password123",
+        password: TEST_PASSWORD,
       })
     ).rejects.toBeInstanceOf(UnauthorizedError);
   });
@@ -122,8 +127,8 @@ describe("service integration contracts", () => {
   it("updateAccountPassword validates payload before Appwrite request", async () => {
     await expect(
       updateAccountPassword({
-        currentPassword: "short",
-        nextPassword: "new-password123",
+        currentPassword: TEST_SHORT_PASSWORD,
+        nextPassword: TEST_NEW_PASSWORD,
       })
     ).rejects.toBeInstanceOf(ValidationError);
   });
