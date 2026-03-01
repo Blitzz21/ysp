@@ -7,9 +7,8 @@ type UseAuthStatusOptions = {
   refreshOnEvents?: boolean;
 };
 
-export function useAuthStatus(options?: UseAuthStatusOptions): {
+export function useAuthStatus(_options?: UseAuthStatusOptions): {
   status: AuthStatus;
 } {
-  void options;
   return { status: "unauthenticated" };
 }

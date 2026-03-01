@@ -147,7 +147,7 @@ function resolveDateBounds(
   toDate?: Date
 ): DateBounds {
   const now = new Date();
-  let resolved: DateBounds = { fromDate, toDate };
+  const resolved: DateBounds = { fromDate, toDate };
   if (status === "upcoming") {
     resolved.fromDate = fromDate && fromDate.getTime() > now.getTime() ? fromDate : now;
   } else if (status === "past") {
@@ -374,65 +374,10 @@ export async function createMyChapterOpportunity(
   return mapOpportunity(row);
 }
 
-export async function updateOpportunity(
-  id: string,
-  input: Partial<Parameters<typeof createOpportunity>[0]>
-): Promise<VolunteerOpportunity> {
-  const session = await getSession();
-  if (session?.role === "admin") {
-    const parsed = updateSchema.safeParse(input);
-    if (!parsed.success) {
-      throw new ValidationError("Invalid opportunity update");
-    }
-    const current = await getRow<OpportunityRow>(TABLE_ID, id);
-    const published = parsed.data.published ?? current.pubished;
-    const capacity = parsed.data.capacity ?? current.capacity ?? 0;
-    const currentVolunteers =
-      parsed.data.currentVolunteers ?? current.currentVolunteers ?? 0;
-    if (capacity > 0 && currentVolunteers > capacity) {
-      throw new ValidationError("Current volunteers cannot exceed capacity");
-    }
-    const data: Record<string, unknown> = { ...parsed.data };
-    if (parsed.data.eventDate) {
-      data.eventData = parsed.data.eventDate.toISOString();
-      delete data.eventDate;
-    }
-    if (parsed.data.sdgs) {
-      data.sdgs = serializeSdgs(parsed.data.sdgs);
-    }
-    if (parsed.data.published !== undefined) {
-      data[PUBLISHED_FIELD] = parsed.data.published;
-      delete data.published;
-    }
-    if (parsed.data.capacity !== undefined) {
-      data.capacity = capacity;
-    }
-    if (parsed.data.currentVolunteers !== undefined) {
-      data.currentVolunteers = currentVolunteers;
-    }
-    if (parsed.data.waitlistEnabled !== undefined) {
-      data.waitlistEnabled = parsed.data.waitlistEnabled;
-    }
-    const row = await updateRow<OpportunityRow>(
-      TABLE_ID,
-      id,
-      data,
-      buildOpportunityPermissions(published)
-    );
-    return mapOpportunity(row);
-  }
-
-  const chapterId = requireAssignedChapter(session);
-  const parsed = updateSchema.safeParse(input);
-  if (!parsed.success) {
-    throw new ValidationError("Invalid opportunity update");
-  }
-
-  const current = await getRow<OpportunityRow>(TABLE_ID, id);
-  if (current.chapterId !== chapterId) {
-    throw new ForbiddenError("Cannot edit opportunities outside your chapter");
-  }
-
+function buildUpdateData(
+  parsed: { data: z.infer<typeof updateSchema> },
+  current: OpportunityRow
+): { data: Record<string, unknown>; published: boolean | undefined } {
   const published = parsed.data.published ?? current.pubished;
   const capacity = parsed.data.capacity ?? current.capacity ?? 0;
   const currentVolunteers =
@@ -440,8 +385,8 @@ export async function updateOpportunity(
   if (capacity > 0 && currentVolunteers > capacity) {
     throw new ValidationError("Current volunteers cannot exceed capacity");
   }
+
   const data: Record<string, unknown> = { ...parsed.data };
-  delete data.chapterId;
   if (parsed.data.eventDate) {
     data.eventData = parsed.data.eventDate.toISOString();
     delete data.eventDate;
@@ -463,11 +408,39 @@ export async function updateOpportunity(
     data.waitlistEnabled = parsed.data.waitlistEnabled;
   }
 
+  return { data, published };
+}
+
+export async function updateOpportunity(
+  id: string,
+  input: Partial<Parameters<typeof createOpportunity>[0]>
+): Promise<VolunteerOpportunity> {
+  const session = await getSession();
+  const parsed = updateSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new ValidationError("Invalid opportunity update");
+  }
+
+  const current = await getRow<OpportunityRow>(TABLE_ID, id);
+  const isAdmin = session?.role === "admin";
+
+  if (!isAdmin) {
+    const chapterId = requireAssignedChapter(session);
+    if (current.chapterId !== chapterId) {
+      throw new ForbiddenError("Cannot edit opportunities outside your chapter");
+    }
+  }
+
+  const { data, published } = buildUpdateData(parsed, current);
+  if (!isAdmin) {
+    delete data.chapterId;
+  }
+
   const row = await updateRow<OpportunityRow>(
     TABLE_ID,
     id,
     data,
-    buildOpportunityPermissions(published, session?.userId)
+    buildOpportunityPermissions(published ?? false, isAdmin ? undefined : session?.userId)
   );
   return mapOpportunity(row);
 }

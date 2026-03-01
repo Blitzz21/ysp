@@ -7,9 +7,8 @@ import { useState } from "react";
 import { PasswordToggleIcon } from "@/components/auth/PasswordToggleIcon";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 
-export default function ResetPasswordClient() {
+function ResetPasswordForm({ userId, secret }: { userId: string; secret: string }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
@@ -17,30 +16,22 @@ export default function ResetPasswordClient() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const userId = searchParams.get("userId") ?? "";
-  const secret = searchParams.get("secret") ?? "";
-
-  async function submitPasswordReset(): Promise<string> {
-    const response = await fetch("/api/auth/recovery/complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, secret, password, confirmPassword }),
-    });
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(payload?.error ?? "Could not reset password.");
-    }
-    return "Password updated successfully. Redirecting to login...";
-  }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
     setMessage(null);
     try {
-      const successMessage = await submitPasswordReset();
-      setMessage(successMessage);
+      const response = await fetch("/api/auth/recovery/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, secret, password, confirmPassword }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error ?? "Could not reset password.");
+      }
+      setMessage("Password updated successfully. Redirecting to login...");
       setTimeout(() => router.replace("/login"), 1200);
     } catch (err: unknown) {
       const reason = err instanceof Error ? err.message : "Could not reset password.";
@@ -49,6 +40,83 @@ export default function ResetPasswordClient() {
       setLoading(false);
     }
   }
+
+  return (
+    <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+      <label className="block text-sm font-semibold text-navy">
+        New password
+        <div className="relative mt-2">
+          <input
+            className="auth-input pr-12"
+            type={showPasswords ? "text" : "password"}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Enter new password"
+            minLength={8}
+            required
+          />
+          <button
+            className="auth-icon-button"
+            type="button"
+            onClick={() => setShowPasswords((prev) => !prev)}
+            aria-label={showPasswords ? "Hide password" : "Show password"}
+          >
+            <PasswordToggleIcon visible={showPasswords} />
+          </button>
+        </div>
+      </label>
+      <label className="block text-sm font-semibold text-navy">
+        Confirm password
+        <div className="relative mt-2">
+          <input
+            className="auth-input pr-12"
+            type={showPasswords ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            placeholder="Confirm new password"
+            minLength={8}
+            required
+          />
+          <button
+            className="auth-icon-button"
+            type="button"
+            onClick={() => setShowPasswords((prev) => !prev)}
+            aria-label={showPasswords ? "Hide password" : "Show password"}
+          >
+            <PasswordToggleIcon visible={showPasswords} />
+          </button>
+        </div>
+      </label>
+
+      {message ? (
+        <div className="auth-reveal rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {message}
+        </div>
+      ) : null}
+      {error ? (
+        <div className="auth-reveal rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      ) : null}
+
+      <button
+        className="mt-2 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
+        type="submit"
+        disabled={loading}
+      >
+        <span className="inline-flex items-center justify-center gap-2">
+          {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
+          {loading ? "Updating..." : "Update password"}
+        </span>
+      </button>
+    </form>
+  );
+}
+
+export default function ResetPasswordClient() {
+  const searchParams = useSearchParams();
+  const userId = searchParams.get("userId") ?? "";
+  const secret = searchParams.get("secret") ?? "";
 
   return (
     <div className="auth-frame h-dvh w-dvw bg-slate-50 gradient">
@@ -66,74 +134,7 @@ export default function ResetPasswordClient() {
               Invalid or expired reset link. Request a new one from Forgot password.
             </div>
           ) : (
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-              <label className="block text-sm font-semibold text-navy">
-                New password
-                <div className="relative mt-2">
-                  <input
-                    className="auth-input pr-12"
-                    type={showPasswords ? "text" : "password"}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="Enter new password"
-                    minLength={8}
-                    required
-                  />
-                  <button
-                    className="auth-icon-button"
-                    type="button"
-                    onClick={() => setShowPasswords((prev) => !prev)}
-                    aria-label={showPasswords ? "Hide password" : "Show password"}
-                  >
-                    <PasswordToggleIcon visible={showPasswords} />
-                  </button>
-                </div>
-              </label>
-              <label className="block text-sm font-semibold text-navy">
-                Confirm password
-                <div className="relative mt-2">
-                  <input
-                    className="auth-input pr-12"
-                    type={showPasswords ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    placeholder="Confirm new password"
-                    minLength={8}
-                    required
-                  />
-                  <button
-                    className="auth-icon-button"
-                    type="button"
-                    onClick={() => setShowPasswords((prev) => !prev)}
-                    aria-label={showPasswords ? "Hide password" : "Show password"}
-                  >
-                    <PasswordToggleIcon visible={showPasswords} />
-                  </button>
-                </div>
-              </label>
-
-              {message ? (
-                <div className="auth-reveal rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  {message}
-                </div>
-              ) : null}
-              {error ? (
-                <div className="auth-reveal rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                  {error}
-                </div>
-              ) : null}
-
-              <button
-                className="mt-2 w-full rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
-                type="submit"
-                disabled={loading}
-              >
-                <span className="inline-flex items-center justify-center gap-2">
-                  {loading ? <span className="auth-spinner" aria-hidden="true" /> : null}
-                  {loading ? "Updating..." : "Update password"}
-                </span>
-              </button>
-            </form>
+            <ResetPasswordForm userId={userId} secret={secret} />
           )}
 
           <div className="auth-footer mt-6 text-sm">
