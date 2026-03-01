@@ -13,8 +13,8 @@ import {
   publicReadPermissions,
   updateRow,
 } from "./appwriteClient";
-import { NotFoundError, ValidationError } from "./errors";
-import { requireAdmin, requireAssignedChapter } from "./rbac";
+import { ForbiddenError, NotFoundError, ValidationError } from "./errors";
+import { requireAdmin, requireAssignedChapter, requireChapterHead } from "./rbac";
 import type { Chapter } from "./types";
 
 const TABLE_ID = "chapters";
@@ -204,4 +204,62 @@ export async function updateMyChapterContact(input: {
 
   const row = await updateRow<ChapterRow>(TABLE_ID, chapterId, parsed.data, publicReadPermissions());
   return mapChapter(row);
+}
+
+const PROFILES_TABLE_ID = "user_profiles";
+
+type ProfileRoleRow = {
+  userId: string;
+  role: string;
+  assignedChapterId?: string;
+};
+
+export async function transferChapterOwnership(newOwnerUserId: string): Promise<void> {
+  const session = await getSession();
+  requireChapterHead(session);
+  const chapterId = requireAssignedChapter(session);
+
+  if (newOwnerUserId === session!.userId) {
+    throw new ValidationError("You are already the chapter head");
+  }
+
+  // Verify new owner is a member of this chapter
+  const memberRows = await listRows<{ userId: string; chapterId: string; status: string }>(
+    "chapter_memberships",
+    [
+      buildEqualQuery("userId", newOwnerUserId),
+      buildEqualQuery("chapterId", chapterId),
+      buildEqualQuery("status", "active"),
+    ]
+  );
+  if (memberRows.length === 0) {
+    throw new ForbiddenError("New owner must be an active member of this chapter");
+  }
+
+  // Update chapter's chapterHeadUserId
+  await updateRow<ChapterRow>(TABLE_ID, chapterId, {
+    chapterHeadUserId: newOwnerUserId,
+  }, publicReadPermissions());
+
+  // Update new owner's profile: role → chapter_head, assignedChapterId → chapterId
+  const newOwnerProfiles = await listRows<ProfileRoleRow>(PROFILES_TABLE_ID, [
+    buildEqualQuery("userId", newOwnerUserId),
+  ]);
+  if (newOwnerProfiles[0]) {
+    await updateRow(PROFILES_TABLE_ID, newOwnerProfiles[0].$id, {
+      role: "chapter_head",
+      assignedChapterId: chapterId,
+    });
+  }
+
+  // Update old owner's profile: role → member, clear assignedChapterId
+  const oldOwnerProfiles = await listRows<ProfileRoleRow>(PROFILES_TABLE_ID, [
+    buildEqualQuery("userId", session!.userId),
+  ]);
+  if (oldOwnerProfiles[0]) {
+    await updateRow(PROFILES_TABLE_ID, oldOwnerProfiles[0].$id, {
+      role: "member",
+      assignedChapterId: "",
+    });
+  }
 }

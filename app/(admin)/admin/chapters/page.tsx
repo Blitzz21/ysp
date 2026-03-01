@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 
 import { CountedInput } from "@/components/admin/CountedField";
-import { StatusBanner } from "@/components/dashboard/StatusBanner";
+import { ToastForm } from "@/components/ui/ToastForm";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
   adminListChapters,
@@ -10,11 +10,10 @@ import {
   updateChapter,
 } from "@/services/chapters";
 import type { Chapter } from "@/services/types";
-import { type SearchParams, readParam, createRedirectBuilder } from "@/lib/pageHelpers";
 
-const buildRedirect = createRedirectBuilder("/admin/chapters");
-
-async function createChapterAction(formData: FormData): Promise<void> {
+async function createChapterAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   try {
     const name = String(formData.get("name") ?? "").trim();
@@ -36,16 +35,17 @@ async function createChapterAction(formData: FormData): Promise<void> {
       chapterHeadUserId: chapterHeadUserId.length ? chapterHeadUserId : undefined,
       published,
     });
+    revalidatePath("/admin/chapters");
+    return { ok: true, message: "Chapter created." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to create chapter").message;
-    buildRedirect("error", message);
+    return { ok: false, message };
   }
-
-  revalidatePath("/admin/chapters");
-  buildRedirect("success", "Chapter created.");
 }
 
-async function updateChapterAction(formData: FormData): Promise<void> {
+async function updateChapterAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   const id = String(formData.get("id") ?? "").trim();
   try {
@@ -73,26 +73,27 @@ async function updateChapterAction(formData: FormData): Promise<void> {
           : undefined,
       published,
     });
+    revalidatePath("/admin/chapters");
+    return { ok: true, message: "Chapter updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update chapter").message;
-    buildRedirect("error", message);
+    return { ok: false, message };
   }
-
-  revalidatePath("/admin/chapters");
-  buildRedirect("success", "Chapter updated.");
 }
 
-async function deleteChapterAction(formData: FormData): Promise<void> {
+async function deleteChapterAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   const id = String(formData.get("id") ?? "").trim();
   try {
     await deleteChapter(id);
+    revalidatePath("/admin/chapters");
+    return { ok: true, message: "Chapter deleted." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to delete chapter").message;
-    buildRedirect("error", message);
+    return { ok: false, message };
   }
-  revalidatePath("/admin/chapters");
-  buildRedirect("success", "Chapter deleted.");
 }
 
 function ChapterCard({ chapter }: { chapter: Chapter }) {
@@ -108,9 +109,8 @@ function ChapterCard({ chapter }: { chapter: Chapter }) {
         </div>
         <div className="flex items-center gap-2 text-xs text-muted">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              isPublished ? "bg-green-100 text-green-700" : "bg-gray-100 text-muted"
-            }`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${isPublished ? "bg-green-100 text-green-700" : "bg-gray-100 text-muted"
+              }`}
           >
             {isPublished ? "Published" : "Draft"}
           </span>
@@ -126,7 +126,7 @@ function ChapterCard({ chapter }: { chapter: Chapter }) {
           <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
             Chapter profile
           </h4>
-          <form action={updateChapterAction} className="space-y-3">
+          <ToastForm action={updateChapterAction} className="space-y-3">
             <input type="hidden" name="id" value={chapter.id} />
             <div className="grid gap-3 md:grid-cols-2">
               <label className="text-xs font-semibold text-ink">
@@ -220,7 +220,7 @@ function ChapterCard({ chapter }: { chapter: Chapter }) {
             >
               Save changes
             </button>
-          </form>
+          </ToastForm>
         </div>
 
         <aside className="rounded-2xl border border-dashed border-gray-200 bg-[#fff7ea] p-4 text-xs text-muted">
@@ -230,7 +230,7 @@ function ChapterCard({ chapter }: { chapter: Chapter }) {
             <li>Only assign a chapter head if verified.</li>
             <li>Contacts appear on public pages.</li>
           </ul>
-          <form action={deleteChapterAction} className="mt-4">
+          <ToastForm action={deleteChapterAction} className="mt-4">
             <input type="hidden" name="id" value={chapter.id} />
             <button
               className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700"
@@ -238,22 +238,14 @@ function ChapterCard({ chapter }: { chapter: Chapter }) {
             >
               Delete chapter
             </button>
-          </form>
+          </ToastForm>
         </aside>
       </div>
     </details>
   );
 }
 
-export default async function AdminChaptersPage({
-  searchParams,
-}: {
-  searchParams?: Promise<SearchParams>;
-}) {
-  const params = (await searchParams) ?? {};
-  const message = readParam(params, "message");
-  const status = readParam(params, "status");
-
+export default async function AdminChaptersPage() {
   let chapters: Chapter[] = [];
   let hasLoadError = false;
 
@@ -275,9 +267,7 @@ export default async function AdminChaptersPage({
         </p>
       </div>
 
-      <StatusBanner status={status} message={message} className="mb-6" />
-
-      <form
+      <ToastForm
         action={createChapterAction}
         className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
       >
@@ -385,7 +375,7 @@ export default async function AdminChaptersPage({
         >
           Create chapter
         </button>
-      </form>
+      </ToastForm>
 
       {hasLoadError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">

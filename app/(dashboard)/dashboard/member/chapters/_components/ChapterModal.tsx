@@ -3,13 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import type { Chapter, ChapterMembership } from "@/services/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { useToast } from "@/components/ui/Toast";
+import type { ChapterAction } from "./ChapterCardGrid";
 
 type ChapterModalProps = {
     chapter: Chapter;
     membership?: ChapterMembership;
     chapterHeadName?: string;
-    joinAction: (formData: FormData) => void | Promise<void>;
-    leaveAction: (formData: FormData) => void | Promise<void>;
+    joinAction: ChapterAction;
+    leaveAction: ChapterAction;
     onClose: () => void;
 };
 
@@ -60,15 +62,16 @@ export function ChapterModal({
         return () => document.removeEventListener("keydown", handleKey);
     }, [onClose, pendingAction]);
 
-    const handleConfirm = () => {
+    const { toast } = useToast();
+
+    const handleConfirm = async () => {
         if (!pendingAction) return;
         const fd = new FormData();
         fd.set("chapterId", chapter.id);
-        if (pendingAction === "leave") {
-            leaveAction(fd);
-        } else {
-            joinAction(fd);
-        }
+        const result = pendingAction === "leave"
+            ? await leaveAction(fd)
+            : await joinAction(fd);
+        toast(result.message, result.ok ? "success" : "error");
         setPendingAction(null);
     };
 

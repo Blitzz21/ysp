@@ -1,13 +1,10 @@
 import { revalidatePath } from "next/cache";
 
 import { CountedInput } from "@/components/admin/CountedField";
-import { StatusBanner } from "@/components/dashboard/StatusBanner";
+import { ToastForm } from "@/components/ui/ToastForm";
 import { toPublicDomainError } from "@/services/errorContract";
 import { getSiteSettings, updateSiteSettings } from "@/services/settings";
 import { getSiteStats, updateSiteStats } from "@/services/stats";
-import { type SearchParams, readParam, createRedirectBuilder } from "@/lib/pageHelpers";
-
-const buildRedirect = createRedirectBuilder("/admin/settings");
 
 function toOptionalString(value: FormDataEntryValue | null): string | undefined {
   const parsed = String(value ?? "").trim();
@@ -24,7 +21,9 @@ function parseOptionalInteger(value: FormDataEntryValue | null): number | undefi
   return asNumber;
 }
 
-async function updateSettingsAction(formData: FormData): Promise<void> {
+async function updateSettingsAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   try {
     await updateSiteSettings({
@@ -34,18 +33,19 @@ async function updateSettingsAction(formData: FormData): Promise<void> {
       membershipFormUrl: toOptionalString(formData.get("membershipFormUrl")),
       createChapterFormUrl: toOptionalString(formData.get("createChapterFormUrl")),
     });
+    revalidatePath("/admin/settings");
+    revalidatePath("/contact");
+    revalidatePath("/membership");
+    return { ok: true, message: "Site settings updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update site settings").message;
-    buildRedirect("error", message);
+    return { ok: false, message };
   }
-
-  revalidatePath("/admin/settings");
-  revalidatePath("/contact");
-  revalidatePath("/membership");
-  buildRedirect("success", "Site settings updated.");
 }
 
-async function updateStatsAction(formData: FormData): Promise<void> {
+async function updateStatsAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   try {
     await updateSiteStats({
@@ -54,25 +54,16 @@ async function updateStatsAction(formData: FormData): Promise<void> {
       membersCount: parseOptionalInteger(formData.get("membersCount")),
       livesImpactedCount: parseOptionalInteger(formData.get("livesImpactedCount")),
     });
+    revalidatePath("/admin/settings");
+    revalidatePath("/");
+    return { ok: true, message: "Site stats updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update site stats").message;
-    buildRedirect("error", message);
+    return { ok: false, message };
   }
-
-  revalidatePath("/admin/settings");
-  revalidatePath("/");
-  buildRedirect("success", "Site stats updated.");
 }
 
-export default async function AdminSettingsPage({
-  searchParams,
-}: {
-  searchParams?: Promise<SearchParams>;
-}) {
-  const params = (await searchParams) ?? {};
-  const status = readParam(params, "status");
-  const message = readParam(params, "message");
-
+export default async function AdminSettingsPage() {
   let hasLoadError = false;
   let settings = {
     email: "",
@@ -116,8 +107,6 @@ export default async function AdminSettingsPage({
         </p>
       </div>
 
-      <StatusBanner status={status} message={message} className="mb-6" />
-
       {hasLoadError ? (
         <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Settings are unavailable. Please confirm admin access and service connectivity.
@@ -125,7 +114,7 @@ export default async function AdminSettingsPage({
       ) : null}
 
       <div className="space-y-6">
-        <form
+        <ToastForm
           action={updateSettingsAction}
           className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
         >
@@ -191,9 +180,9 @@ export default async function AdminSettingsPage({
           >
             Save contact settings
           </button>
-        </form>
+        </ToastForm>
 
-        <form
+        <ToastForm
           action={updateStatsAction}
           className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
         >
@@ -255,7 +244,7 @@ export default async function AdminSettingsPage({
           >
             Save counters
           </button>
-        </form>
+        </ToastForm>
       </div>
     </section>
   );

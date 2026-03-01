@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 
 import { CountedInput, CountedTextarea } from "@/components/admin/CountedField";
-import { StatusBanner } from "@/components/dashboard/StatusBanner";
+import { ToastForm } from "@/components/ui/ToastForm";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
   adminListPrograms,
@@ -10,9 +10,6 @@ import {
   updateProgram,
 } from "@/services/programs";
 import type { Program } from "@/services/types";
-import { type SearchParams, readParam, createRedirectBuilder } from "@/lib/pageHelpers";
-
-const buildRedirect = createRedirectBuilder("/admin/programs");
 
 function readFile(formData: FormData, key: string): File | undefined {
   const value = formData.get(key);
@@ -22,7 +19,9 @@ function readFile(formData: FormData, key: string): File | undefined {
   return undefined;
 }
 
-async function createProgramAction(formData: FormData): Promise<void> {
+async function createProgramAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   try {
     const title = String(formData.get("title") ?? "").trim();
@@ -38,19 +37,20 @@ async function createProgramAction(formData: FormData): Promise<void> {
       published,
       imageFile,
     });
+    revalidatePath("/admin/programs");
+    revalidatePath("/");
+    revalidatePath("/programs");
+    return { ok: true, message: "Program created." };
   } catch (error) {
     console.error("[createProgramAction] failed:", error);
     const message = toPublicDomainError(error, "Failed to create program").message;
-    buildRedirect("error", message);
+    return { ok: false, message };
   }
-
-  revalidatePath("/admin/programs");
-  revalidatePath("/");
-  revalidatePath("/programs");
-  buildRedirect("success", "Program created.");
 }
 
-async function updateProgramAction(formData: FormData): Promise<void> {
+async function updateProgramAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   const id = String(formData.get("id") ?? "").trim();
   try {
@@ -68,32 +68,33 @@ async function updateProgramAction(formData: FormData): Promise<void> {
       published,
       imageFile: removeImage ? null : imageFile,
     });
+    revalidatePath("/admin/programs");
+    revalidatePath("/");
+    revalidatePath("/programs");
+    return { ok: true, message: "Program updated." };
   } catch (error) {
     console.error("[updateProgramAction] failed:", error);
     const message = toPublicDomainError(error, "Failed to update program").message;
-    buildRedirect("error", message);
+    return { ok: false, message };
   }
-
-  revalidatePath("/admin/programs");
-  revalidatePath("/");
-  revalidatePath("/programs");
-  buildRedirect("success", "Program updated.");
 }
 
-async function deleteProgramAction(formData: FormData): Promise<void> {
+async function deleteProgramAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   const id = String(formData.get("id") ?? "").trim();
   try {
     await deleteProgram(id);
+    revalidatePath("/admin/programs");
+    revalidatePath("/");
+    revalidatePath("/programs");
+    return { ok: true, message: "Program deleted." };
   } catch (error) {
     console.error("[deleteProgramAction] failed:", error);
     const message = toPublicDomainError(error, "Failed to delete program").message;
-    buildRedirect("error", message);
+    return { ok: false, message };
   }
-  revalidatePath("/admin/programs");
-  revalidatePath("/");
-  revalidatePath("/programs");
-  buildRedirect("success", "Program deleted.");
 }
 
 function ProgramCard({ program }: { program: Program }) {
@@ -107,8 +108,8 @@ function ProgramCard({ program }: { program: Program }) {
         <div className="flex items-center gap-2">
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${program.published
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-muted"
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-muted"
               }`}
           >
             {program.published ? "Published" : "Draft"}
@@ -124,7 +125,7 @@ function ProgramCard({ program }: { program: Program }) {
           <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
             Core details
           </h4>
-          <form
+          <ToastForm
             action={updateProgramAction}
             className="space-y-3"
           >
@@ -195,7 +196,7 @@ function ProgramCard({ program }: { program: Program }) {
             >
               Save changes
             </button>
-          </form>
+          </ToastForm>
         </div>
 
         <aside className="rounded-2xl border border-dashed border-gray-200 bg-[#fff7ea] p-4 text-xs text-muted">
@@ -205,7 +206,7 @@ function ProgramCard({ program }: { program: Program }) {
             <li>Draft status hides programs from public pages.</li>
             <li>Image uploads use file ID for public display.</li>
           </ul>
-          <form action={deleteProgramAction} className="mt-4">
+          <ToastForm action={deleteProgramAction} className="mt-4">
             <input type="hidden" name="id" value={program.id} />
             <button
               className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700"
@@ -213,22 +214,14 @@ function ProgramCard({ program }: { program: Program }) {
             >
               Delete program
             </button>
-          </form>
+          </ToastForm>
         </aside>
       </div>
     </details>
   );
 }
 
-export default async function AdminProgramsPage({
-  searchParams,
-}: {
-  searchParams?: Promise<SearchParams>;
-}) {
-  const params = (await searchParams) ?? {};
-  const message = readParam(params, "message");
-  const status = readParam(params, "status");
-
+export default async function AdminProgramsPage() {
   let programs: Program[] = [];
   let hasLoadError = false;
 
@@ -253,9 +246,7 @@ export default async function AdminProgramsPage({
         </div>
       </div>
 
-      <StatusBanner status={status} message={message} className="mb-6" />
-
-      <form
+      <ToastForm
         action={createProgramAction}
         className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
       >
@@ -339,7 +330,7 @@ export default async function AdminProgramsPage({
         >
           Create program
         </button>
-      </form>
+      </ToastForm>
 
       {hasLoadError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">

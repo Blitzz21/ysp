@@ -1,7 +1,6 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { StatusBanner } from "@/components/dashboard/StatusBanner";
 import { getSession } from "@/services/auth";
 import { listPublicChapters } from "@/services/chapters";
 import { toPublicDomainError } from "@/services/errorContract";
@@ -11,17 +10,10 @@ import { getMyProfile } from "@/services/profiles";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import type { Chapter, ChapterMembership } from "@/services/types";
-import { type SearchParams, readParam } from "@/lib/pageHelpers";
 
 export const dynamic = "force-dynamic";
 
-export default async function MemberDashboardPage(props: {
-  searchParams?: Promise<SearchParams>;
-}) {
-  const searchParams = (await props.searchParams) ?? {};
-  const status = readParam(searchParams, "status");
-  const message = readParam(searchParams, "message");
-
+export default async function MemberDashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login?next=/dashboard/member");
 
@@ -74,7 +66,7 @@ export default async function MemberDashboardPage(props: {
         }
       />
 
-      <StatusBanner status={status} message={message} />
+
 
       {loadError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
@@ -172,10 +164,10 @@ export default async function MemberDashboardPage(props: {
                   </span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${m.status === "active"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : m.status === "pending"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-gray-100 text-gray-500"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : m.status === "pending"
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-gray-100 text-gray-500"
                       }`}
                   >
                     {m.status}

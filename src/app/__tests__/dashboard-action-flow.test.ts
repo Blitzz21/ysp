@@ -12,11 +12,11 @@ const ACTION_CASES: Array<{ file: string; actionName: string }> = [
   { file: "app/(dashboard)/settings/page.tsx", actionName: "updatePasswordAction" },
   { file: "app/(dashboard)/dashboard/member/chapters/page.tsx", actionName: "joinChapterAction" },
   { file: "app/(dashboard)/dashboard/member/chapters/page.tsx", actionName: "leaveChapterAction" },
-  { file: "app/(dashboard)/dashboard/chapter-head/page.tsx", actionName: "createRoleAction" },
-  { file: "app/(dashboard)/dashboard/chapter-head/page.tsx", actionName: "updateRoleAction" },
-  { file: "app/(dashboard)/dashboard/chapter-head/page.tsx", actionName: "assignOfficerAction" },
-  { file: "app/(dashboard)/dashboard/chapter-head/page.tsx", actionName: "removeOfficerAction" },
-  { file: "app/(dashboard)/dashboard/chapter-head/page.tsx", actionName: "removeMemberAction" },
+  { file: "app/(dashboard)/dashboard/chapter-head/members/page.tsx", actionName: "createRoleAction" },
+  { file: "app/(dashboard)/dashboard/chapter-head/members/page.tsx", actionName: "updateRoleAction" },
+  { file: "app/(dashboard)/dashboard/chapter-head/members/page.tsx", actionName: "assignOfficerAction" },
+  { file: "app/(dashboard)/dashboard/chapter-head/members/page.tsx", actionName: "removeOfficerAction" },
+  { file: "app/(dashboard)/dashboard/chapter-head/members/page.tsx", actionName: "removeMemberAction" },
 ];
 
 function readSource(relativePath: string): string {

@@ -4,6 +4,11 @@ import { useState } from "react";
 import type { Chapter, ChapterMembership } from "@/services/types";
 import { ChapterModal } from "./ChapterModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { useToast } from "@/components/ui/Toast";
+
+export type ChapterAction = (
+    formData: FormData
+) => Promise<{ ok: boolean; message: string }>;
 
 /* ── Helpers ── */
 function StatusBadge({ membership }: { membership?: ChapterMembership }) {
@@ -63,14 +68,15 @@ export function ChapterCardGrid({
 }: {
     chapters: Chapter[];
     membershipMap: Map<string, ChapterMembership>;
-    joinAction: (formData: FormData) => void | Promise<void>;
-    leaveAction: (formData: FormData) => void | Promise<void>;
+    joinAction: ChapterAction;
+    leaveAction: ChapterAction;
     chapterHeadNames?: Map<string, string>;
     opportunityCounts?: Map<string, number>;
 }) {
     const [search, setSearch] = useState("");
     const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+    const { toast } = useToast();
 
     const filtered = chapters.filter((ch) => {
         if (!search) return true;
@@ -81,15 +87,14 @@ export function ChapterCardGrid({
         );
     });
 
-    const handleConfirmAction = () => {
+    const handleConfirmAction = async () => {
         if (!pendingAction) return;
         const fd = new FormData();
         fd.set("chapterId", pendingAction.chapterId);
-        if (pendingAction.type === "leave") {
-            leaveAction(fd);
-        } else {
-            joinAction(fd);
-        }
+        const result = pendingAction.type === "leave"
+            ? await leaveAction(fd)
+            : await joinAction(fd);
+        toast(result.message, result.ok ? "success" : "error");
         setPendingAction(null);
     };
 

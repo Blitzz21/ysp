@@ -13,13 +13,15 @@ export type DashboardNavIcon =
   | "opportunities"
   | "admin"
   | "overview"
-  | "programs";
+  | "programs"
+  | "manage";
 
 export type DashboardNavItem = {
   href: string;
   label: string;
   icon: DashboardNavIcon;
   exact?: boolean;
+  children?: DashboardNavItem[];
 };
 
 type DashboardShellProps = {
@@ -119,6 +121,15 @@ function NavIcon({ icon }: { icon: DashboardNavIcon }) {
           <path d="M5 4h14a1 1 0 0 1 1 1v14l-4-2-4 2-4-2-4 2V5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.7" />
         </svg>
       );
+    case "manage":
+      return (
+        <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          <circle cx="8" cy="6" r="1.5" fill="currentColor" />
+          <circle cx="14" cy="12" r="1.5" fill="currentColor" />
+          <circle cx="10" cy="18" r="1.5" fill="currentColor" />
+        </svg>
+      );
     default:
       return (
         <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
@@ -126,6 +137,80 @@ function NavIcon({ icon }: { icon: DashboardNavIcon }) {
         </svg>
       );
   }
+}
+
+function DropdownNavItem({
+  item,
+  pathname,
+  collapsed,
+  focusRing,
+  onMobileClose,
+}: {
+  item: DashboardNavItem;
+  pathname: string;
+  collapsed: boolean;
+  focusRing: string;
+  onMobileClose: () => void;
+}) {
+  const childActive = item.children?.some((child) => isActivePath(pathname, child)) ?? false;
+  const [open, setOpen] = useState(childActive);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex w-full items-center rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${childActive
+          ? "border-orange-200 bg-orange-50 text-orange-700"
+          : "border-transparent text-ink hover:border-orange-200 hover:bg-orange-50/60"
+          } ${collapsed ? "justify-center gap-0" : "gap-3"} ${focusRing}`}
+      >
+        <span className={`shrink-0 ${iconClassName(childActive)}`}>
+          <NavIcon icon={item.icon} />
+        </span>
+        <span
+          className={`flex-1 overflow-hidden whitespace-nowrap text-left transition-all duration-300 ease-out ${collapsed
+            ? "max-w-0 translate-x-[-8px] opacity-0"
+            : "max-w-[150px] translate-x-0 opacity-100"
+            }`}
+        >
+          {item.label}
+        </span>
+        {!collapsed && (
+          <svg
+            className={`h-3.5 w-3.5 shrink-0 text-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+      {open && !collapsed && item.children && (
+        <div className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3">
+          {item.children.map((child) => {
+            const active = isActivePath(pathname, child);
+            return (
+              <Link
+                key={child.href}
+                href={child.href}
+                onClick={onMobileClose}
+                className={`flex items-center rounded-xl border px-3 py-2 text-sm font-medium transition ${active
+                  ? "border-orange-200 bg-orange-50 text-orange-700"
+                  : "border-transparent text-muted hover:border-orange-200 hover:bg-orange-50/60 hover:text-ink"
+                  } ${focusRing}`}
+              >
+                <span className={`mr-2.5 shrink-0 ${iconClassName(active)}`}>
+                  <NavIcon icon={child.icon} />
+                </span>
+                {child.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function DashboardShell({
@@ -194,8 +279,20 @@ export function DashboardShell({
             </button>
           </div>
 
-          <nav className="flex-1 space-y-2 p-3">
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
             {navItems.map((item) => {
+              if (item.children) {
+                return (
+                  <DropdownNavItem
+                    key={item.href}
+                    item={item}
+                    pathname={pathname}
+                    collapsed={collapsed}
+                    focusRing={focusRing}
+                    onMobileClose={() => setMobileOpen(false)}
+                  />
+                );
+              }
               const active = isActivePath(pathname, item);
               return (
                 <Link

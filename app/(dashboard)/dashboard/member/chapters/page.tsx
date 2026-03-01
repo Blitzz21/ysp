@@ -10,7 +10,6 @@ import { toPublicDomainError } from "@/services/errorContract";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { ChapterCardGrid } from "./_components/ChapterCardGrid";
 import type { Chapter, ChapterMembership } from "@/services/types";
-import { type SearchParams, createRedirectBuilder } from "@/lib/pageHelpers";
 
 export const dynamic = "force-dynamic";
 
@@ -18,47 +17,43 @@ export const dynamic = "force-dynamic";
 /*  Server actions                                                    */
 /* ------------------------------------------------------------------ */
 
-const buildRedirect = createRedirectBuilder("/dashboard/member/chapters");
-
-async function joinChapterAction(formData: FormData): Promise<void> {
+async function joinChapterAction(
+    formData: FormData
+): Promise<{ ok: boolean; message: string }> {
     "use server";
     const chapterId = String(formData.get("chapterId") ?? "").trim();
-    if (!chapterId) buildRedirect("error", "Please select a chapter first.");
+    if (!chapterId) return { ok: false, message: "Please select a chapter first." };
     try {
         await joinChapter(chapterId);
+        revalidatePath("/dashboard/member/chapters");
+        return { ok: true, message: "Chapter join request submitted." };
     } catch (error) {
         const message = toPublicDomainError(error, "Unable to join chapter.").message;
-        buildRedirect("error", message);
+        return { ok: false, message };
     }
-    revalidatePath("/dashboard/member/chapters");
-    buildRedirect("success", "Chapter join request submitted.");
 }
 
-async function leaveChapterAction(formData: FormData): Promise<void> {
+async function leaveChapterAction(
+    formData: FormData
+): Promise<{ ok: boolean; message: string }> {
     "use server";
     const chapterId = String(formData.get("chapterId") ?? "").trim();
-    if (!chapterId) buildRedirect("error", "Please select a chapter first.");
+    if (!chapterId) return { ok: false, message: "Please select a chapter first." };
     try {
         await leaveChapter(chapterId);
+        revalidatePath("/dashboard/member/chapters");
+        return { ok: true, message: "Membership updated." };
     } catch (error) {
         const message = toPublicDomainError(error, "Unable to update membership.").message;
-        buildRedirect("error", message);
+        return { ok: false, message };
     }
-    revalidatePath("/dashboard/member/chapters");
-    buildRedirect("success", "Membership updated.");
 }
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                              */
 /* ------------------------------------------------------------------ */
 
-export default async function MemberChaptersPage(props: {
-    searchParams?: Promise<SearchParams>;
-}) {
-    const searchParams = (await props.searchParams) ?? {};
-    const status = Array.isArray(searchParams.status) ? searchParams.status[0] : searchParams.status;
-    const message = Array.isArray(searchParams.message) ? searchParams.message[0] : searchParams.message;
-
+export default async function MemberChaptersPage() {
     const session = await getSession();
     if (!session) redirect("/login?next=/dashboard/member/chapters");
 
@@ -120,17 +115,6 @@ export default async function MemberChaptersPage(props: {
                 title="Chapters"
                 subtitle="Browse published chapters, join communities, and track your membership status."
             />
-
-            {message && (
-                <div
-                    className={`rounded-2xl border px-4 py-3 text-sm ${status === "error"
-                        ? "border-red-200 bg-red-50 text-red-700"
-                        : "border-green-200 bg-green-50 text-green-700"
-                        }`}
-                >
-                    {message}
-                </div>
-            )}
 
             {loadError ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">

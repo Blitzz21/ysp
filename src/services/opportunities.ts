@@ -19,7 +19,7 @@ import {
 } from "./appwriteClient";
 import { ForbiddenError, NotFoundError, ValidationError } from "./errors";
 import { requireAdmin, requireAssignedChapter, requireChapterHead, requireSession } from "./rbac";
-import type { VolunteerOpportunity } from "./types";
+import type { OpportunitySignup, VolunteerOpportunity } from "./types";
 
 const TABLE_ID = "volunteer_opportunities";
 const SIGNUPS_TABLE_ID = "opportunity_signups";
@@ -461,6 +461,59 @@ export async function deleteOpportunity(id: string): Promise<void> {
     throw new ForbiddenError("Cannot delete opportunities outside your chapter");
   }
   await deleteRow(TABLE_ID, id);
+}
+
+export async function listOpportunitySignups(
+  opportunityId: string
+): Promise<OpportunitySignup[]> {
+  const session = await getSession();
+  requireChapterHead(session);
+  const chapterId = requireAssignedChapter(session);
+
+  const opportunity = await getRow<OpportunityRow>(TABLE_ID, opportunityId);
+  if (!opportunity) {
+    throw new NotFoundError("Opportunity not found");
+  }
+  if (opportunity.chapterId !== chapterId) {
+    throw new ForbiddenError("Cannot view signups for opportunities outside your chapter");
+  }
+
+  const rows = await listRows<OpportunitySignupRow>(SIGNUPS_TABLE_ID, [
+    buildEqualQuery("opportunityId", opportunityId),
+  ]);
+
+  return rows.map((row) => ({
+    id: row.$id,
+    userId: row.userId,
+    opportunityId: row.opportunityId,
+    status: row.status,
+    joinedAt: row.joinedAt,
+    createdAt: row.$createdAt,
+    updatedAt: row.$updatedAt,
+  }));
+}
+
+export async function listMemberSignups(
+  userId: string
+): Promise<OpportunitySignup[]> {
+  const session = await getSession();
+  requireChapterHead(session);
+
+  const rows = await listRows<OpportunitySignupRow>(SIGNUPS_TABLE_ID, [
+    buildEqualQuery("userId", userId),
+  ]);
+
+  return rows
+    .filter((row) => row.status !== "cancelled")
+    .map((row) => ({
+      id: row.$id,
+      userId: row.userId,
+      opportunityId: row.opportunityId,
+      status: row.status,
+      joinedAt: row.joinedAt,
+      createdAt: row.$createdAt,
+      updatedAt: row.$updatedAt,
+    }));
 }
 
 export async function joinOpportunity(

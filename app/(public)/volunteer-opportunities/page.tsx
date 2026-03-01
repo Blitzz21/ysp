@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { StatusBanner } from "@/components/dashboard/StatusBanner";
+import { ToastForm } from "@/components/ui/ToastForm";
 import { getSession } from "@/services/auth";
 import { listPublicChapters } from "@/services/chapters";
 import { listPublicOpportunities, joinOpportunity } from "@/services/opportunities";
 import { toPublicDomainError } from "@/services/errorContract";
 import type { VolunteerOpportunity } from "@/services/types";
-import { type SearchParams, readParam, createRedirectBuilder } from "@/lib/pageHelpers";
+import { type SearchParams, readParam } from "@/lib/pageHelpers";
 
 const MANILA_TIMEZONE = "Asia/Manila";
 
@@ -48,9 +48,9 @@ function getSdgColor(tag: string): string {
   return "bg-orange-500";
 }
 
-const buildRedirect = createRedirectBuilder("/volunteer-opportunities");
-
-async function joinOpportunityAction(formData: FormData): Promise<void> {
+async function joinOpportunityAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   const id = String(formData.get("id") ?? "").trim();
   try {
@@ -60,13 +60,13 @@ async function joinOpportunityAction(formData: FormData): Promise<void> {
         ? "You have been added to the waitlist."
         : "You are now signed up.";
     revalidatePath("/volunteer-opportunities");
-    buildRedirect("success", message);
+    return { ok: true, message };
   } catch (error) {
     const message = toPublicDomainError(
       error,
       "Unable to join this opportunity."
     ).message;
-    buildRedirect("error", message);
+    return { ok: false, message };
   }
 }
 
@@ -83,8 +83,6 @@ export default async function VolunteerOpportunitiesPage(props: {
   const fromDateRaw = readParam(searchParams, "fromDate");
   const toDateRaw = readParam(searchParams, "toDate");
   const status = getStatusFilter(searchParams);
-  const statusMessage = readParam(searchParams, "status");
-  const message = readParam(searchParams, "message");
   const session = await getSession();
   const isAuthenticated = Boolean(session);
 
@@ -229,7 +227,7 @@ export default async function VolunteerOpportunitiesPage(props: {
           </div>
         ) : null}
 
-        <StatusBanner status={statusMessage} message={message} className="mt-6" />
+
 
         {!hasLoadError && opportunities.length === 0 ? (
           <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted shadow-soft">
@@ -297,7 +295,7 @@ export default async function VolunteerOpportunitiesPage(props: {
                         />
                       </div>
                       {isAuthenticated ? (
-                        <form action={joinOpportunityAction} className="mt-4">
+                        <ToastForm action={joinOpportunityAction} className="mt-4">
                           <input type="hidden" name="id" value={opportunity.id} />
                           <button
                             type="submit"
@@ -310,7 +308,7 @@ export default async function VolunteerOpportunitiesPage(props: {
                                 : "Full"
                               : "Join opportunity"}
                           </button>
-                        </form>
+                        </ToastForm>
                       ) : (
                         <div className="mt-4">
                           <Link

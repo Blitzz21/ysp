@@ -39,19 +39,32 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           : "Member";
   const isAdmin = session.role === "admin";
   const isChapterHead = session.role === "chapter_head";
-  const navItems: DashboardNavItem[] = [
-    { href: "/dashboard/member", label: "Overview", icon: "member", exact: true },
-    { href: "/dashboard/member/chapters", label: "Chapters", icon: "chapter" },
-    { href: "/dashboard/member/opportunities", label: "Opportunities", icon: "opportunities" },
-    { href: "/settings", label: "Settings", icon: "settings" },
-  ];
 
-  if (isChapterHead || isAdmin) {
-    navItems.push({
-      href: "/dashboard/chapter-head",
-      label: "Chapter head dashboard",
-      icon: "chapter",
-    });
+  let navItems: DashboardNavItem[];
+
+  if (isChapterHead) {
+    navItems = [
+      { href: "/dashboard/chapter-head", label: "Overview", icon: "overview", exact: true },
+      {
+        href: "/dashboard/chapter-head/manage",
+        label: "Manage",
+        icon: "manage",
+        children: [
+          { href: "/dashboard/chapter-head/opportunities", label: "Opportunities", icon: "opportunities" },
+          { href: "/dashboard/chapter-head/members", label: "Members", icon: "member" },
+        ],
+      },
+      { href: "/dashboard/chapter-head/settings", label: "Chapter Settings", icon: "settings" },
+      { href: "/dashboard/member", label: "Member Dashboard", icon: "chapter" },
+      { href: "/settings", label: "Settings", icon: "settings" },
+    ];
+  } else {
+    navItems = [
+      { href: "/dashboard/member", label: "Overview", icon: "member", exact: true },
+      { href: "/dashboard/member/chapters", label: "Chapters", icon: "chapter" },
+      { href: "/dashboard/member/opportunities", label: "Opportunities", icon: "opportunities" },
+      { href: "/settings", label: "Settings", icon: "settings" },
+    ];
   }
 
   if (isAdmin) {

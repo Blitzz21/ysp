@@ -1,7 +1,7 @@
 ﻿import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { StatusBanner } from "@/components/dashboard/StatusBanner";
+import { ToastForm } from "@/components/ui/ToastForm";
 import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
@@ -13,18 +13,13 @@ import {
 } from "@/services/profiles";
 import AvatarUploader from "@/components/settings/AvatarUploader";
 import SettingsNav from "@/components/settings/SettingsNav";
-import { resolveTab, type SettingsTab } from "@/lib/settingsTabs";
+import { resolveTab } from "@/lib/settingsTabs";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
 import type { Gender } from "@/services/types";
-import { type SearchParams, type StatusType, readParam } from "@/lib/pageHelpers";
+import { type SearchParams, readParam } from "@/lib/pageHelpers";
 
 export const dynamic = "force-dynamic";
-
-function buildRedirect(status: StatusType, message: string, tab: SettingsTab): never {
-  const encoded = encodeURIComponent(message);
-  redirect(`/settings?tab=${tab}&status=${status}&message=${encoded}`);
-}
 
 /* ── Form field styling ── */
 const inputClass =
@@ -40,7 +35,9 @@ const primaryBtnClass =
   "rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600";
 
 /* ── Server Actions ── */
-async function updateProfileAction(formData: FormData): Promise<void> {
+async function updateProfileAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
@@ -53,7 +50,7 @@ async function updateProfileAction(formData: FormData): Promise<void> {
 
   const age = ageRaw ? Number(ageRaw) : undefined;
   if (ageRaw && Number.isNaN(age)) {
-    buildRedirect("error", "Age must be a valid number.", "profile");
+    return { ok: false, message: "Age must be a valid number." };
   }
 
   const validGenders = ["male", "female", "other", "prefer_not_to_say"];
@@ -70,67 +67,66 @@ async function updateProfileAction(formData: FormData): Promise<void> {
       bio: bio || undefined,
       gender,
     });
+    revalidatePath("/settings");
+    return { ok: true, message: "Profile updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update profile.").message;
-    buildRedirect("error", message, "profile");
+    return { ok: false, message };
   }
-
-  revalidatePath("/settings");
-  buildRedirect("success", "Profile updated.", "profile");
 }
 
 async function updateAvatarAction(formData: FormData): Promise<void> {
   "use server";
   const file = formData.get("avatar");
   if (!file || typeof file === "string") {
-    buildRedirect("error", "Please select an avatar image.", "profile");
+    return;
   }
   try {
     await updateAvatar(file as File);
-  } catch (error) {
-    const message = toPublicDomainError(error, "Unable to update avatar.").message;
-    buildRedirect("error", message, "profile");
+  } catch {
+    // Avatar upload errors handled by the component
   }
 
   revalidatePath("/settings");
-  buildRedirect("success", "Avatar updated.", "profile");
 }
 
-async function updateEmailAction(formData: FormData): Promise<void> {
+async function updateEmailAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   const email = String(formData.get("accountEmail") ?? "").trim();
   const password = String(formData.get("accountPassword") ?? "");
 
   try {
     await updateAccountEmail({ email, password });
+    revalidatePath("/settings");
+    return { ok: true, message: "Account email updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update email.").message;
-    buildRedirect("error", message, "email");
+    return { ok: false, message };
   }
-
-  revalidatePath("/settings");
-  buildRedirect("success", "Account email updated.", "email");
 }
 
-async function updatePasswordAction(formData: FormData): Promise<void> {
+async function updatePasswordAction(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   "use server";
   const currentPassword = String(formData.get("currentPassword") ?? "");
   const nextPassword = String(formData.get("nextPassword") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
   if (nextPassword !== confirmPassword) {
-    buildRedirect("error", "Passwords do not match.", "password");
+    return { ok: false, message: "Passwords do not match." };
   }
 
   try {
     await updateAccountPassword({ currentPassword, nextPassword });
+    revalidatePath("/settings");
+    return { ok: true, message: "Password updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update password.").message;
-    buildRedirect("error", message, "password");
+    return { ok: false, message };
   }
-
-  revalidatePath("/settings");
-  buildRedirect("success", "Password updated.", "password");
 }
 
 /* ── Tab Panels ── */
@@ -177,7 +173,7 @@ function ProfileTab({
           Update your personal details and contact information.
         </p>
 
-        <form action={updateProfileAction} className="mt-6">
+        <ToastForm action={updateProfileAction} className="mt-6">
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block text-sm font-medium text-ink">
               First name
@@ -263,7 +259,7 @@ function ProfileTab({
               Save profile
             </button>
           </div>
-        </form>
+        </ToastForm>
       </div>
     </div>
   );
@@ -277,7 +273,7 @@ function EmailTab() {
         Update the email address you use to log in.
       </p>
 
-      <form action={updateEmailAction} className="pt-5">
+      <ToastForm action={updateEmailAction} className="pt-5">
         <div className="grid gap-5">
           <label className="block text-sm font-medium text-ink">
             New email
@@ -311,7 +307,7 @@ function EmailTab() {
             Update email
           </button>
         </div>
-      </form>
+      </ToastForm>
     </div>
   );
 }
@@ -324,7 +320,7 @@ function PasswordTab() {
         Please enter your current password to change your password.
       </p>
 
-      <form action={updatePasswordAction} className="pt-5">
+      <ToastForm action={updatePasswordAction} className="pt-5">
         <div className="grid gap-5">
           <label className="block text-sm font-medium text-ink">
             Current password
@@ -370,7 +366,7 @@ function PasswordTab() {
             Update password
           </button>
         </div>
-      </form>
+      </ToastForm>
     </div>
   );
 }
@@ -545,8 +541,6 @@ export default async function SettingsPage(props: {
 
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft md:p-8">
         <SettingsNav>
-          <StatusBanner status={status} message={message} />
-
           {tab === "profile" && (
             <ProfileTab profile={profile} avatarSrc={avatarSrc} />
           )}
