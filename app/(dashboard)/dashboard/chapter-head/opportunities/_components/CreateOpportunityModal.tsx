@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, type DragEvent, type ChangeEvent } from "react";
+import { createPortal } from "react-dom";
 import { useToast } from "@/components/ui/Toast";
 import { SdgMultiSelect } from "@/components/ui/SdgMultiSelect";
 
@@ -12,6 +13,14 @@ interface CreateOpportunityModalProps {
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+const STEPS = [
+    { key: "details", label: "Details", desc: "Title, date, and description" },
+    { key: "media", label: "Media", desc: "Upload an image" },
+    { key: "settings", label: "Settings", desc: "Status, contacts, capacity" },
+] as const;
+
+type StepKey = (typeof STEPS)[number]["key"];
+
 export function CreateOpportunityModal({
     onClose,
     createAction,
@@ -19,26 +28,32 @@ export function CreateOpportunityModal({
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [step, setStep] = useState<StepKey>("details");
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [dragOver, setDragOver] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
+    const stepIndex = STEPS.findIndex((s) => s.key === step);
+
     /* ── Image handling ── */
-    const handleFile = useCallback((file: File) => {
-        if (!ACCEPTED_TYPES.includes(file.type)) {
-            toast("Only JPG, PNG, and WebP images are supported.", "error");
-            return;
-        }
-        if (file.size > MAX_FILE_SIZE) {
-            toast("Image must be under 5 MB.", "error");
-            return;
-        }
-        setImageFile(file);
-        const reader = new FileReader();
-        reader.onload = (e) => setImagePreview(e.target?.result as string);
-        reader.readAsDataURL(file);
-    }, [toast]);
+    const handleFile = useCallback(
+        (file: File) => {
+            if (!ACCEPTED_TYPES.includes(file.type)) {
+                toast("Only JPG, PNG, and WebP images are supported.", "error");
+                return;
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                toast("Image must be under 5 MB.", "error");
+                return;
+            }
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onload = (e) => setImagePreview(e.target?.result as string);
+            reader.readAsDataURL(file);
+        },
+        [toast]
+    );
 
     function onDrop(e: DragEvent) {
         e.preventDefault();
@@ -58,6 +73,17 @@ export function CreateOpportunityModal({
         if (fileInputRef.current) fileInputRef.current.value = "";
     }
 
+    /* ── Navigation ── */
+    function goNext() {
+        const idx = STEPS.findIndex((s) => s.key === step);
+        if (idx < STEPS.length - 1) setStep(STEPS[idx + 1].key);
+    }
+
+    function goPrev() {
+        const idx = STEPS.findIndex((s) => s.key === step);
+        if (idx > 0) setStep(STEPS[idx - 1].key);
+    }
+
     /* ── Submit ── */
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -65,9 +91,7 @@ export function CreateOpportunityModal({
         setSubmitting(true);
 
         const formData = new FormData(e.currentTarget);
-        if (imageFile) {
-            formData.set("imageFile", imageFile);
-        }
+        if (imageFile) formData.set("imageFile", imageFile);
 
         try {
             const result = await createAction(formData);
@@ -84,228 +108,306 @@ export function CreateOpportunityModal({
         }
     }
 
-    return (
+    const isLast = stepIndex === STEPS.length - 1;
+
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
             onClick={onClose}
         >
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="create-opp-title"
-                className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200"
+                className="relative flex w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200"
+                style={{ maxHeight: "min(90vh, 640px)" }}
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header gradient */}
-                <div className="h-16 w-full rounded-t-3xl bg-gradient-to-br from-orange-400 to-amber-300" />
-
-                {/* Close button */}
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-gray-600 transition hover:bg-white hover:text-ink"
-                    aria-label="Close"
-                >
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-
-                <form ref={formRef} onSubmit={handleSubmit} className="px-6 pb-6 pt-4">
-                    <h2 id="create-opp-title" className="font-manrope text-xl font-bold text-ink">
-                        New Opportunity
+                {/* ── Left step sidebar ── */}
+                <div className="hidden w-56 shrink-0 border-r border-gray-100 bg-gray-50/60 p-6 md:flex md:flex-col">
+                    <h2
+                        id="create-opp-title"
+                        className="font-manrope text-lg font-bold text-ink"
+                    >
+                        New opportunity
                     </h2>
-                    <p className="mt-1 text-sm text-muted">Create a volunteer opportunity for your chapter.</p>
-
-                    <div className="mt-5 space-y-4">
-                        {/* Title + date */}
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <label className="text-xs font-semibold text-ink">
-                                Title <span className="text-orange-500">*</span>
-                                <input
-                                    name="title"
-                                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
-                                    maxLength={128}
-                                    required
-                                />
-                            </label>
-                            <label className="text-xs font-semibold text-ink">
-                                Event date/time <span className="text-orange-500">*</span>
-                                <input
-                                    name="eventDate"
-                                    type="datetime-local"
-                                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
-                                    required
-                                />
-                            </label>
-                        </div>
-
-                        {/* Description */}
-                        <label className="block text-xs font-semibold text-ink">
-                            Description <span className="text-orange-500">*</span>
-                            <textarea
-                                name="description"
-                                rows={3}
-                                maxLength={1024}
-                                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
-                                required
-                            />
-                        </label>
-
-                        {/* SDG tags */}
-                        <div className="text-xs font-semibold text-ink">
-                            SDG tags <span className="text-orange-500">*</span>
-                            <SdgMultiSelect name="sdgs" required />
-                        </div>
-
-                        {/* Image upload — drag & drop */}
-                        <div className="text-xs font-semibold text-ink">
-                            Image (optional)
-                            <div
-                                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                                onDragLeave={() => setDragOver(false)}
-                                onDrop={onDrop}
-                                onClick={() => fileInputRef.current?.click()}
-                                className={`mt-1 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition ${dragOver
-                                        ? "border-orange-400 bg-orange-50"
-                                        : "border-gray-200 bg-gray-50 hover:border-orange-300"
-                                    }`}
-                            >
-                                {imagePreview ? (
-                                    <div className="relative">
-                                        <img
-                                            src={imagePreview}
-                                            alt="Preview"
-                                            className="h-32 w-auto rounded-lg object-cover"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); removeImage(); }}
-                                            className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-sm hover:bg-red-600"
-                                            aria-label="Remove image"
-                                        >
-                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                <path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" />
+                    <nav className="mt-6 space-y-1" aria-label="Form steps">
+                        {STEPS.map((s, i) => {
+                            const isActive = s.key === step;
+                            const isPast = i < stepIndex;
+                            return (
+                                <button
+                                    key={s.key}
+                                    type="button"
+                                    onClick={() => setStep(s.key)}
+                                    className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition ${isActive
+                                        ? "bg-white shadow-sm"
+                                        : "hover:bg-white/60"
+                                        }`}
+                                >
+                                    <span
+                                        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold transition ${isActive
+                                            ? "bg-orange-500 text-white"
+                                            : isPast
+                                                ? "bg-emerald-100 text-emerald-600"
+                                                : "bg-gray-200 text-gray-500"
+                                            }`}
+                                    >
+                                        {isPast ? (
+                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                             </svg>
-                                        </button>
+                                        ) : (
+                                            i + 1
+                                        )}
+                                    </span>
+                                    <div className="min-w-0">
+                                        <span className={`block text-sm font-semibold ${isActive ? "text-ink" : "text-muted"}`}>
+                                            {s.label}
+                                        </span>
+                                        <span className="block text-[11px] text-muted">
+                                            {s.desc}
+                                        </span>
                                     </div>
-                                ) : (
-                                    <>
-                                        <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-8m-4 4l4-4 4 4M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
-                                        </svg>
-                                        <p className="mt-2 text-sm text-muted">
-                                            Drag & drop an image here, or <span className="font-semibold text-orange-500">browse</span>
-                                        </p>
-                                        <p className="mt-1 text-[11px] text-muted">JPG, PNG, WebP · Max 5 MB</p>
-                                    </>
-                                )}
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </div>
+
+                {/* ── Right content area ── */}
+                <div className="flex min-w-0 flex-1 flex-col">
+                    {/* Mobile header */}
+                    <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 md:py-3">
+                        <div className="md:hidden">
+                            <h2 className="font-manrope text-lg font-bold text-ink">
+                                New opportunity
+                            </h2>
+                            <p className="text-xs text-muted">
+                                Step {stepIndex + 1} of {STEPS.length} — {STEPS[stepIndex].label}
+                            </p>
+                        </div>
+                        <p className="hidden text-sm text-muted md:block">
+                            {STEPS[stepIndex].desc}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-ink"
+                            aria-label="Close"
+                        >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {/* Form — all fields rendered but only active step visible */}
+                    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-y-auto">
+                        <div className="flex-1 px-6 py-5">
+                            {/* ── Step 1: Details ── */}
+                            <div className={step === "details" ? "space-y-5" : "hidden"}>
+                                <label className="block text-sm font-medium text-ink">
+                                    Title <span className="text-orange-500">*</span>
+                                    <input
+                                        name="title"
+                                        placeholder="Add a title"
+                                        className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                        maxLength={128}
+                                        required
+                                    />
+                                </label>
+
+                                <label className="block text-sm font-medium text-ink">
+                                    Event date/time <span className="text-orange-500">*</span>
+                                    <input
+                                        name="eventDate"
+                                        type="datetime-local"
+                                        className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                        required
+                                    />
+                                </label>
+
+                                <label className="block text-sm font-medium text-ink">
+                                    Description <span className="text-orange-500">*</span>
+                                    <textarea
+                                        name="description"
+                                        rows={3}
+                                        maxLength={1024}
+                                        placeholder="Describe the opportunity..."
+                                        className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                        required
+                                    />
+                                </label>
+
+                                <div className="text-sm font-medium text-ink">
+                                    SDG tags <span className="text-orange-500">*</span>
+                                    <div className="mt-1.5">
+                                        <SdgMultiSelect name="sdgs" required />
+                                    </div>
+                                </div>
                             </div>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                className="hidden"
-                                onChange={onFileChange}
-                            />
-                        </div>
 
-                        {/* Status + Contact */}
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <label className="text-xs font-semibold text-ink">
-                                Status
-                                <select
-                                    name="published"
-                                    defaultValue="false"
-                                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                            {/* ── Step 2: Media ── */}
+                            <div className={step === "media" ? "space-y-5" : "hidden"}>
+                                <p className="text-sm text-muted">Add a cover image for this opportunity. This will be shown on the public listing.</p>
+                                <div
+                                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                                    onDragLeave={() => setDragOver(false)}
+                                    onDrop={onDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition ${dragOver
+                                        ? "border-orange-400 bg-orange-50/50"
+                                        : "border-gray-200 bg-gray-50/50 hover:border-gray-300"
+                                        }`}
                                 >
-                                    <option value="false">Draft</option>
-                                    <option value="true">Published</option>
-                                </select>
-                            </label>
-                            <label className="text-xs font-semibold text-ink">
-                                Contact name
+                                    {imagePreview ? (
+                                        <div className="relative">
+                                            <img
+                                                src={imagePreview}
+                                                alt="Preview"
+                                                className="h-40 w-auto rounded-lg object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); removeImage(); }}
+                                                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-sm hover:bg-red-600"
+                                                aria-label="Remove image"
+                                            >
+                                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                    <path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-8m-4 4l4-4 4 4M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
+                                            </svg>
+                                            <p className="mt-3 text-sm text-muted">
+                                                Drag & drop an image here, or <span className="font-medium text-orange-500">browse</span>
+                                            </p>
+                                            <p className="mt-1 text-xs text-muted">JPG, PNG, WebP · Max 5 MB</p>
+                                        </>
+                                    )}
+                                </div>
                                 <input
-                                    name="signupContactName"
-                                    maxLength={128}
-                                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    className="hidden"
+                                    onChange={onFileChange}
                                 />
-                            </label>
-                        </div>
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <label className="text-xs font-semibold text-ink">
-                                Contact email
-                                <input
-                                    name="signupContactEmail"
-                                    type="email"
-                                    maxLength={256}
-                                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                                />
-                            </label>
-                            <label className="text-xs font-semibold text-ink">
-                                Contact phone
-                                <input
-                                    name="signupContactPhone"
-                                    maxLength={64}
-                                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                                />
-                            </label>
+                            </div>
+
+                            {/* ── Step 3: Settings ── */}
+                            <div className={step === "settings" ? "space-y-5" : "hidden"}>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <label className="block text-sm font-medium text-ink">
+                                        Status
+                                        <select
+                                            name="published"
+                                            defaultValue="false"
+                                            className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm"
+                                        >
+                                            <option value="false">Draft</option>
+                                            <option value="true">Published</option>
+                                        </select>
+                                    </label>
+                                    <label className="block text-sm font-medium text-ink">
+                                        Contact name
+                                        <input
+                                            name="signupContactName"
+                                            maxLength={128}
+                                            className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                        />
+                                    </label>
+                                </div>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <label className="block text-sm font-medium text-ink">
+                                        Contact email
+                                        <input
+                                            name="signupContactEmail"
+                                            type="email"
+                                            maxLength={256}
+                                            className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                        />
+                                    </label>
+                                    <label className="block text-sm font-medium text-ink">
+                                        Contact phone
+                                        <input
+                                            name="signupContactPhone"
+                                            maxLength={64}
+                                            className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                        />
+                                    </label>
+                                </div>
+                                <div className="grid gap-4 sm:grid-cols-3">
+                                    <label className="block text-sm font-medium text-ink">
+                                        Capacity needed
+                                        <input
+                                            name="capacity"
+                                            type="number"
+                                            min={0}
+                                            className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                        />
+                                    </label>
+                                    <label className="block text-sm font-medium text-ink">
+                                        Current volunteers
+                                        <input
+                                            name="currentVolunteers"
+                                            type="number"
+                                            min={0}
+                                            className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                                        />
+                                    </label>
+                                    <label className="block text-sm font-medium text-ink">
+                                        Waitlist
+                                        <select
+                                            name="waitlistEnabled"
+                                            defaultValue="false"
+                                            className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm"
+                                        >
+                                            <option value="false">Disabled</option>
+                                            <option value="true">Enabled</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Capacity + Waitlist */}
-                        <div className="grid gap-3 md:grid-cols-3">
-                            <label className="text-xs font-semibold text-ink">
-                                Capacity needed
-                                <input
-                                    name="capacity"
-                                    type="number"
-                                    min={0}
-                                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                                />
-                            </label>
-                            <label className="text-xs font-semibold text-ink">
-                                Current volunteers
-                                <input
-                                    name="currentVolunteers"
-                                    type="number"
-                                    min={0}
-                                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                                />
-                            </label>
-                            <label className="text-xs font-semibold text-ink">
-                                Waitlist
-                                <select
-                                    name="waitlistEnabled"
-                                    defaultValue="false"
-                                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                                >
-                                    <option value="false">Disabled</option>
-                                    <option value="true">Enabled</option>
-                                </select>
-                            </label>
-                        </div>
-
-                        {/* Submit */}
-                        <div className="flex items-center gap-3 pt-2">
-                            <button
-                                type="submit"
-                                disabled={submitting}
-                                className="rounded-full bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {submitting ? "Creating…" : "Create opportunity"}
-                            </button>
+                        {/* ── Footer ── */}
+                        <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4">
                             <button
                                 type="button"
-                                onClick={onClose}
-                                className="rounded-full border border-gray-200 bg-white px-6 py-2.5 text-sm font-semibold text-muted transition hover:bg-gray-50"
+                                onClick={stepIndex === 0 ? onClose : goPrev}
+                                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-muted transition hover:bg-gray-50 hover:text-ink"
                             >
-                                Cancel
+                                {stepIndex === 0 ? "Cancel" : "Back"}
                             </button>
+                            {isLast ? (
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="rounded-lg bg-ink px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {submitting ? "Creating…" : "Create opportunity"}
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={goNext}
+                                    className="rounded-lg bg-ink px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800"
+                                >
+                                    Continue
+                                </button>
+                            )}
                         </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

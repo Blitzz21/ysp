@@ -209,8 +209,8 @@ function JoinersList({ signups }: { signups: SignupWithProfile[] }) {
             </div>
             <span
               className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${signup.status === "joined"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-amber-100 text-amber-700"
+                ? "bg-green-100 text-green-700"
+                : "bg-amber-100 text-amber-700"
                 }`}
             >
               {signup.status === "joined" ? "Joined" : "Waitlisted"}
@@ -230,11 +230,11 @@ function OpportunityCard({
   signups: SignupWithProfile[];
 }) {
   return (
-    <details className="group rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
+    <details className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
       <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-manrope text-lg font-semibold">{opportunity.title}</h3>
-          <p className="text-xs text-muted">
+          <h3 className="font-manrope text-base font-semibold text-ink">{opportunity.title}</h3>
+          <p className="mt-0.5 text-xs text-muted">
             {new Date(opportunity.eventDate).toLocaleString("en-PH")}
             {" · "}
             {opportunity.currentVolunteers}/{opportunity.capacity || "\u221E"} volunteers
@@ -242,21 +242,21 @@ function OpportunityCard({
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${opportunity.published
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-muted"
+            className={`rounded-md px-2.5 py-1 text-xs font-medium ${opportunity.published
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-gray-100 text-gray-500"
               }`}
           >
             {opportunity.published ? "Published" : "Draft"}
           </span>
-          <span className="rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-ink transition group-open:border-orange-300 group-open:text-orange-600">
-            Edit
-          </span>
+          <svg className="h-4 w-4 text-gray-300 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
       </summary>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <ToastForm action={updateOpportunityAction} className="space-y-3">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+        <ToastForm action={updateOpportunityAction} className="space-y-4">
           <input type="hidden" name="id" value={opportunity.id} />
           <div className="grid gap-3 md:grid-cols-2">
             <label className="text-xs font-semibold text-ink">
@@ -274,7 +274,7 @@ function OpportunityCard({
                 name="eventDate"
                 type="datetime-local"
                 defaultValue={toDateTimeLocalValue(opportunity.eventDate)}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                 required
               />
             </label>
@@ -293,7 +293,7 @@ function OpportunityCard({
             <label className="text-xs font-semibold text-ink">
               Status
               <select
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                 name="published"
                 defaultValue={opportunity.published ? "true" : "false"}
               >
@@ -344,7 +344,7 @@ function OpportunityCard({
                 type="number"
                 min={0}
                 defaultValue={String(opportunity.capacity)}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
               />
             </label>
             <label className="text-xs font-semibold text-ink">
@@ -354,13 +354,13 @@ function OpportunityCard({
                 type="number"
                 min={0}
                 defaultValue={String(opportunity.currentVolunteers)}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
               />
             </label>
             <label className="text-xs font-semibold text-ink">
               Waitlist
               <select
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                 name="waitlistEnabled"
                 defaultValue={opportunity.waitlistEnabled ? "true" : "false"}
               >
@@ -371,7 +371,7 @@ function OpportunityCard({
           </div>
           <button
             type="submit"
-            className="rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-glow"
+            className="rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-gray-800"
           >
             Save changes
           </button>
@@ -392,7 +392,7 @@ function OpportunityCard({
               <input type="hidden" name="id" value={opportunity.id} />
               <button
                 type="submit"
-                className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700"
+                className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50"
               >
                 Delete opportunity
               </button>
@@ -443,7 +443,7 @@ export default async function ChapterHeadOpportunitiesPage() {
             Opportunities are unavailable. Please confirm your chapter head access.
           </div>
         ) : opportunities.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-muted">
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-muted">
             No opportunities yet. Click &quot;New Opportunity&quot; above to get started.
           </div>
         ) : (

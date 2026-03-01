@@ -33,7 +33,7 @@ type DashboardShellProps = {
 };
 
 function iconClassName(active: boolean): string {
-  return active ? "text-orange-600" : "text-muted";
+  return active ? "text-ink" : "text-gray-400";
 }
 
 function isActivePath(pathname: string, item: DashboardNavItem): boolean {
@@ -160,9 +160,9 @@ function DropdownNavItem({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex w-full items-center rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${childActive
-          ? "border-orange-200 bg-orange-50 text-orange-700"
-          : "border-transparent text-ink hover:border-orange-200 hover:bg-orange-50/60"
+        className={`flex w-full items-center rounded-xl px-3 py-2 text-sm font-medium transition ${childActive
+          ? "bg-gray-100 text-ink"
+          : "text-gray-600 hover:bg-gray-50 hover:text-ink"
           } ${collapsed ? "justify-center gap-0" : "gap-3"} ${focusRing}`}
       >
         <span className={`shrink-0 ${iconClassName(childActive)}`}>
@@ -195,15 +195,15 @@ function DropdownNavItem({
                 key={child.href}
                 href={child.href}
                 onClick={onMobileClose}
-                className={`flex items-center rounded-xl border px-3 py-2 text-sm font-medium transition ${active
-                  ? "border-orange-200 bg-orange-50 text-orange-700"
-                  : "border-transparent text-muted hover:border-orange-200 hover:bg-orange-50/60 hover:text-ink"
+                className={`flex items-center rounded-lg px-3 py-1.5 text-[13px] font-medium transition ${active
+                  ? "bg-gray-100 text-ink"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-ink"
                   } ${focusRing}`}
               >
                 <span className={`mr-2.5 shrink-0 ${iconClassName(active)}`}>
                   <NavIcon icon={child.icon} />
                 </span>
-                {child.label}
+                <span className={active ? "font-semibold" : ""}>{child.label}</span>
               </Link>
             );
           })}
@@ -227,7 +227,7 @@ export function DashboardShell({
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2";
 
   return (
-    <div className="h-screen overflow-hidden bg-[#f7f5f0] text-ink">
+    <div className="h-screen overflow-hidden bg-[#f8f8f6] text-ink">
       <div className="flex h-full">
         <div
           className={`fixed inset-0 z-30 bg-black/30 transition md:hidden ${mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
@@ -238,18 +238,18 @@ export function DashboardShell({
 
         <aside
           id="dashboard-sidebar"
-          className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-gray-200 bg-white/95 backdrop-blur transition-all duration-300 ease-out md:translate-x-0 ${collapsed ? "w-20" : "w-72"
+          className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden border-r border-gray-200/80 bg-white transition-all duration-300 ease-out md:translate-x-0 ${collapsed ? "w-[72px]" : "w-64"
             } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
         >
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4">
-            <Link className="flex min-w-0 items-center gap-3 overflow-hidden" href="/">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center">
+          <div className="flex items-center justify-between border-b border-gray-100/80 px-4 py-3">
+            <Link className="flex min-w-0 items-center gap-2.5 overflow-hidden" href="/">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center">
                 <Image
                   src="/ysp-logo.png"
                   alt="Youth Service Philippines logo"
-                  className="h-10 w-10 object-contain"
-                  width={40}
-                  height={40}
+                  className="h-8 w-8 object-contain"
+                  width={32}
+                  height={32}
                   priority
                 />
               </span>
@@ -259,16 +259,16 @@ export function DashboardShell({
                   : "max-w-[180px] translate-x-0 opacity-100"
                   }`}
               >
-                <span className="block whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.32em] text-orange-600">
+                <span className="block whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.25em] text-gray-400">
                   {productLabel}
                 </span>
-                <span className="block truncate font-manrope text-lg font-semibold text-navy">
+                <span className="block truncate font-manrope text-sm font-bold text-ink">
                   {title}
                 </span>
               </span>
             </Link>
             <button
-              className={`inline-flex rounded-full border border-gray-200 p-2 text-muted transition hover:border-orange-300 hover:text-orange-600 md:hidden ${focusRing}`}
+              className={`inline-flex rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-ink md:hidden ${focusRing}`}
               onClick={() => setMobileOpen(false)}
               type="button"
               aria-label="Close sidebar"
@@ -279,7 +279,7 @@ export function DashboardShell({
             </button>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
             {navItems.map((item) => {
               if (item.children) {
                 return (
@@ -299,9 +299,9 @@ export function DashboardShell({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${active
-                    ? "border-orange-200 bg-orange-50 text-orange-700"
-                    : "border-transparent text-ink hover:border-orange-200 hover:bg-orange-50/60"
+                  className={`flex items-center rounded-xl px-3 py-2 text-sm font-medium transition ${active
+                    ? "bg-gray-100 text-ink"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-ink"
                     } ${collapsed ? "justify-center gap-0" : "gap-3"} ${focusRing}`}
                 >
                   <span className={`shrink-0 ${iconClassName(active)}`}>
@@ -320,9 +320,9 @@ export function DashboardShell({
             })}
           </nav>
 
-          <div className="space-y-2 border-t border-gray-100 p-3">
+          <div className="space-y-1.5 border-t border-gray-100/80 px-3 py-3">
             <button
-              className={`flex w-full items-center rounded-2xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-muted transition hover:border-orange-300 hover:text-orange-600 ${collapsed ? "justify-center" : "gap-2"
+              className={`flex w-full items-center rounded-xl px-3 py-2 text-sm font-medium text-gray-500 transition hover:bg-gray-50 hover:text-ink ${collapsed ? "justify-center" : "gap-2"
                 } ${focusRing}`}
               onClick={() => setCollapsed((prev) => !prev)}
               type="button"
@@ -335,12 +335,12 @@ export function DashboardShell({
                   : "max-w-[130px] translate-x-0 opacity-100"
                   }`}
               >
-                Collapse sidebar
+                Collapse
               </span>
             </button>
             <form action={signOutAction}>
               <button
-                className={`flex w-full items-center rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2.5 font-semibold text-orange-700 transition hover:border-orange-300 ${collapsed ? "justify-center text-xs" : "gap-2 text-sm"
+                className={`flex w-full items-center rounded-xl px-3 py-2 font-medium text-gray-500 transition hover:bg-red-50 hover:text-red-600 ${collapsed ? "justify-center text-xs" : "gap-2 text-sm"
                   } ${focusRing}`}
                 type="submit"
               >
@@ -358,18 +358,18 @@ export function DashboardShell({
                     strokeLinejoin="round"
                   />
                 </svg>
-                {!collapsed ? "Logout" : null}
+                {!collapsed ? "Log out" : null}
               </button>
             </form>
           </div>
         </aside>
 
         <div
-          className={`relative min-w-0 flex-1 transition-[margin] duration-300 ease-out ${collapsed ? "md:ml-20" : "md:ml-72"
+          className={`relative min-w-0 flex-1 transition-[margin] duration-300 ease-out ${collapsed ? "md:ml-[72px]" : "md:ml-64"
             }`}
         >
           <button
-            className={`fixed left-4 top-4 z-20 inline-flex rounded-full border border-gray-200 bg-white p-2 text-muted shadow-soft transition hover:border-orange-300 hover:text-orange-600 md:hidden ${focusRing}`}
+            className={`fixed left-4 top-4 z-20 inline-flex rounded-lg border border-gray-200 bg-white p-2 text-gray-500 shadow-sm transition hover:bg-gray-50 hover:text-ink md:hidden ${focusRing}`}
             onClick={() => setMobileOpen(true)}
             type="button"
             aria-label="Open sidebar"
