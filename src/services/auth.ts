@@ -160,6 +160,7 @@ async function fetchUserProfile(userId: string): Promise<UserProfileRow | null> 
   return rows[0] ?? null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub: callers pass email/password
 export async function signIn(_email: string, _password: string): Promise<void> {
   throw new Error("Use the client login page to create Appwrite sessions.");
 }

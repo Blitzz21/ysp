@@ -517,8 +517,6 @@ export default async function SettingsPage(props: {
   searchParams?: Promise<SearchParams>;
 }) {
   const searchParams = (await props.searchParams) ?? {};
-  const status = readParam(searchParams, "status");
-  const message = readParam(searchParams, "message");
   const tab = resolveTab(readParam(searchParams, "tab"));
 
   const session = await getSession();

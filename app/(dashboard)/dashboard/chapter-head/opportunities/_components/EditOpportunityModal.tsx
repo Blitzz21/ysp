@@ -348,6 +348,7 @@ export function EditOpportunityModal({
                                 >
                                     {imagePreview ? (
                                         <div className="relative">
+                                            {/* eslint-disable-next-line @next/next/no-img-element -- blob preview URL */}
                                             <img src={imagePreview} alt="Preview" className="h-40 w-auto rounded-lg object-cover" />
                                             <button
                                                 type="button"

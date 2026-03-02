@@ -32,6 +32,7 @@ function OpportunityCardClient({
             {/* Image thumbnail */}
             {imageUrl ? (
                 <div className="sm:w-36 md:w-44 shrink-0 bg-gray-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- dynamic Appwrite storage URL */}
                     <img
                         src={imageUrl}
                         alt={opportunity.title}
@@ -194,12 +195,10 @@ export function OpportunitiesClientWrapper({
  */
 export function ToastForm({
     action,
-    successMessage,
     children,
     className,
 }: {
     action: (formData: FormData) => Promise<{ ok: boolean; message: string }>;
-    successMessage?: string;
     children: React.ReactNode;
     className?: string;
 }) {

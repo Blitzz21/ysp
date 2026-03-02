@@ -31,7 +31,7 @@ test.describe("P0: Admin Program Lifecycle + Visual Regression", () => {
         .first()
         .locator('button:has-text("Delete program")')
         .click();
-      await expect(page).toHaveURL(/status=success/);
+      await expect(page.getByRole("alert").getByText("Program deleted.")).toBeVisible();
       await page.goto("/admin/programs");
       await expect(
         page.getByRole("heading", { name: "Programs" })
@@ -134,12 +134,10 @@ test.describe("P0: Admin Program Lifecycle + Visual Regression", () => {
           .first()
           .setInputFiles(tmpImg);
 
-        // Submit the form. The server action redirects to
-        // /admin/programs?status=success&message=Program+created.
+        // Submit the form. ToastForm shows a toast notification on success.
         await page.getByRole("button", { name: "Create program" }).click();
 
-        await expect(page).toHaveURL(/status=success/);
-        await expect(page.getByText("Program created.")).toBeVisible();
+        await expect(page.getByRole("alert").getByText("Program created.")).toBeVisible();
       });
 
       // ─────────────────────────────────────────────────────────────────────

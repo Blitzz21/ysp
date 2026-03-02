@@ -7,6 +7,7 @@ type UseAuthStatusOptions = {
   refreshOnEvents?: boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- stub: options reserved for future use
 export function useAuthStatus(_options?: UseAuthStatusOptions): {
   status: AuthStatus;
 } {

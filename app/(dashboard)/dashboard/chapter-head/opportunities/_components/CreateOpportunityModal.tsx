@@ -297,6 +297,7 @@ export function CreateOpportunityModal({
                                 >
                                     {imagePreview ? (
                                         <div className="relative">
+                                            {/* eslint-disable-next-line @next/next/no-img-element -- blob preview URL */}
                                             <img
                                                 src={imagePreview}
                                                 alt="Preview"
