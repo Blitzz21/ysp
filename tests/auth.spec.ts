@@ -327,10 +327,10 @@ test("admin dashboard uses sidebar navigation", async ({ page }) => {
   }
 
   await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Programs",      exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Chapters",      exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Programs", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chapters", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Opportunities", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Settings",      exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Settings", exact: true })).toBeVisible();
 });
 
 test("member dashboard route is usable", async ({ page }) => {
@@ -377,9 +377,9 @@ test("sidebar active state matches current route", async ({ page }) => {
     return;
   }
 
-  await expect(page.getByRole("link", { name: "Overview" })).toHaveClass(/bg-orange-50/);
+  await expect(page.getByRole("link", { name: "Overview" })).toHaveClass(/bg-gray-100/);
   await page.goto("/admin/settings");
-  await expect(page.getByRole("link", { name: "Settings" })).toHaveClass(/bg-orange-50/);
+  await expect(page.getByRole("link", { name: "Settings" })).toHaveClass(/bg-gray-100/);
 });
 
 test("member settings route is usable", async ({ page }) => {
@@ -395,7 +395,7 @@ test("chapter dashboard uses sidebar navigation", async ({ page }) => {
     return;
   }
 
-  await expect(page.getByRole("link", { name: "Chapter dashboard",    exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chapter dashboard", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Chapter opportunities", exact: true })).toBeVisible();
   await expect(page.getByText("Chapter assignment required")).toBeVisible();
 });
