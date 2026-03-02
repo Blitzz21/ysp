@@ -4,35 +4,54 @@ import { useRef, useState, useCallback, type DragEvent, type ChangeEvent } from 
 import { createPortal } from "react-dom";
 import { useToast } from "@/components/ui/Toast";
 import { SdgMultiSelect } from "@/components/ui/SdgMultiSelect";
+import type { VolunteerOpportunity } from "@/services/types";
 
-interface CreateOpportunityModalProps {
+interface EditOpportunityModalProps {
+    opportunity: VolunteerOpportunity;
+    existingImageUrl?: string | null;
     onClose: () => void;
-    createAction: (formData: FormData) => Promise<{ ok: boolean; message: string }>;
+    updateAction: (formData: FormData) => Promise<{ ok: boolean; message: string }>;
+    deleteAction: (formData: FormData) => Promise<{ ok: boolean; message: string }>;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const STEPS = [
     { key: "details", label: "Details", desc: "Title, date, and description" },
-    { key: "media", label: "Media", desc: "Upload an image" },
+    { key: "media", label: "Media", desc: "Upload or change image" },
     { key: "settings", label: "Settings", desc: "Status, contacts, capacity" },
 ] as const;
 
 type StepKey = (typeof STEPS)[number]["key"];
 
-export function CreateOpportunityModal({
+function toDateTimeLocalValue(value: string): string {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "";
+    const yyyy = parsed.getFullYear();
+    const mm = `${parsed.getMonth() + 1}`.padStart(2, "0");
+    const dd = `${parsed.getDate()}`.padStart(2, "0");
+    const hh = `${parsed.getHours()}`.padStart(2, "0");
+    const min = `${parsed.getMinutes()}`.padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
+export function EditOpportunityModal({
+    opportunity,
+    existingImageUrl,
     onClose,
-    createAction,
-}: CreateOpportunityModalProps) {
+    updateAction,
+    deleteAction,
+}: EditOpportunityModalProps) {
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [step, setStep] = useState<StepKey>("details");
     const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(existingImageUrl ?? null);
     const [dragOver, setDragOver] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
     const stepIndex = STEPS.findIndex((s) => s.key === step);
 
@@ -77,7 +96,6 @@ export function CreateOpportunityModal({
     function validateStep(which: StepKey): boolean {
         const form = formRef.current;
         if (!form) return false;
-
         if (which === "details") {
             const title = (form.elements.namedItem("title") as HTMLInputElement)?.value?.trim();
             const eventDate = (form.elements.namedItem("eventDate") as HTMLInputElement)?.value;
@@ -87,7 +105,6 @@ export function CreateOpportunityModal({
                 return false;
             }
         }
-        // media and settings have no required fields to block navigation
         return true;
     }
 
@@ -105,12 +122,7 @@ export function CreateOpportunityModal({
 
     function goToStep(target: StepKey) {
         const targetIdx = STEPS.findIndex((s) => s.key === target);
-        // Going backward is always allowed; going forward requires validation
-        if (targetIdx <= stepIndex) {
-            setStep(target);
-            return;
-        }
-        // Validate all steps between current and target
+        if (targetIdx <= stepIndex) { setStep(target); return; }
         for (let i = stepIndex; i < targetIdx; i++) {
             if (!validateStep(STEPS[i].key)) return;
         }
@@ -122,12 +134,32 @@ export function CreateOpportunityModal({
         e.preventDefault();
         if (submitting) return;
         setSubmitting(true);
-
         const formData = new FormData(e.currentTarget);
+        formData.set("id", opportunity.id);
         if (imageFile) formData.set("imageFile", imageFile);
-
         try {
-            const result = await createAction(formData);
+            const result = await updateAction(formData);
+            if (result.ok) {
+                toast(result.message, "success");
+                onClose();
+            } else {
+                toast(result.message, "error");
+            }
+        } catch {
+            toast("An unexpected error occurred.", "error");
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    /* ── Delete ── */
+    async function handleDelete() {
+        if (submitting) return;
+        setSubmitting(true);
+        const formData = new FormData();
+        formData.set("id", opportunity.id);
+        try {
+            const result = await deleteAction(formData);
             if (result.ok) {
                 toast(result.message, "success");
                 onClose();
@@ -151,61 +183,84 @@ export function CreateOpportunityModal({
             <div
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby="create-opp-title"
+                aria-labelledby="edit-opp-title"
                 className="relative flex w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200"
-                style={{ maxHeight: "min(90vh, 640px)" }}
+                style={{ maxHeight: "min(90vh, 680px)" }}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* ── Left step sidebar ── */}
-                <div className="hidden w-56 shrink-0 border-r border-gray-100 bg-gray-50/60 p-6 md:flex md:flex-col">
-                    <h2
-                        id="create-opp-title"
-                        className="font-manrope text-lg font-bold text-ink"
-                    >
-                        New opportunity
-                    </h2>
-                    <nav className="mt-6 space-y-1" aria-label="Form steps">
-                        {STEPS.map((s, i) => {
-                            const isActive = s.key === step;
-                            const isPast = i < stepIndex;
-                            return (
-                                <button
-                                    key={s.key}
-                                    type="button"
-                                    onClick={() => goToStep(s.key)}
-                                    className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition ${isActive
-                                        ? "bg-white shadow-sm"
-                                        : "hover:bg-white/60"
-                                        }`}
-                                >
-                                    <span
-                                        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold transition ${isActive
-                                            ? "bg-orange-500 text-white"
-                                            : isPast
-                                                ? "bg-emerald-100 text-emerald-600"
-                                                : "bg-gray-200 text-gray-500"
+                <div className="hidden w-56 shrink-0 border-r border-gray-100 bg-gray-50/60 p-6 md:flex md:flex-col md:justify-between">
+                    <div>
+                        <h2
+                            id="edit-opp-title"
+                            className="font-manrope text-lg font-bold text-ink"
+                        >
+                            Edit opportunity
+                        </h2>
+                        <nav className="mt-6 space-y-1" aria-label="Form steps">
+                            {STEPS.map((s, i) => {
+                                const isActive = s.key === step;
+                                const isPast = i < stepIndex;
+                                return (
+                                    <button
+                                        key={s.key}
+                                        type="button"
+                                        onClick={() => goToStep(s.key)}
+                                        className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition ${isActive
+                                            ? "bg-white shadow-sm"
+                                            : "hover:bg-white/60"
                                             }`}
                                     >
-                                        {isPast ? (
-                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        ) : (
-                                            i + 1
-                                        )}
-                                    </span>
-                                    <div className="min-w-0">
-                                        <span className={`block text-sm font-semibold ${isActive ? "text-ink" : "text-muted"}`}>
-                                            {s.label}
+                                        <span
+                                            className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold transition ${isActive
+                                                ? "bg-orange-500 text-white"
+                                                : isPast
+                                                    ? "bg-emerald-100 text-emerald-600"
+                                                    : "bg-gray-200 text-gray-500"
+                                                }`}
+                                        >
+                                            {isPast ? (
+                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            ) : (
+                                                i + 1
+                                            )}
                                         </span>
-                                        <span className="block text-[11px] text-muted">
-                                            {s.desc}
-                                        </span>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </nav>
+                                        <div className="min-w-0">
+                                            <span className={`block text-sm font-semibold ${isActive ? "text-ink" : "text-muted"}`}>{s.label}</span>
+                                            <span className="block text-[11px] text-muted">{s.desc}</span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </div>
+
+                    {/* Delete zone */}
+                    <div className="mt-4 border-t border-gray-200 pt-4">
+                        {confirmDelete ? (
+                            <div className="space-y-2">
+                                <p className="text-xs text-red-600 font-medium">Delete this opportunity?</p>
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={handleDelete} disabled={submitting} className="flex-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-60">
+                                        {submitting ? "Deleting…" : "Confirm"}
+                                    </button>
+                                    <button type="button" onClick={() => setConfirmDelete(false)} className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-muted hover:bg-gray-50">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setConfirmDelete(true)}
+                                className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                            >
+                                Delete opportunity
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* ── Right content area ── */}
@@ -213,16 +268,12 @@ export function CreateOpportunityModal({
                     {/* Mobile header */}
                     <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 md:py-3">
                         <div className="md:hidden">
-                            <h2 className="font-manrope text-lg font-bold text-ink">
-                                New opportunity
-                            </h2>
+                            <h2 className="font-manrope text-lg font-bold text-ink">Edit opportunity</h2>
                             <p className="text-xs text-muted">
                                 Step {stepIndex + 1} of {STEPS.length} — {STEPS[stepIndex].label}
                             </p>
                         </div>
-                        <p className="hidden text-sm text-muted md:block">
-                            {STEPS[stepIndex].desc}
-                        </p>
+                        <p className="hidden text-sm text-muted md:block">{STEPS[stepIndex].desc}</p>
                         <button
                             type="button"
                             onClick={onClose}
@@ -236,55 +287,55 @@ export function CreateOpportunityModal({
                         </button>
                     </div>
 
-                    {/* Form — all fields rendered but only active step visible */}
+                    {/* Form */}
                     <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-y-auto">
                         <div className="flex-1 px-6 py-5">
-                            {/* ── Step 1: Details ── */}
+                            {/* Step 1: Details */}
                             <div className={step === "details" ? "space-y-5" : "hidden"}>
                                 <label className="block text-sm font-medium text-ink">
                                     Title <span className="text-orange-500">*</span>
                                     <input
                                         name="title"
+                                        defaultValue={opportunity.title}
                                         placeholder="Add a title"
                                         className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                                         maxLength={128}
                                         required
                                     />
                                 </label>
-
                                 <label className="block text-sm font-medium text-ink">
                                     Event date/time <span className="text-orange-500">*</span>
                                     <input
                                         name="eventDate"
                                         type="datetime-local"
+                                        defaultValue={toDateTimeLocalValue(opportunity.eventDate)}
                                         className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                                         required
                                     />
                                 </label>
-
                                 <label className="block text-sm font-medium text-ink">
                                     Description <span className="text-orange-500">*</span>
                                     <textarea
                                         name="description"
                                         rows={3}
                                         maxLength={1024}
+                                        defaultValue={opportunity.description}
                                         placeholder="Describe the opportunity..."
                                         className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                                         required
                                     />
                                 </label>
-
                                 <div className="text-sm font-medium text-ink">
                                     SDG tags <span className="text-orange-500">*</span>
                                     <div className="mt-1.5">
-                                        <SdgMultiSelect name="sdgs" required />
+                                        <SdgMultiSelect name="sdgs" defaultValue={opportunity.sdgs} required />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* ── Step 2: Media ── */}
+                            {/* Step 2: Media */}
                             <div className={step === "media" ? "space-y-5" : "hidden"}>
-                                <p className="text-sm text-muted">Add a cover image for this opportunity. This will be shown on the public listing.</p>
+                                <p className="text-sm text-muted">Change or upload a cover image for this opportunity.</p>
                                 <div
                                     onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                                     onDragLeave={() => setDragOver(false)}
@@ -297,11 +348,7 @@ export function CreateOpportunityModal({
                                 >
                                     {imagePreview ? (
                                         <div className="relative">
-                                            <img
-                                                src={imagePreview}
-                                                alt="Preview"
-                                                className="h-40 w-auto rounded-lg object-cover"
-                                            />
+                                            <img src={imagePreview} alt="Preview" className="h-40 w-auto rounded-lg object-cover" />
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); removeImage(); }}
@@ -334,14 +381,14 @@ export function CreateOpportunityModal({
                                 />
                             </div>
 
-                            {/* ── Step 3: Settings ── */}
+                            {/* Step 3: Settings */}
                             <div className={step === "settings" ? "space-y-5" : "hidden"}>
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <label className="block text-sm font-medium text-ink">
                                         Status
                                         <select
                                             name="published"
-                                            defaultValue="false"
+                                            defaultValue={opportunity.published ? "true" : "false"}
                                             className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm"
                                         >
                                             <option value="false">Draft</option>
@@ -352,6 +399,7 @@ export function CreateOpportunityModal({
                                         Contact name
                                         <input
                                             name="signupContactName"
+                                            defaultValue={opportunity.signupContactName ?? ""}
                                             maxLength={128}
                                             className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                                         />
@@ -363,6 +411,7 @@ export function CreateOpportunityModal({
                                         <input
                                             name="signupContactEmail"
                                             type="email"
+                                            defaultValue={opportunity.signupContactEmail ?? ""}
                                             maxLength={256}
                                             className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                                         />
@@ -371,6 +420,7 @@ export function CreateOpportunityModal({
                                         Contact phone
                                         <input
                                             name="signupContactPhone"
+                                            defaultValue={opportunity.signupContactPhone ?? ""}
                                             maxLength={64}
                                             className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                                         />
@@ -383,6 +433,7 @@ export function CreateOpportunityModal({
                                             name="capacity"
                                             type="number"
                                             min={0}
+                                            defaultValue={String(opportunity.capacity)}
                                             className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                                         />
                                     </label>
@@ -392,6 +443,7 @@ export function CreateOpportunityModal({
                                             name="currentVolunteers"
                                             type="number"
                                             min={0}
+                                            defaultValue={String(opportunity.currentVolunteers)}
                                             className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm transition focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300"
                                         />
                                     </label>
@@ -399,7 +451,7 @@ export function CreateOpportunityModal({
                                         Waitlist
                                         <select
                                             name="waitlistEnabled"
-                                            defaultValue="false"
+                                            defaultValue={opportunity.waitlistEnabled ? "true" : "false"}
                                             className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm"
                                         >
                                             <option value="false">Disabled</option>
@@ -407,10 +459,28 @@ export function CreateOpportunityModal({
                                         </select>
                                     </label>
                                 </div>
+
+                                {/* Mobile delete */}
+                                <div className="md:hidden border-t border-gray-100 pt-4">
+                                    {confirmDelete ? (
+                                        <div className="flex gap-2">
+                                            <button type="button" onClick={handleDelete} disabled={submitting} className="flex-1 rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-60">
+                                                {submitting ? "Deleting…" : "Confirm delete"}
+                                            </button>
+                                            <button type="button" onClick={() => setConfirmDelete(false)} className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-muted hover:bg-gray-50">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button type="button" onClick={() => setConfirmDelete(true)} className="w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50">
+                                            Delete opportunity
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
-                        {/* ── Footer ── */}
+                        {/* Footer */}
                         <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4">
                             <button
                                 type="button"
@@ -425,7 +495,7 @@ export function CreateOpportunityModal({
                                     disabled={submitting}
                                     className="rounded-lg bg-ink px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {submitting ? "Creating…" : "Create opportunity"}
+                                    {submitting ? "Saving…" : "Save changes"}
                                 </button>
                             ) : (
                                 <button
