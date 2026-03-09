@@ -202,7 +202,7 @@ export default function AvatarUploader({
             <button
               type="button"
               onClick={openEditor}
-              className="group relative h-24 w-24 overflow-hidden rounded-full border-2 border-white bg-white shadow-soft transition hover:shadow-xl"
+              className="group relative aspect-square h-24 w-24 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white shadow-soft transition hover:shadow-xl"
               aria-label="Change profile photo"
             >
               {previewUrl ? (

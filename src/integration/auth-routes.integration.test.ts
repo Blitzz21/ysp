@@ -99,7 +99,7 @@ describe("auth route integration contracts", () => {
     const payload = (await response.json()) as { ok: boolean; emailVerified: boolean };
 
     expect(response.status).toBe(200);
-    expect(payload).toEqual({ ok: true, emailVerified: true });
+    expect(payload).toEqual({ ok: true, emailVerified: true, role: "member" });
     expect(cookieStore.set).toHaveBeenCalledWith(
       "ysp_session",
       "session-secret",

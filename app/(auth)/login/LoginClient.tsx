@@ -88,12 +88,17 @@ export default function LoginClient() {
         return;
       }
 
-      const payload = (await response.json().catch(() => null)) as { emailVerified?: boolean } | null;
+      const payload = (await response.json().catch(() => null)) as { emailVerified?: boolean; role?: string } | null;
       if (payload?.emailVerified === false) {
         router.push(`/verify-email?next=${encodeURIComponent(redirectTo)}`);
         return;
       }
-      router.push(redirectTo);
+      // Redirect admins to /admin when no explicit ?next= was provided
+      if (payload?.role === "admin" && redirectTo === "/dashboard") {
+        router.push("/admin");
+      } else {
+        router.push(redirectTo);
+      }
     } catch {
       setError("Login failed. Please try again.");
     } finally {

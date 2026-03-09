@@ -16,7 +16,12 @@ const SESSION_COOKIE = "ysp_session";
 type LoginPayload = { email?: string; password?: string; remember?: boolean };
 
 type AppwriteAccount = {
+  $id?: string;
   emailVerification?: boolean;
+};
+
+type UserProfileRow = {
+  role?: string;
 };
 
 export async function POST(request: Request) {
@@ -136,6 +141,35 @@ export async function POST(request: Request) {
   const account = (await accountResponse.json().catch(() => null)) as AppwriteAccount | null;
   const emailVerified = account?.emailVerification === true;
 
+  // Fetch user role from profile for redirect
+  let role: string = "member";
+  const apiKey = process.env.APPWRITE_API_KEY;
+  const dbId = process.env.APPWRITE_DATABASE_ID;
+  if (apiKey && dbId && account?.$id) {
+    try {
+      const query = JSON.stringify({ method: "equal", attribute: "userId", values: [account.$id] });
+      const profileRes = await fetch(
+        `${baseEndpoint}/tablesdb/${dbId}/tables/user_profiles/rows?queries[]=${encodeURIComponent(query)}`,
+        {
+          headers: {
+            "X-Appwrite-Project": projectId,
+            "X-Appwrite-Key": apiKey,
+          },
+          cache: "no-store",
+        }
+      );
+      if (profileRes.ok) {
+        const profileData = (await profileRes.json().catch(() => null)) as { rows?: UserProfileRow[] } | null;
+        const profile = profileData?.rows?.[0];
+        if (profile?.role) {
+          role = profile.role;
+        }
+      }
+    } catch {
+      // Non-critical — default to "member" if profile lookup fails
+    }
+  }
+
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, resolvedToken.token, {
     httpOnly: true,
@@ -152,5 +186,5 @@ export async function POST(request: Request) {
     email,
     reason: emailVerified ? "verified" : "unverified",
   });
-  return NextResponse.json({ ok: true, emailVerified });
+  return NextResponse.json({ ok: true, emailVerified, role });
 }
