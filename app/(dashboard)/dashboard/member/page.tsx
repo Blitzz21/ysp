@@ -44,6 +44,14 @@ export default async function MemberDashboardPage() {
   );
   const chapterNameById = new Map(chapters.map((c) => [c.id, c.name]));
 
+  // Resolve the member's chapter: prefer assignedChapterId, fall back to first active membership
+  const resolvedChapterId =
+    profile.assignedChapterId ??
+    activeMemberships.find((m) => m.status === "active")?.chapterId;
+  const resolvedChapterName = resolvedChapterId
+    ? chapterNameById.get(resolvedChapterId) ?? "Assigned"
+    : "None";
+
   return (
     <div className="space-y-8">
       {/* Header */}

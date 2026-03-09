@@ -12,6 +12,7 @@ import {
   updateOpportunity,
 } from "@/services/opportunities";
 import type { Chapter, VolunteerOpportunity } from "@/services/types";
+import { AdminImageUploader, AdminCreateImageUploader } from "./_components/AdminImageUploader";
 
 function parseDateTime(value: string, fieldName: string): Date {
   const parsed = new Date(value);
@@ -76,6 +77,10 @@ async function createOpportunityAction(
       String(formData.get("waitlistEnabled") ?? "false") === "true";
     const published = String(formData.get("published") ?? "false") === "true";
 
+    const imageFiles = formData.getAll("imageFiles").filter(
+      (entry): entry is File => entry instanceof File && entry.size > 0
+    );
+
     await createOpportunity({
       title,
       eventDate: parseDateTime(eventDateRaw, "Event date"),
@@ -89,6 +94,7 @@ async function createOpportunityAction(
       currentVolunteers,
       waitlistEnabled,
       published,
+      imageFiles: imageFiles.length ? imageFiles : undefined,
     });
     revalidatePath("/admin/opportunities");
     return { ok: true, message: "Opportunity created." };
@@ -121,6 +127,14 @@ async function updateOpportunityAction(
       String(formData.get("waitlistEnabled") ?? "false") === "true";
     const published = String(formData.get("published") ?? "false") === "true";
 
+    const imageFiles = formData.getAll("imageFiles").filter(
+      (entry): entry is File => entry instanceof File && entry.size > 0
+    );
+    const existingImageFileIdsRaw = String(formData.get("existingImageFileIds") ?? "").trim();
+    const existingImageFileIds = existingImageFileIdsRaw
+      ? existingImageFileIdsRaw.split(",").filter(Boolean)
+      : undefined;
+
     await updateOpportunity(id, {
       title: title.length ? title : undefined,
       eventDate: eventDateRaw.length
@@ -136,6 +150,8 @@ async function updateOpportunityAction(
       currentVolunteers,
       waitlistEnabled,
       published,
+      imageFiles: imageFiles.length ? imageFiles : undefined,
+      existingImageFileIds,
     });
     revalidatePath("/admin/opportunities");
     return { ok: true, message: "Opportunity updated." };
@@ -183,8 +199,8 @@ function OpportunityCard({
         <div className="flex items-center gap-2">
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${opportunity.published
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-muted"
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-muted"
               }`}
           >
             {opportunity.published ? "Published" : "Draft"}
@@ -323,6 +339,10 @@ function OpportunityCard({
               </select>
             </label>
           </div>
+          <AdminImageUploader
+            opportunityId={opportunity.id}
+            existingFileIds={opportunity.imageFileIds ?? []}
+          />
           <button
             type="submit"
             className="rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-glow"
@@ -502,6 +522,7 @@ export default async function AdminOpportunitiesPage() {
             </select>
           </label>
         </div>
+        <AdminCreateImageUploader />
         <button
           type="submit"
           className="mt-4 rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-glow disabled:cursor-not-allowed disabled:opacity-70"

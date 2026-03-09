@@ -37,7 +37,7 @@ export interface VolunteerOpportunity {
   signupContactPhone?: string;
   capacity: number;
   currentVolunteers: number;
-  imageFileId?: string;
+  imageFileIds?: string[];
   waitlistEnabled: boolean;
   published: boolean;
   createdAt: string;

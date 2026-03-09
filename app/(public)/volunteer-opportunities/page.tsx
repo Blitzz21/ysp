@@ -37,6 +37,12 @@ function getStatusFilter(searchParams: SearchParams): StatusFilter {
   return "all";
 }
 
+function getOpportunityImageUrl(fileId: string): string {
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
+  return `${endpoint}/storage/buckets/696dac0d0000f9557fbd/files/${fileId}/preview?project=${projectId}&width=400&output=webp`;
+}
+
 function getSdgColor(tag: string): string {
   const normalized = tag.toLowerCase();
   if (normalized.includes("health")) return "bg-[#4C9F38]";
@@ -242,7 +248,18 @@ export default async function VolunteerOpportunitiesPage(props: {
                 key={opportunity.id}
                 className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
               >
-                <div className="h-28 rounded-2xl bg-[linear-gradient(135deg,#FFE9C7_0%,#FF7A1A_90%)]"></div>
+                {opportunity.imageFileIds?.length ? (
+                  <div className="h-28 overflow-hidden rounded-2xl bg-gray-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- Appwrite storage URL */}
+                    <img
+                      src={getOpportunityImageUrl(opportunity.imageFileIds[0])}
+                      alt={opportunity.title}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-28 rounded-2xl bg-[linear-gradient(135deg,#FFE9C7_0%,#FF7A1A_90%)]"></div>
+                )}
                 <h2 className="mt-4 font-manrope text-xl font-semibold">
                   {opportunity.title}
                 </h2>

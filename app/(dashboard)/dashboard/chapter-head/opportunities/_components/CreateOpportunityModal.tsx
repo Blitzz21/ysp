@@ -15,7 +15,7 @@ const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const STEPS = [
     { key: "details", label: "Details", desc: "Title, date, and description" },
-    { key: "media", label: "Media", desc: "Upload an image" },
+    { key: "media", label: "Media", desc: "Upload images" },
     { key: "settings", label: "Settings", desc: "Status, contacts, capacity" },
 ] as const;
 
@@ -29,28 +29,42 @@ export function CreateOpportunityModal({
     const formRef = useRef<HTMLFormElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [step, setStep] = useState<StepKey>("details");
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [dragOver, setDragOver] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     const stepIndex = STEPS.findIndex((s) => s.key === step);
 
     /* ── Image handling ── */
-    const handleFile = useCallback(
-        (file: File) => {
-            if (!ACCEPTED_TYPES.includes(file.type)) {
-                toast("Only JPG, PNG, and WebP images are supported.", "error");
-                return;
+    const handleFiles = useCallback(
+        (files: FileList | File[]) => {
+            const newFiles: File[] = [];
+            const newPreviews: string[] = [];
+            for (const file of Array.from(files)) {
+                if (!ACCEPTED_TYPES.includes(file.type)) {
+                    toast("Only JPG, PNG, and WebP images are supported.", "error");
+                    continue;
+                }
+                if (file.size > MAX_FILE_SIZE) {
+                    toast("Image must be under 5 MB.", "error");
+                    continue;
+                }
+                newFiles.push(file);
             }
-            if (file.size > MAX_FILE_SIZE) {
-                toast("Image must be under 5 MB.", "error");
-                return;
+            if (!newFiles.length) return;
+            // Read previews for new files
+            for (const file of newFiles) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    newPreviews.push(e.target?.result as string);
+                    if (newPreviews.length === newFiles.length) {
+                        setImageFiles((prev) => [...prev, ...newFiles]);
+                        setImagePreviews((prev) => [...prev, ...newPreviews]);
+                    }
+                };
+                reader.readAsDataURL(file);
             }
-            setImageFile(file);
-            const reader = new FileReader();
-            reader.onload = (e) => setImagePreview(e.target?.result as string);
-            reader.readAsDataURL(file);
         },
         [toast]
     );
@@ -58,19 +72,17 @@ export function CreateOpportunityModal({
     function onDrop(e: DragEvent) {
         e.preventDefault();
         setDragOver(false);
-        const file = e.dataTransfer.files[0];
-        if (file) handleFile(file);
+        if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
     }
 
     function onFileChange(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (file) handleFile(file);
+        if (e.target.files?.length) handleFiles(e.target.files);
+        if (fileInputRef.current) fileInputRef.current.value = "";
     }
 
-    function removeImage() {
-        setImageFile(null);
-        setImagePreview(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
+    function removeImage(index: number) {
+        setImageFiles((prev) => prev.filter((_, i) => i !== index));
+        setImagePreviews((prev) => prev.filter((_, i) => i !== index));
     }
 
     /* ── Validation ── */
@@ -124,7 +136,9 @@ export function CreateOpportunityModal({
         setSubmitting(true);
 
         const formData = new FormData(e.currentTarget);
-        if (imageFile) formData.set("imageFile", imageFile);
+        for (const file of imageFiles) {
+            formData.append("imageFiles", file);
+        }
 
         try {
             const result = await createAction(formData);
@@ -284,52 +298,57 @@ export function CreateOpportunityModal({
 
                             {/* ── Step 2: Media ── */}
                             <div className={step === "media" ? "space-y-5" : "hidden"}>
-                                <p className="text-sm text-muted">Add a cover image for this opportunity. This will be shown on the public listing.</p>
+                                <p className="text-sm text-muted">Add images for this opportunity. These will be shown on the public listing.</p>
+
+                                {/* Image previews grid */}
+                                {imagePreviews.length > 0 && (
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                        {imagePreviews.map((preview, index) => (
+                                            <div key={index} className="group/img relative aspect-video overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                                                {/* eslint-disable-next-line @next/next/no-img-element -- blob preview URL */}
+                                                <img src={preview} alt={`Preview ${index + 1}`} className="h-full w-full object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(index)}
+                                                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-sm opacity-0 transition group-hover/img:opacity-100 hover:bg-red-600"
+                                                    aria-label={`Remove image ${index + 1}`}
+                                                >
+                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                        <path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Drop zone / add more */}
                                 <div
                                     onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                                     onDragLeave={() => setDragOver(false)}
                                     onDrop={onDrop}
                                     onClick={() => fileInputRef.current?.click()}
-                                    className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition ${dragOver
+                                    className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition ${imagePreviews.length > 0 ? "p-6" : "p-10"} ${dragOver
                                         ? "border-orange-400 bg-orange-50/50"
                                         : "border-gray-200 bg-gray-50/50 hover:border-gray-300"
                                         }`}
                                 >
-                                    {imagePreview ? (
-                                        <div className="relative">
-                                            {/* eslint-disable-next-line @next/next/no-img-element -- blob preview URL */}
-                                            <img
-                                                src={imagePreview}
-                                                alt="Preview"
-                                                className="h-40 w-auto rounded-lg object-cover"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); removeImage(); }}
-                                                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-sm hover:bg-red-600"
-                                                aria-label="Remove image"
-                                            >
-                                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                    <path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-8m-4 4l4-4 4 4M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
-                                            </svg>
-                                            <p className="mt-3 text-sm text-muted">
-                                                Drag & drop an image here, or <span className="font-medium text-orange-500">browse</span>
-                                            </p>
-                                            <p className="mt-1 text-xs text-muted">JPG, PNG, WebP · Max 5 MB</p>
-                                        </>
-                                    )}
+                                    <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-8m-4 4l4-4 4 4M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
+                                    </svg>
+                                    <p className="mt-3 text-sm text-muted">
+                                        {imagePreviews.length > 0
+                                            ? <>Add more images, or <span className="font-medium text-orange-500">browse</span></>
+                                            : <>Drag & drop images here, or <span className="font-medium text-orange-500">browse</span></>
+                                        }
+                                    </p>
+                                    <p className="mt-1 text-xs text-muted">JPG, PNG, WebP · Max 5 MB each</p>
                                 </div>
                                 <input
                                     ref={fileInputRef}
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
+                                    multiple
                                     className="hidden"
                                     onChange={onFileChange}
                                 />

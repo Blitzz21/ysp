@@ -23,8 +23,8 @@ function OpportunityCardClient({
     onEdit: () => void;
     onDelete: () => void;
 }) {
-    const imageUrl = opportunity.imageFileId
-        ? getOpportunityImageUrl(opportunity.imageFileId)
+    const imageUrl = opportunity.imageFileIds?.length
+        ? getOpportunityImageUrl(opportunity.imageFileIds[0])
         : null;
 
     return (
@@ -176,10 +176,10 @@ export function OpportunitiesClientWrapper({
             {editOpp && (
                 <EditOpportunityModal
                     opportunity={editOpp}
-                    existingImageUrl={
-                        editOpp.imageFileId
-                            ? getOpportunityImageUrl(editOpp.imageFileId)
-                            : null
+                    existingImageUrls={
+                        editOpp.imageFileIds?.length
+                            ? editOpp.imageFileIds.map(getOpportunityImageUrl)
+                            : undefined
                     }
                     onClose={() => setEditOpp(null)}
                     updateAction={updateAction}

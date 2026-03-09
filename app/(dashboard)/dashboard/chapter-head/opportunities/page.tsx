@@ -65,6 +65,10 @@ async function createOpportunityAction(
       String(formData.get("waitlistEnabled") ?? "false") === "true";
     const published = String(formData.get("published") ?? "false") === "true";
 
+    const imageFiles = formData.getAll("imageFiles").filter(
+      (entry): entry is File => entry instanceof File && entry.size > 0
+    );
+
     await createMyChapterOpportunity({
       title,
       eventDate: parseDateTime(eventDateRaw, "Event date"),
@@ -77,6 +81,7 @@ async function createOpportunityAction(
       currentVolunteers,
       waitlistEnabled,
       published,
+      imageFiles: imageFiles.length ? imageFiles : undefined,
     });
     revalidatePath(REVALIDATE_PATH);
     return { ok: true, message: "Opportunity created." };
@@ -108,6 +113,14 @@ async function updateOpportunityAction(
       String(formData.get("waitlistEnabled") ?? "false") === "true";
     const published = String(formData.get("published") ?? "false") === "true";
 
+    const imageFiles = formData.getAll("imageFiles").filter(
+      (entry): entry is File => entry instanceof File && entry.size > 0
+    );
+    const existingImageFileIdsRaw = String(formData.get("existingImageFileIds") ?? "").trim();
+    const existingImageFileIds = existingImageFileIdsRaw
+      ? existingImageFileIdsRaw.split(",").filter(Boolean)
+      : [];
+
     await updateOpportunity(id, {
       title: title.length ? title : undefined,
       eventDate: eventDateRaw.length
@@ -122,6 +135,8 @@ async function updateOpportunityAction(
       currentVolunteers,
       waitlistEnabled,
       published,
+      imageFiles: imageFiles.length ? imageFiles : undefined,
+      existingImageFileIds,
     });
     revalidatePath(REVALIDATE_PATH);
     return { ok: true, message: "Opportunity updated." };

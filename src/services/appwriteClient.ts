@@ -250,6 +250,16 @@ export async function deleteRow(tableId: string, rowId: string): Promise<void> {
   );
 }
 
+function resolveFileName(file: File): string {
+  // When files pass through Next.js server actions, the name can become "blob"
+  // or lose its extension. Derive a proper filename from the MIME type.
+  const ext = file.name && /\.\w+$/.test(file.name)
+    ? ""
+    : { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif" }[file.type] ?? "";
+  if (ext) return `upload${ext}`;
+  return file.name || "upload";
+}
+
 export async function uploadFile(
   file: File,
   permissions?: string[]
@@ -258,7 +268,7 @@ export async function uploadFile(
   const config = getAppwriteConfig();
   const form = new FormData();
   form.append("fileId", "unique()");
-  form.append("file", file);
+  form.append("file", file, resolveFileName(file));
   if (permissions?.length) {
     for (const permission of permissions) {
       form.append("permissions[]", permission);

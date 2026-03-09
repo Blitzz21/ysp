@@ -5,6 +5,12 @@ import type { VolunteerOpportunity } from "@/services/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 /* ── Helpers ── */
+function getOpportunityImageUrl(fileId: string): string {
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
+    return `${endpoint}/storage/buckets/696dac0d0000f9557fbd/files/${fileId}/preview?project=${projectId}&width=600&output=webp`;
+}
+
 function formatEventDate(value: string): string {
     const d = new Date(value);
     return d.toLocaleDateString("en-US", {
@@ -34,15 +40,17 @@ export function OpportunityModal({
     opportunity,
     chapterName,
     joinAction,
+    isJoined = false,
     onClose,
 }: {
     opportunity: VolunteerOpportunity;
     chapterName: string;
     joinAction: (formData: FormData) => Promise<void>;
+    isJoined?: boolean;
     onClose: () => void;
 }) {
     const overlayRef = useRef<HTMLDivElement>(null);
-    const [joinState, setJoinState] = useState<"idle" | "loading" | "joined" | "waitlisted" | "error">("idle");
+    const [joinState, setJoinState] = useState<"idle" | "loading" | "joined" | "waitlisted" | "error">(isJoined ? "joined" : "idle");
     const [statusMessage, setStatusMessage] = useState("");
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -111,6 +119,32 @@ export function OpportunityModal({
                             <path d="m6 6 12 12" />
                         </svg>
                     </button>
+
+                    {/* Images */}
+                    {opportunity.imageFileIds && opportunity.imageFileIds.length > 0 && (
+                        <div className="mb-4 -mx-6 -mt-6 md:-mx-8 md:-mt-8">
+                            {opportunity.imageFileIds.length === 1 ? (
+                                // eslint-disable-next-line @next/next/no-img-element -- Appwrite storage URL
+                                <img
+                                    src={getOpportunityImageUrl(opportunity.imageFileIds[0])}
+                                    alt={opportunity.title}
+                                    className="h-48 w-full object-cover"
+                                />
+                            ) : (
+                                <div className="flex gap-1 overflow-x-auto">
+                                    {opportunity.imageFileIds.map((fileId, i) => (
+                                        // eslint-disable-next-line @next/next/no-img-element -- Appwrite storage URL
+                                        <img
+                                            key={fileId}
+                                            src={getOpportunityImageUrl(fileId)}
+                                            alt={`${opportunity.title} ${i + 1}`}
+                                            className="h-48 w-auto shrink-0 object-cover first:rounded-tl-3xl last:rounded-tr-3xl"
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Status badge */}
                     <div className="mb-4 flex items-center gap-2">
@@ -236,7 +270,12 @@ export function OpportunityModal({
                         >
                             Close
                         </button>
-                        {canJoin && joinState !== "joined" && (
+                        {joinState === "joined" || isJoined ? (
+                            <div className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 px-5 py-2.5 text-sm font-semibold text-emerald-700">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                Already Joined
+                            </div>
+                        ) : canJoin ? (
                             <button
                                 type="button"
                                 onClick={() => setShowConfirm(true)}
@@ -249,7 +288,7 @@ export function OpportunityModal({
                                         ? "Join Waitlist"
                                         : "Join Opportunity"}
                             </button>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </div>

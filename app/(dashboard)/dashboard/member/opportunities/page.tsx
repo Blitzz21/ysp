@@ -2,7 +2,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/services/auth";
-import { listPublishedOpportunities, joinOpportunity } from "@/services/opportunities";
+import {
+    listPublishedOpportunities,
+    joinOpportunity,
+    getMyActiveSignups,
+    getBatchSignupAvatars,
+    type SignupAvatar,
+} from "@/services/opportunities";
 import { listPublicChapters } from "@/services/chapters";
 import { toPublicDomainError } from "@/services/errorContract";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -36,15 +42,24 @@ export default async function MemberOpportunitiesPage() {
 
     let opportunities: VolunteerOpportunity[] = [];
     let chapters: Chapter[] = [];
+    let joinedIds = new Set<string>();
+    let avatarMap = new Map<string, SignupAvatar[]>();
     let loadError: string | null = null;
 
     try {
-        const [opRows, chapterRows] = await Promise.all([
+        const [opRows, chapterRows, signups] = await Promise.all([
             listPublishedOpportunities(),
             listPublicChapters(),
+            getMyActiveSignups(),
         ]);
         opportunities = opRows;
         chapters = chapterRows;
+        joinedIds = new Set(signups.map((s) => s.opportunityId));
+
+        // Fetch avatars for all opportunities (batch)
+        if (opRows.length > 0) {
+            avatarMap = await getBatchSignupAvatars(opRows.map((op) => op.id));
+        }
     } catch (error) {
         loadError = toPublicDomainError(error, "Unable to load opportunities.").message;
     }
@@ -68,6 +83,8 @@ export default async function MemberOpportunitiesPage() {
                     opportunities={opportunities}
                     chapterNameById={chapterNameById}
                     joinAction={joinOpportunityAction}
+                    joinedOpportunityIds={joinedIds}
+                    signupAvatars={avatarMap}
                 />
             )}
         </div>

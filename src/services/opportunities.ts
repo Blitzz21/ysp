@@ -13,7 +13,9 @@ import {
   deleteRow,
   getRow,
   listRows,
+  publicReadPermissions,
   updateRow,
+  uploadFile,
   userReadPermissions,
   userReadWritePermissions,
 } from "./appwriteClient";
@@ -80,6 +82,15 @@ type OpportunitySignupRow = {
   joinedAt: string;
 };
 
+function serializeFileIds(values: string[]): string {
+  return values.filter(Boolean).join(",");
+}
+
+function parseFileIds(value?: string): string[] {
+  if (!value) return [];
+  return value.split(",").map((entry) => entry.trim()).filter(Boolean);
+}
+
 function serializeSdgs(values: string[]): string {
   return values.map((value) => value.trim()).filter(Boolean).join(",");
 }
@@ -107,7 +118,7 @@ function mapOpportunity(
     signupContactPhone: row.signupContactPhone ?? undefined,
     capacity: Math.max(0, row.capacity ?? 0),
     currentVolunteers: Math.max(0, row.currentVolunteers ?? 0),
-    imageFileId: row.imageFileId ?? undefined,
+    imageFileIds: parseFileIds(row.imageFileId),
     waitlistEnabled: row.waitlistEnabled ?? false,
     published: row.pubished,
     createdAt: row.$createdAt,
@@ -292,6 +303,7 @@ export async function createOpportunity(input: {
   currentVolunteers?: number;
   waitlistEnabled?: boolean;
   published?: boolean;
+  imageFiles?: File[];
 }): Promise<VolunteerOpportunity> {
   const session = await getSession();
   requireAdmin(session);
@@ -310,6 +322,15 @@ export async function createOpportunity(input: {
     throw new ValidationError("Current volunteers cannot exceed capacity");
   }
 
+  const fileIds: string[] = [];
+  if (input.imageFiles?.length) {
+    const filePermissions = published ? publicReadPermissions() : adminOnlyPermissions();
+    for (const file of input.imageFiles) {
+      const uploaded = await uploadFile(file, filePermissions);
+      fileIds.push(uploaded.$id);
+    }
+  }
+
   const row = await createRow<OpportunityRow>(
     TABLE_ID,
     {
@@ -324,6 +345,7 @@ export async function createOpportunity(input: {
       capacity,
       currentVolunteers,
       waitlistEnabled,
+      imageFileId: fileIds.length ? serializeFileIds(fileIds) : undefined,
       [PUBLISHED_FIELD]: published,
     },
     buildOpportunityPermissions(published)
@@ -352,6 +374,18 @@ export async function createMyChapterOpportunity(
   if (capacity > 0 && currentVolunteers > capacity) {
     throw new ValidationError("Current volunteers cannot exceed capacity");
   }
+
+  const fileIds: string[] = [];
+  if (input.imageFiles?.length) {
+    const filePermissions = published
+      ? [...userReadWritePermissions(session!.userId), 'read("any")']
+      : userReadWritePermissions(session!.userId);
+    for (const file of input.imageFiles) {
+      const uploaded = await uploadFile(file, filePermissions);
+      fileIds.push(uploaded.$id);
+    }
+  }
+
   const row = await createRow<OpportunityRow>(
     TABLE_ID,
     {
@@ -366,6 +400,7 @@ export async function createMyChapterOpportunity(
       capacity,
       currentVolunteers,
       waitlistEnabled,
+      imageFileId: fileIds.length ? serializeFileIds(fileIds) : undefined,
       [PUBLISHED_FIELD]: published,
     },
     buildOpportunityPermissions(published, session?.userId)
@@ -413,7 +448,7 @@ function buildUpdateData(
 
 export async function updateOpportunity(
   id: string,
-  input: Partial<Parameters<typeof createOpportunity>[0]>
+  input: Partial<Parameters<typeof createOpportunity>[0]> & { existingImageFileIds?: string[] }
 ): Promise<VolunteerOpportunity> {
   const session = await getSession();
   const parsed = updateSchema.safeParse(input);
@@ -434,6 +469,25 @@ export async function updateOpportunity(
   const { data, published } = buildUpdateData(parsed, current);
   if (!isAdmin) {
     delete data.chapterId;
+  }
+
+  // Handle image file uploads and existing image IDs
+  const hasImageChanges = input.imageFiles !== undefined || input.existingImageFileIds !== undefined;
+  if (hasImageChanges) {
+    const keptIds = input.existingImageFileIds ?? [];
+    const newIds: string[] = [];
+    if (input.imageFiles?.length) {
+      const nextPublished = published ?? current.pubished;
+      const filePermissions = nextPublished
+        ? (isAdmin ? publicReadPermissions() : [...userReadWritePermissions(session!.userId), 'read("any")'])
+        : (isAdmin ? adminOnlyPermissions() : userReadWritePermissions(session!.userId));
+      for (const file of input.imageFiles) {
+        const uploaded = await uploadFile(file, filePermissions);
+        newIds.push(uploaded.$id);
+      }
+    }
+    const allIds = [...keptIds, ...newIds];
+    data.imageFileId = allIds.length ? serializeFileIds(allIds) : "";
   }
 
   const row = await updateRow<OpportunityRow>(
@@ -567,4 +621,142 @@ export async function joinOpportunity(
   }
 
   return status;
+}
+
+/* ─────────────────────────────────────────────
+ * Current user's signups
+ * ───────────────────────────────────────────── */
+
+/**
+ * Return the current authenticated user's non-cancelled signups.
+ */
+export async function getMyActiveSignups(): Promise<OpportunitySignup[]> {
+  const session = requireSession(await getSession());
+
+  const rows = await listRows<OpportunitySignupRow>(SIGNUPS_TABLE_ID, [
+    buildEqualQuery("userId", session.userId),
+  ]);
+
+  return rows
+    .filter((row) => row.status !== "cancelled")
+    .map((row) => ({
+      id: row.$id,
+      userId: row.userId,
+      opportunityId: row.opportunityId,
+      status: row.status,
+      joinedAt: row.joinedAt,
+      createdAt: row.$createdAt,
+      updatedAt: row.$updatedAt,
+    }));
+}
+
+/**
+ * Return opportunities the current user has joined/waitlisted, enriched with
+ * opportunity details.  Sorted by joinedAt descending (most recent first).
+ */
+export async function getMyJoinedOpportunities(): Promise<
+  {
+    opportunity: VolunteerOpportunity;
+    signupStatus: "joined" | "waitlisted";
+    joinedAt: string;
+  }[]
+> {
+  const signups = await getMyActiveSignups();
+  if (!signups.length) return [];
+
+  // Batch-fetch opportunities
+  const opRows = await listRows<OpportunityRow>(TABLE_ID, []);
+  const opMap = new Map<string, VolunteerOpportunity>();
+  for (const row of opRows) {
+    opMap.set(
+      row.$id,
+      mapOpportunity(row as OpportunityRow & { $id: string; $createdAt: string; $updatedAt: string })
+    );
+  }
+
+  return signups
+    .filter((s) => opMap.has(s.opportunityId))
+    .map((s) => ({
+      opportunity: opMap.get(s.opportunityId)!,
+      signupStatus: s.status as "joined" | "waitlisted",
+      joinedAt: s.joinedAt,
+    }))
+    .sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime());
+}
+
+/* ─────────────────────────────────────────────
+ * Signup avatars (batch)
+ * ───────────────────────────────────────────── */
+
+export type SignupAvatar = {
+  userId: string;
+  name: string;
+  avatarFileId?: string;
+};
+
+/**
+ * For a list of opportunity IDs, return a map of opportunityId → SignupAvatar[]
+ * (max 10 avatars per opportunity).  Single batch fetch, no N+1.
+ */
+export async function getBatchSignupAvatars(
+  opportunityIds: string[]
+): Promise<Map<string, SignupAvatar[]>> {
+  if (!opportunityIds.length) return new Map();
+
+  // 1. Fetch all signups (non-cancelled) across all requested opportunities
+  const allSignups = await listRows<OpportunitySignupRow>(SIGNUPS_TABLE_ID, []);
+  const idsSet = new Set(opportunityIds);
+
+  const grouped = new Map<string, string[]>(); // oppId → userId[]
+  const uniqueUserIds = new Set<string>();
+
+  for (const row of allSignups) {
+    if (row.status === "cancelled") continue;
+    if (!idsSet.has(row.opportunityId)) continue;
+    uniqueUserIds.add(row.userId);
+    const list = grouped.get(row.opportunityId) ?? [];
+    list.push(row.userId);
+    grouped.set(row.opportunityId, list);
+  }
+
+  if (!uniqueUserIds.size) return new Map();
+
+  // 2. Batch-fetch user profiles
+  // Import dynamically to avoid circular dependency
+  const { getProfileByUserId } = await import("./profiles");
+  const profileMap = new Map<string, { name: string; avatarFileId?: string }>();
+
+  await Promise.all(
+    Array.from(uniqueUserIds).map(async (uid) => {
+      try {
+        const profile = await getProfileByUserId(uid);
+        if (profile) {
+          profileMap.set(uid, {
+            name: profile.name ?? profile.firstName ?? "User",
+            avatarFileId: profile.avatarFileId ?? undefined,
+          });
+        }
+      } catch {
+        // skip if profile not found
+      }
+    })
+  );
+
+  // 3. Build final map (max 10 avatars per opportunity)
+  const result = new Map<string, SignupAvatar[]>();
+  for (const oppId of opportunityIds) {
+    const userIds = grouped.get(oppId) ?? [];
+    const avatars: SignupAvatar[] = [];
+    for (const uid of userIds.slice(0, 10)) {
+      const p = profileMap.get(uid);
+      avatars.push({
+        userId: uid,
+        name: p?.name ?? "User",
+        avatarFileId: p?.avatarFileId,
+      });
+    }
+    result.set(oppId, avatars);
+  }
+
+  return result;
 }

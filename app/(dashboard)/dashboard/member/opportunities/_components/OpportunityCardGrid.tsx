@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 import type { VolunteerOpportunity } from "@/services/types";
+import type { SignupAvatar } from "@/services/opportunities";
+import { AvatarGroup, type AvatarItem } from "@/components/ui/AvatarGroup";
 import { OpportunityModal } from "./OpportunityModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 /* ── Helpers ── */
+function getOpportunityImageUrl(fileId: string): string {
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
+    return `${endpoint}/storage/buckets/696dac0d0000f9557fbd/files/${fileId}/preview?project=${projectId}&width=400&output=webp`;
+}
+
 function formatEventDate(value: string): string {
     const d = new Date(value);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -85,10 +93,14 @@ export function OpportunityCardGrid({
     opportunities,
     chapterNameById,
     joinAction,
+    joinedOpportunityIds = new Set(),
+    signupAvatars = new Map(),
 }: {
     opportunities: VolunteerOpportunity[];
     chapterNameById: Map<string, string>;
     joinAction: (formData: FormData) => Promise<void>;
+    joinedOpportunityIds?: Set<string>;
+    signupAvatars?: Map<string, SignupAvatar[]>;
 }) {
     const [search, setSearch] = useState("");
     const [selectedOp, setSelectedOp] = useState<VolunteerOpportunity | null>(null);
@@ -154,6 +166,13 @@ export function OpportunityCardGrid({
                         const chapterName = chapterNameById.get(op.chapterId) ?? "—";
                         const isFull = op.capacity > 0 && op.currentVolunteers >= op.capacity;
                         const canJoin = !isFull || op.waitlistEnabled;
+                        const isJoined = joinedOpportunityIds.has(op.id);
+
+                        // Build avatar items for this opportunity
+                        const avatars: AvatarItem[] = (signupAvatars.get(op.id) ?? []).map((a) => ({
+                            avatarFileId: a.avatarFileId,
+                            fallback: a.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "??",
+                        }));
 
                         return (
                             <div
@@ -165,14 +184,25 @@ export function OpportunityCardGrid({
                                 className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:border-orange-200 hover:shadow-md overflow-hidden cursor-pointer"
                             >
                                 {/* Image / Gradient header */}
-                                <div className={`relative h-28 w-full bg-gradient-to-br ${getSdgGradient(op.sdgs)} flex items-center justify-center`}>
-                                    <svg className="h-10 w-10 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-                                        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-                                        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-                                        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-                                    </svg>
-                                </div>
+                                {op.imageFileIds?.length ? (
+                                    <div className="relative h-28 w-full bg-gray-100">
+                                        {/* eslint-disable-next-line @next/next/no-img-element -- Appwrite storage URL */}
+                                        <img
+                                            src={getOpportunityImageUrl(op.imageFileIds[0])}
+                                            alt={op.title}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className={`relative h-28 w-full bg-gradient-to-br ${getSdgGradient(op.sdgs)} flex items-center justify-center`}>
+                                        <svg className="h-10 w-10 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                                            <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                                            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+                                            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+                                        </svg>
+                                    </div>
+                                )}
 
                                 <div className="flex flex-1 flex-col p-5">
                                     {/* Status badge */}
@@ -220,13 +250,27 @@ export function OpportunityCardGrid({
                                         </div>
                                     )}
 
-                                    {/* Capacity bar */}
+                                    {/* Capacity bar + avatar group */}
                                     <div className="mt-auto pt-3">
                                         <CapacityBar current={op.currentVolunteers} total={op.capacity} />
+                                        {avatars.length > 0 && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <AvatarGroup avatars={avatars} max={4} totalCount={op.currentVolunteers} />
+                                                <span className="text-[10px] text-muted">
+                                                    {op.currentVolunteers} joined
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Join Now button (visible on all viewports) */}
-                                    {canJoin && (
+                                    {/* Join / Already Joined button */}
+                                    {isJoined ? (
+                                        <div className="mt-3">
+                                            <div className="w-full rounded-xl bg-emerald-100 px-4 py-2 text-center text-xs font-semibold text-emerald-700">
+                                                ✓ Already Joined
+                                            </div>
+                                        </div>
+                                    ) : canJoin ? (
                                         <div className="mt-3" onClick={(e) => e.stopPropagation()}>
                                             <button
                                                 type="button"
@@ -236,7 +280,7 @@ export function OpportunityCardGrid({
                                                 {isFull ? "Join Waitlist" : "Join Now"}
                                             </button>
                                         </div>
-                                    )}
+                                    ) : null}
                                 </div>
                             </div>
                         );
@@ -250,6 +294,7 @@ export function OpportunityCardGrid({
                     opportunity={selectedOp}
                     chapterName={chapterNameById.get(selectedOp.chapterId) ?? "—"}
                     joinAction={joinAction}
+                    isJoined={joinedOpportunityIds.has(selectedOp.id)}
                     onClose={() => setSelectedOp(null)}
                 />
             )}
