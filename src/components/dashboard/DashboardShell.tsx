@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -221,6 +221,7 @@ export function DashboardShell({
   children,
 }: DashboardShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const focusRing =
@@ -242,7 +243,11 @@ export function DashboardShell({
             } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
         >
           <div className="flex items-center justify-between border-b border-gray-100/80 px-4 py-3">
-            <Link className="flex min-w-0 items-center gap-2.5 overflow-hidden" href="/">
+            <button
+              type="button"
+              onClick={() => router.refresh()}
+              className="flex min-w-0 items-center gap-2.5 overflow-hidden"
+            >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center">
                 <Image
                   src="/ysp-logo.png"
@@ -266,7 +271,7 @@ export function DashboardShell({
                   {title}
                 </span>
               </span>
-            </Link>
+            </button>
             <button
               className={`inline-flex rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-ink md:hidden ${focusRing}`}
               onClick={() => setMobileOpen(false)}

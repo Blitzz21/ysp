@@ -47,6 +47,7 @@ export default async function ChapterLayout({ children }: { children: ReactNode 
       <DashboardShell
         productLabel="Chapter Dashboard"
         title="YSP Chapter"
+        
         navItems={navItems}
         signOutAction={signOutAction}
       >
@@ -83,6 +84,7 @@ export default async function ChapterLayout({ children }: { children: ReactNode 
     <DashboardShell
       productLabel="Chapter Dashboard"
       title="YSP Chapter"
+      
       navItems={navItems}
       signOutAction={signOutAction}
     >

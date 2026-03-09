@@ -41,6 +41,7 @@ export default async function AdminLayout({
     <DashboardShell
       productLabel="Admin Console"
       title="YSP Admin"
+      
       navItems={adminNavItems}
       signOutAction={signOutAction}
     >

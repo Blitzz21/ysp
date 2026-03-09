@@ -63,6 +63,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       { href: "/dashboard/member", label: "Overview", icon: "member", exact: true },
       { href: "/dashboard/member/chapters", label: "Chapters", icon: "chapter" },
       { href: "/dashboard/member/opportunities", label: "Opportunities", icon: "opportunities" },
+      { href: "/dashboard/member/my-opportunities", label: "My Opportunities", icon: "programs" },
       { href: "/settings", label: "Settings", icon: "settings" },
     ];
   }
@@ -75,6 +76,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     <DashboardShell
       productLabel="Dashboard"
       title={`YSP ${roleLabel}`}
+
       navItems={navItems}
       signOutAction={signOutAction}
     >
