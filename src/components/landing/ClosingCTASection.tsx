@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function ClosingCTASection() {
   return (
     <section className="pb-20">
@@ -12,18 +14,18 @@ export function ClosingCTASection() {
             Join 1,500+ active youth in making the Philippines a better place.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <a
+            <Link
               className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-orange-600 shadow-soft transition hover:-translate-y-0.5"
-              href="#membership"
+              href="/membership"
             >
               Register Today
-            </a>
-            <a
+            </Link>
+            <Link
               className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:underline"
-              href="#chapters"
+              href="/chapters"
             >
               Find Chapter
-            </a>
+            </Link>
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import { revalidatePath } from "next/cache";
 
-import { CountedInput, CountedTextarea } from "@/components/admin/CountedField";
-import { ToastForm } from "@/components/ui/ToastForm";
+import { AddProgramModal } from "@/components/admin/AddProgramModal";
+import { ProgramCard } from "@/components/admin/ProgramCard";
+
 import { toPublicDomainError } from "@/services/errorContract";
 import {
   adminListPrograms,
@@ -97,129 +98,6 @@ async function deleteProgramAction(
   }
 }
 
-function ProgramCard({ program }: { program: Program }) {
-  return (
-    <details className="group rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
-      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="font-manrope text-lg font-semibold">{program.title}</h3>
-          <p className="text-xs text-muted">Slug: {program.slug}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${program.published
-              ? "bg-green-100 text-green-700"
-              : "bg-gray-100 text-muted"
-              }`}
-          >
-            {program.published ? "Published" : "Draft"}
-          </span>
-          <span className="rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-ink transition group-open:border-orange-300 group-open:text-orange-600">
-            Edit
-          </span>
-        </div>
-      </summary>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-            Core details
-          </h4>
-          <ToastForm
-            action={updateProgramAction}
-            className="space-y-3"
-          >
-            <input type="hidden" name="id" value={program.id} />
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="text-xs font-semibold text-ink">
-                Title
-                <CountedInput
-                  name="title"
-                  defaultValue={program.title}
-                  maxLength={128}
-                  hint="Max 128 characters."
-                />
-              </label>
-              <label className="text-xs font-semibold text-ink">
-                Slug
-                <CountedInput
-                  name="slug"
-                  defaultValue={program.slug}
-                  maxLength={128}
-                  hint="Lowercase, numbers, hyphens."
-                />
-              </label>
-            </div>
-            <label className="text-xs font-semibold text-ink">
-              Description
-              <CountedTextarea
-                name="description"
-                defaultValue={program.description}
-                maxLength={1024}
-                hint="Max 1024 characters."
-                rows={3}
-              />
-            </label>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              <label className="text-xs font-semibold text-ink">
-                Status
-                <select
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                  name="published"
-                  defaultValue={program.published ? "true" : "false"}
-                >
-                  <option value="false">Draft</option>
-                  <option value="true">Published</option>
-                </select>
-              </label>
-              <label className="text-xs font-semibold text-ink">
-                Replace image
-                <input
-                  className="mt-1 w-full text-sm"
-                  name="imageFile"
-                  type="file"
-                  accept="image/*"
-                />
-                <span className="mt-1 block text-[11px] text-muted">
-                  Allowed: jpg, png, svg, gif.
-                </span>
-              </label>
-              <label className="flex items-center gap-2 text-xs font-semibold text-ink">
-                <input className="h-4 w-4" type="checkbox" name="removeImage" />
-                Remove image
-              </label>
-            </div>
-            <button
-              className="rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-glow"
-              type="submit"
-            >
-              Save changes
-            </button>
-          </ToastForm>
-        </div>
-
-        <aside className="rounded-2xl border border-dashed border-gray-200 bg-[#fff7ea] p-4 text-xs text-muted">
-          <p className="font-semibold text-ink">Quick guidance</p>
-          <ul className="mt-2 space-y-2">
-            <li>Use short, action-oriented titles.</li>
-            <li>Draft status hides programs from public pages.</li>
-            <li>Image uploads use file ID for public display.</li>
-          </ul>
-          <ToastForm action={deleteProgramAction} className="mt-4">
-            <input type="hidden" name="id" value={program.id} />
-            <button
-              className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700"
-              type="submit"
-            >
-              Delete program
-            </button>
-          </ToastForm>
-        </aside>
-      </div>
-    </details>
-  );
-}
 
 export default async function AdminProgramsPage() {
   let programs: Program[] = [];
@@ -239,98 +117,12 @@ export default async function AdminProgramsPage() {
             Admin
           </p>
           <h2 className="font-manrope text-2xl font-semibold">Programs</h2>
-          <p className="mt-2 text-sm text-muted">
-            Create, publish, and maintain program content. Upload images that
-            will render on public pages.
+          <p className="mt-1 text-sm text-muted">
+            Create, publish, and maintain program content.
           </p>
         </div>
+        <AddProgramModal action={createProgramAction} />
       </div>
-
-      <ToastForm
-        action={createProgramAction}
-        className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
-      >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="font-manrope text-lg font-semibold">New program</h3>
-            <p className="mt-1 text-xs text-muted">
-              Slug will auto-generate if you leave it blank.
-            </p>
-          </div>
-          <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
-            Required fields marked
-          </span>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-ink">
-            Title{" "}
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
-              Required
-            </span>
-            <CountedInput
-              name="title"
-              required
-              placeholder="Youth Action Labs"
-              maxLength={128}
-              hint="Max 128 characters."
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Slug (optional)
-            <CountedInput
-              name="slug"
-              placeholder="youth-action-labs"
-              maxLength={128}
-              hint="Leave empty to auto-generate."
-            />
-          </label>
-        </div>
-        <label className="mt-3 block text-xs font-semibold text-ink">
-          Description{" "}
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
-            Required
-          </span>
-          <CountedTextarea
-            name="description"
-            rows={3}
-            required
-            placeholder="Describe the program objectives, cadence, and outcomes."
-            maxLength={1024}
-            hint="Max 1024 characters."
-          />
-        </label>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <label className="text-xs font-semibold text-ink">
-            Status
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="published"
-              defaultValue="false"
-            >
-              <option value="false">Draft</option>
-              <option value="true">Published</option>
-            </select>
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Image upload
-            <input
-              className="mt-1 w-full text-sm"
-              name="imageFile"
-              type="file"
-              accept="image/*"
-            />
-            <span className="mt-1 block text-[11px] text-muted">
-              Allowed: jpg, png, svg, gif. WebP is not enabled yet.
-            </span>
-          </label>
-        </div>
-        <button
-          className="mt-4 rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-glow"
-          type="submit"
-        >
-          Create program
-        </button>
-      </ToastForm>
 
       {hasLoadError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
@@ -365,7 +157,12 @@ export default async function AdminProgramsPage() {
       {!hasLoadError && programs.length > 0 ? (
         <div className="grid gap-6">
           {programs.map((program) => (
-            <ProgramCard key={program.id} program={program} />
+            <ProgramCard
+              key={program.id}
+              program={program}
+              updateAction={updateProgramAction}
+              deleteAction={deleteProgramAction}
+            />
           ))}
         </div>
       ) : null}

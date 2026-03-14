@@ -9,7 +9,7 @@ export function ChaptersMapSection() {
       <div className="pointer-events-none absolute right-10 top-16 h-20 w-20 rounded-[28px] bg-yellow/40 blur-xl"></div>
       <div className="pointer-events-none absolute bottom-20 left-12 h-24 w-24 rounded-full bg-orange-500/20 blur-2xl"></div>
 
-      <div className="chapters-curve bg-[#E76F0010] absolute left-1/2 top-1/2 z-[0] h-[120%] w-[100%] -translate-x-1/2 -translate-y-1/3 rounded-t-[50%] md:h-[110%] md:w-[150%]"></div>
+      <div className="chapters-curve bg-[#E76F0010] absolute left-1/2 top-1/2 z-[0] h-[80%] md:h-[120%] w-[700px] md:w-[100%] -translate-x-1/2 -translate-y-1/3 rounded-t-[50%] md:h-[110%] md:w-[150%]"></div>
       <div className="grid-pattern pointer-events-none absolute left-1/2 top-1/2 z-[1] h-[120%] w-[100%] -translate-x-1/2 -translate-y-1/3 rounded-t-[50%] opacity-20 md:h-[110%] md:w-[150%]"></div>
 
       <div className="relative z-[2] mx-auto w-full max-w-7xl">

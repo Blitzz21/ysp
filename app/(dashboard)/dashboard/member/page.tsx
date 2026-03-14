@@ -132,8 +132,8 @@ export default async function MemberDashboardPage() {
 
       {/* Quick-access cards */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent chapters summary */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        {/* Recent chapters summary — hidden for chapter heads */}
+        {!isChapterHead && <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="font-manrope text-lg font-semibold text-ink">
@@ -184,7 +184,7 @@ export default async function MemberDashboardPage() {
               ))
             )}
           </div>
-        </div>
+        </div>}
 
         {/* Quick links */}
         <div className="space-y-6">
@@ -203,7 +203,7 @@ export default async function MemberDashboardPage() {
             </Link>
           </div>
 
-          {(isAdmin || isChapterHead) && (
+          {isAdmin && (
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <h3 className="font-manrope text-lg font-semibold text-ink">
                 Switch dashboards
@@ -212,22 +212,12 @@ export default async function MemberDashboardPage() {
                 Jump to the dashboards you can access.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {(isChapterHead || isAdmin) && (
-                  <Link
-                    href="/chapter"
-                    className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-                  >
-                    Chapter dashboard
-                  </Link>
-                )}
-                {isAdmin && (
-                  <Link
-                    href="/admin"
-                    className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-                  >
-                    Admin console
-                  </Link>
-                )}
+                <Link
+                  href="/admin"
+                  className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
+                >
+                  Admin console
+                </Link>
               </div>
             </div>
           )}

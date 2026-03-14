@@ -3,12 +3,9 @@
 import { useState } from "react";
 import type { VolunteerOpportunity } from "@/services/types";
 
+import { getFileViewUrl } from "@/lib/imageUrl";
+
 /* ── Helpers ── */
-function getOpportunityImageUrl(fileId: string): string {
-    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
-    return `${endpoint}/storage/buckets/696dac0d0000f9557fbd/files/${fileId}/preview?project=${projectId}&width=400&output=webp`;
-}
 
 function formatEventDate(value: string): string {
     const d = new Date(value);
@@ -94,7 +91,7 @@ export function MyOpportunitiesGrid({
                         const { opportunity, signupStatus, joinedAt, chapterName } = item;
                         const status = getStatusInfo(signupStatus, opportunity.eventDate);
                         const imageUrl = opportunity.imageFileIds?.length
-                            ? getOpportunityImageUrl(opportunity.imageFileIds[0])
+                            ? getFileViewUrl(opportunity.imageFileIds[0])
                             : null;
 
                         return (

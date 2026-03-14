@@ -1,4 +1,5 @@
 import { listPublishedPrograms } from "@/services/programs";
+import { getPublicFileViewUrl } from "@/services/appwriteClient";
 import Link from "next/link";
 
 export async function ProgramsSection() {
@@ -42,7 +43,16 @@ export async function ProgramsSection() {
                 className="reveal group rounded-3xl border border-gray-200 bg-white p-5 shadow-soft transition hover:-translate-y-2 hover:shadow-glow"
                 data-testid="program-card"
               >
-                <div className="h-36 rounded-2xl bg-[linear-gradient(135deg,#FFE1C2_0%,#FF7A1A_100%)]" />
+                {program.imageFileId ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={getPublicFileViewUrl(program.imageFileId)}
+                    alt={program.title}
+                    className="h-36 w-full rounded-2xl object-cover"
+                  />
+                ) : (
+                  <div className="h-36 rounded-2xl bg-[linear-gradient(135deg,#FFE1C2_0%,#FF7A1A_100%)]" />
+                )}
                 <h3 className="mt-4 font-manrope text-lg font-semibold">
                   {program.title}
                 </h3>

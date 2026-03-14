@@ -44,28 +44,6 @@ export default async function AdminHomePage() {
         label="Admin"
         title="Overview"
         subtitle="Track operational counts and jump directly to management workflows."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/admin/programs"
-              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-            >
-              Manage programs
-            </Link>
-            <Link
-              href="/admin/chapters"
-              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-            >
-              Manage chapters
-            </Link>
-            <Link
-              href="/admin/opportunities"
-              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-orange-300 hover:text-orange-600"
-            >
-              Manage opportunities
-            </Link>
-          </div>
-        }
       />
 
       {hasDataIssue ? (
@@ -123,6 +101,27 @@ export default async function AdminHomePage() {
             </svg>
           }
         />
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/admin/programs"
+          className="rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600"
+        >
+          Manage programs
+        </Link>
+        <Link
+          href="/admin/chapters"
+          className="rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600"
+        >
+          Manage chapters
+        </Link>
+        <Link
+          href="/admin/opportunities"
+          className="rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600"
+        >
+          Manage opportunities
+        </Link>
       </div>
     </section>
   );

@@ -12,9 +12,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function getOpportunityImageUrl(fileId: string): string {
-    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
-    return `${endpoint}/storage/buckets/696dac0d0000f9557fbd/files/${fileId}/preview?project=${projectId}&width=400&output=webp`;
+    return `/api/file/${fileId}?w=400`;
 }
 
 /**

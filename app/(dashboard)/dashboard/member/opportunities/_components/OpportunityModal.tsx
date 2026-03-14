@@ -4,12 +4,9 @@ import { useRef, useEffect, useState } from "react";
 import type { VolunteerOpportunity } from "@/services/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
+import { getFileViewUrl } from "@/lib/imageUrl";
+
 /* ── Helpers ── */
-function getOpportunityImageUrl(fileId: string): string {
-    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
-    return `${endpoint}/storage/buckets/696dac0d0000f9557fbd/files/${fileId}/preview?project=${projectId}&width=600&output=webp`;
-}
 
 function formatEventDate(value: string): string {
     const d = new Date(value);
@@ -126,7 +123,7 @@ export function OpportunityModal({
                             {opportunity.imageFileIds.length === 1 ? (
                                 // eslint-disable-next-line @next/next/no-img-element -- Appwrite storage URL
                                 <img
-                                    src={getOpportunityImageUrl(opportunity.imageFileIds[0])}
+                                    src={getFileViewUrl(opportunity.imageFileIds[0])}
                                     alt={opportunity.title}
                                     className="h-48 w-full object-cover"
                                 />
@@ -136,7 +133,7 @@ export function OpportunityModal({
                                         // eslint-disable-next-line @next/next/no-img-element -- Appwrite storage URL
                                         <img
                                             key={fileId}
-                                            src={getOpportunityImageUrl(fileId)}
+                                            src={getFileViewUrl(fileId)}
                                             alt={`${opportunity.title} ${i + 1}`}
                                             className="h-48 w-auto shrink-0 object-cover first:rounded-tl-3xl last:rounded-tr-3xl"
                                         />

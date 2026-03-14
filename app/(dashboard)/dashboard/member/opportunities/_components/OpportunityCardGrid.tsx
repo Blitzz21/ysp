@@ -7,12 +7,9 @@ import { AvatarGroup, type AvatarItem } from "@/components/ui/AvatarGroup";
 import { OpportunityModal } from "./OpportunityModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
+import { getFileViewUrl } from "@/lib/imageUrl";
+
 /* ── Helpers ── */
-function getOpportunityImageUrl(fileId: string): string {
-    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
-    return `${endpoint}/storage/buckets/696dac0d0000f9557fbd/files/${fileId}/preview?project=${projectId}&width=400&output=webp`;
-}
 
 function formatEventDate(value: string): string {
     const d = new Date(value);
@@ -188,7 +185,7 @@ export function OpportunityCardGrid({
                                     <div className="relative h-28 w-full bg-gray-100">
                                         {/* eslint-disable-next-line @next/next/no-img-element -- Appwrite storage URL */}
                                         <img
-                                            src={getOpportunityImageUrl(op.imageFileIds[0])}
+                                            src={getFileViewUrl(op.imageFileIds[0])}
                                             alt={op.title}
                                             className="h-full w-full object-cover"
                                         />

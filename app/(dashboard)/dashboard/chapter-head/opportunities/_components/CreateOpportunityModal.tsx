@@ -251,7 +251,7 @@ export function CreateOpportunityModal({
                     </div>
 
                     {/* Form — all fields rendered but only active step visible */}
-                    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-y-auto">
+                    <form ref={formRef} onSubmit={handleSubmit} onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") e.preventDefault(); }} className="flex flex-1 flex-col overflow-y-auto">
                         <div className="flex-1 px-6 py-5">
                             {/* ── Step 1: Details ── */}
                             <div className={step === "details" ? "space-y-5" : "hidden"}>

@@ -284,6 +284,34 @@ export async function uploadFile(
   );
 }
 
+export async function updateFilePermissions(
+  fileId: string,
+  permissions: string[]
+): Promise<void> {
+  const config = getAppwriteConfig();
+  // Appwrite PUT /files/{fileId} requires 'name' field — fetch current metadata first
+  const meta = await appwriteRequest<{ name: string }>(
+    `/storage/buckets/${config.bucketId}/files/${fileId}`
+  );
+  await appwriteRequest(
+    `/storage/buckets/${config.bucketId}/files/${fileId}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: meta.name, permissions }),
+    }
+  );
+}
+
+export function getPublicFileViewUrl(fileId: string): string {
+  const endpoint =
+    process.env.APPWRITE_ENDPOINT ?? process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
+  const projectId =
+    process.env.APPWRITE_PROJECT_ID ?? process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
+  const bucketId = process.env.APPWRITE_BUCKET_ID ?? process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID ?? "";
+  return `${endpoint.replace(/\/$/, "")}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}&mode=any`;
+}
+
 export function buildEqualQuery(field: string, value: string | boolean): string {
   return JSON.stringify({
     method: "equal",

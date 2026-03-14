@@ -14,6 +14,7 @@ import {
   getRow,
   listRows,
   publicReadPermissions,
+  updateFilePermissions,
   updateRow,
   uploadFile,
   userReadPermissions,
@@ -476,15 +477,19 @@ export async function updateOpportunity(
   if (hasImageChanges) {
     const keptIds = input.existingImageFileIds ?? [];
     const newIds: string[] = [];
+    const nextPublished = published ?? current.pubished;
+    const filePermissions = nextPublished
+      ? (isAdmin ? publicReadPermissions() : [...userReadWritePermissions(session!.userId), 'read("any")'])
+      : (isAdmin ? adminOnlyPermissions() : userReadWritePermissions(session!.userId));
     if (input.imageFiles?.length) {
-      const nextPublished = published ?? current.pubished;
-      const filePermissions = nextPublished
-        ? (isAdmin ? publicReadPermissions() : [...userReadWritePermissions(session!.userId), 'read("any")'])
-        : (isAdmin ? adminOnlyPermissions() : userReadWritePermissions(session!.userId));
       for (const file of input.imageFiles) {
         const uploaded = await uploadFile(file, filePermissions);
         newIds.push(uploaded.$id);
       }
+    }
+    // Sync permissions on kept files to match current published state
+    for (const keptId of keptIds) {
+      await updateFilePermissions(keptId, filePermissions);
     }
     const allIds = [...keptIds, ...newIds];
     data.imageFileId = allIds.length ? serializeFileIds(allIds) : "";
@@ -759,4 +764,14 @@ export async function getBatchSignupAvatars(
   }
 
   return result;
+}
+
+export async function getPublishedOpportunityByImageId(
+  imageFileId: string
+): Promise<VolunteerOpportunity | null> {
+  const rows = await listRows<OpportunityRow>(TABLE_ID, [
+    buildEqualQuery(PUBLISHED_FIELD, true),
+  ]);
+  const opportunities = rows.map(mapOpportunity);
+  return opportunities.find((op) => op.imageFileIds?.includes(imageFileId)) ?? null;
 }

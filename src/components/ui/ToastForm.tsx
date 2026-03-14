@@ -24,9 +24,11 @@ export function ToastForm({
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         if (submitting) return;
+        // Capture FormData synchronously before any await — currentTarget
+        // becomes null after the event loop yields.
+        const formData = new FormData(e.currentTarget);
         setSubmitting(true);
         try {
-            const formData = new FormData(e.currentTarget);
             const result = await action(formData);
             toast(result.message, result.ok ? "success" : "error");
             if (result.ok && onSuccess) onSuccess();
@@ -38,7 +40,7 @@ export function ToastForm({
     }
 
     return (
-        <form onSubmit={handleSubmit} className={className}>
+        <form onSubmit={handleSubmit} className={className} encType="multipart/form-data">
             {children}
         </form>
     );

@@ -10,10 +10,10 @@
  *   />
  */
 
+import { getFileViewUrl } from "@/lib/imageUrl";
+
 function getAvatarUrl(fileId: string): string {
-    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
-    return `${endpoint}/storage/buckets/696dac0d0000f9557fbd/files/${fileId}/preview?project=${projectId}&width=80&height=80&output=webp`;
+    return getFileViewUrl(fileId);
 }
 
 export interface AvatarItem {

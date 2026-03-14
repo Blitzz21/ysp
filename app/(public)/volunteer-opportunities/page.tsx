@@ -7,6 +7,7 @@ import { listPublicOpportunities, joinOpportunity } from "@/services/opportuniti
 import { toPublicDomainError } from "@/services/errorContract";
 import type { VolunteerOpportunity } from "@/services/types";
 import { type SearchParams, readParam } from "@/lib/pageHelpers";
+import { getFileViewUrl } from "@/lib/imageUrl";
 
 const MANILA_TIMEZONE = "Asia/Manila";
 
@@ -35,12 +36,6 @@ function getStatusFilter(searchParams: SearchParams): StatusFilter {
     return value;
   }
   return "all";
-}
-
-function getOpportunityImageUrl(fileId: string): string {
-  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
-  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
-  return `${endpoint}/storage/buckets/696dac0d0000f9557fbd/files/${fileId}/preview?project=${projectId}&width=400&output=webp`;
 }
 
 function getSdgColor(tag: string): string {
@@ -252,7 +247,7 @@ export default async function VolunteerOpportunitiesPage(props: {
                   <div className="h-28 overflow-hidden rounded-2xl bg-gray-100">
                     {/* eslint-disable-next-line @next/next/no-img-element -- Appwrite storage URL */}
                     <img
-                      src={getOpportunityImageUrl(opportunity.imageFileIds[0])}
+                      src={getFileViewUrl(opportunity.imageFileIds[0])}
                       alt={opportunity.title}
                       className="h-full w-full object-cover"
                     />

@@ -11,6 +11,7 @@ import {
   getRow,
   listRows,
   publicReadPermissions,
+  updateFilePermissions,
   updateRow,
   uploadFile,
 } from "./appwriteClient";
@@ -172,6 +173,12 @@ export async function updateProgram(
       : adminOnlyPermissions();
     const uploaded = await uploadFile(parsed.data.imageFile as File, filePermissions);
     imageField = uploaded.$id;
+  } else if (imageField && parsed.data.published !== undefined) {
+    // Sync file permissions to match the current published state on every save
+    const filePermissions = nextPublished
+      ? publicReadPermissions()
+      : adminOnlyPermissions();
+    await updateFilePermissions(imageField, filePermissions);
   }
 
   const data: Record<string, unknown> = {};
@@ -194,4 +201,12 @@ export async function deleteProgram(id: string): Promise<void> {
   const session = await getSession();
   requireAdmin(session);
   await deleteRow(TABLE_ID, id);
+}
+
+export async function getPublishedProgramByImageId(imageFileId: string): Promise<Program | null> {
+  const rows = await listRows<ProgramRow>(TABLE_ID, [
+    buildEqualQuery("imageField", imageFileId),
+    buildEqualQuery("published", true),
+  ]);
+  return rows[0] ? mapProgram(rows[0]) : null;
 }

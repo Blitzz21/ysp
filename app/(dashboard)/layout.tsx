@@ -55,7 +55,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         ],
       },
       { href: "/dashboard/chapter-head/settings", label: "Chapter Settings", icon: "settings" },
-      { href: "/dashboard/member", label: "Member Dashboard", icon: "chapter" },
       { href: "/settings", label: "Settings", icon: "settings" },
     ];
   } else {

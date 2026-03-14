@@ -28,7 +28,7 @@ export function CountedInput({
   return (
     <div className={className}>
       <input
-        className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+        className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink placeholder:text-gray-400 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
         name={name}
         value={value}
         onChange={(event) => setValue(event.target.value)}
@@ -77,7 +77,7 @@ export function CountedTextarea({
   return (
     <div className={className}>
       <textarea
-        className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+        className="mt-1 w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-ink placeholder:text-gray-400 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
         name={name}
         value={value}
         onChange={(event) => setValue(event.target.value)}

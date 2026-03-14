@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { listPublicChapters } from "@/services/chapters";
 import { listPublicOpportunities } from "@/services/opportunities";
+import { getPublicFileViewUrl } from "@/services/appwriteClient";
 
 const MANILA_TIMEZONE = "Asia/Manila";
 
@@ -83,13 +84,22 @@ export async function OpportunitiesSection() {
                 key={opportunity.id}
                 className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
               >
-                <div
-                  className={`h-32 rounded-2xl ${
-                    index % 3 === 1
-                      ? "bg-[linear-gradient(135deg,#F7F8FA_0%,#FFCF3D_90%)]"
-                      : "bg-[linear-gradient(135deg,#FFE9C7_0%,#FF7A1A_90%)]"
-                  }`}
-                ></div>
+                {opportunity.imageFileIds && opportunity.imageFileIds.length > 0 ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={getPublicFileViewUrl(opportunity.imageFileIds[0])}
+                    alt={opportunity.title}
+                    className="h-32 w-full rounded-2xl object-cover"
+                  />
+                ) : (
+                  <div
+                    className={`h-32 rounded-2xl ${
+                      index % 3 === 1
+                        ? "bg-[linear-gradient(135deg,#F7F8FA_0%,#FFCF3D_90%)]"
+                        : "bg-[linear-gradient(135deg,#FFE9C7_0%,#FF7A1A_90%)]"
+                    }`}
+                  />
+                )}
                 <div className="mt-4 flex items-center justify-between text-xs font-semibold text-muted">
                   <span>{chapterNameById.get(opportunity.chapterId) ?? "YSP Chapter"}</span>
                   <span className="rounded-full bg-orange-500/10 px-3 py-1 text-orange-600">
