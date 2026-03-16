@@ -12,6 +12,7 @@ vi.mock("../appwriteClient", async (importOriginal) => {
         getRow: vi.fn(),
         updateRow: vi.fn(),
         deleteRow: vi.fn(),
+        updateFilePermissions: vi.fn(),
     };
 });
 
