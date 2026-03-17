@@ -77,7 +77,7 @@ test.describe("P0: Admin Program Lifecycle + Visual Regression", () => {
         await page.goto("/");
         await expect(
           page.getByRole("heading", {
-            name: "Fueling youth-led service, one chapter at a time.",
+            name: "Real youth. Real communities. Real change across the Philippines.",
           })
         ).toBeVisible();
 

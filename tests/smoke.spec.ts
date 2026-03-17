@@ -4,7 +4,7 @@ test("home page renders", async ({ page }) => {
   await page.goto("/");
   await expect(
     page.getByRole("heading", {
-      name: "Fueling youth-led service, one chapter at a time.",
+      name: "Real youth. Real communities. Real change across the Philippines.",
     })
   ).toBeVisible();
 });

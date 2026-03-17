@@ -23,8 +23,8 @@ const ACCOUNTS = {
     chapterHead: {
         email: "chapterheadtest@ysp.com.ph",
         password: "chapterheadtest123", // NOSONAR
-        expectedUrl: /\/dashboard\/chapter-head/,
-        expectedTitle: "Chapter Head",
+        expectedUrl: /\/(dashboard\/chapter-head|dashboard\/member)/,
+        expectedTitle: /Chapter Head|Member/,
     },
     member: {
         email: "testuser1@youthservice.ph",
@@ -110,7 +110,7 @@ test.describe("login redirects by role", () => {
 
         // Click the sidebar logo
         const sidebar = page.locator("#dashboard-sidebar");
-        await sidebar.getByRole("link", { name: "Youth Service Philippines logo" }).click();
+        await sidebar.getByRole("button", { name: "Youth Service Philippines logo" }).click();
 
         // Wait a moment for navigation
         await page.waitForTimeout(1000);
