@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import { revalidatePath } from "next/cache";
 
 import { PageHeader } from "@/components/dashboard/PageHeader";
+import { writeAdminAudit } from "@/services/adminAudit";
+import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
   createMyChapterOpportunity,
@@ -84,6 +86,8 @@ async function createOpportunityAction(
       imageFiles: imageFiles.length ? imageFiles : undefined,
     });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "opportunity.create", targetType: "opportunity", targetLabel: title });
     return { ok: true, message: "Opportunity created." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to create opportunity").message;
@@ -139,6 +143,8 @@ async function updateOpportunityAction(
       existingImageFileIds,
     });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "opportunity.update", targetType: "opportunity", targetId: id, targetLabel: title });
     return { ok: true, message: "Opportunity updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update opportunity").message;
@@ -154,6 +160,8 @@ async function deleteOpportunityAction(
   try {
     await deleteOpportunity(id);
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "opportunity.delete", targetType: "opportunity", targetId: id });
     return { ok: true, message: "Opportunity deleted." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to delete opportunity").message;

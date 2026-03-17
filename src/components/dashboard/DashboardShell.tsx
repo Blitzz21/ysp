@@ -14,7 +14,8 @@ export type DashboardNavIcon =
   | "admin"
   | "overview"
   | "programs"
-  | "manage";
+  | "manage"
+  | "logs";
 
 export type DashboardNavItem = {
   href: string;
@@ -128,6 +129,13 @@ function NavIcon({ icon }: { icon: DashboardNavIcon }) {
           <circle cx="8" cy="6" r="1.5" fill="currentColor" />
           <circle cx="14" cy="12" r="1.5" fill="currentColor" />
           <circle cx="10" cy="18" r="1.5" fill="currentColor" />
+        </svg>
+      );
+    case "logs":
+      return (
+        <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M14 2v6h6M8 13h8M8 17h8M8 9h2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
     default:

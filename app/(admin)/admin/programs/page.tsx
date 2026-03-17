@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache";
 import { AddProgramModal } from "@/components/admin/AddProgramModal";
 import { ProgramCard } from "@/components/admin/ProgramCard";
 
+import { writeAdminAudit } from "@/services/adminAudit";
+import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
   adminListPrograms,
@@ -41,6 +43,8 @@ async function createProgramAction(
     revalidatePath("/admin/programs");
     revalidatePath("/");
     revalidatePath("/programs");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "program.create", targetType: "program", targetLabel: title });
     return { ok: true, message: "Program created." };
   } catch (error) {
     console.error("[createProgramAction] failed:", error);
@@ -72,6 +76,8 @@ async function updateProgramAction(
     revalidatePath("/admin/programs");
     revalidatePath("/");
     revalidatePath("/programs");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "program.update", targetType: "program", targetId: id, targetLabel: title });
     return { ok: true, message: "Program updated." };
   } catch (error) {
     console.error("[updateProgramAction] failed:", error);
@@ -90,6 +96,8 @@ async function deleteProgramAction(
     revalidatePath("/admin/programs");
     revalidatePath("/");
     revalidatePath("/programs");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "program.delete", targetType: "program", targetId: id });
     return { ok: true, message: "Program deleted." };
   } catch (error) {
     console.error("[deleteProgramAction] failed:", error);

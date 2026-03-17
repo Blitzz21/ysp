@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { PermissionSelect } from "@/components/dashboard/PermissionSelect";
 import { PageHeader } from "@/components/dashboard/PageHeader";
+import { writeAdminAudit } from "@/services/adminAudit";
 import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
@@ -37,6 +38,8 @@ async function createRoleAction(
   try {
     await createOfficerRole({ label, permissions });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "role.create", targetType: "role", targetLabel: label });
     return { ok: true, message: "Officer role created." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to create officer role.").message;
@@ -54,6 +57,8 @@ async function updateRoleAction(
   try {
     await updateOfficerPermissions({ roleId, label: label || undefined, permissions });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "role.update", targetType: "role", targetId: roleId, targetLabel: label });
     return { ok: true, message: "Officer role updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update officer role.").message;
@@ -70,6 +75,8 @@ async function assignOfficerAction(
   try {
     await assignOfficer({ userId, roleId });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "officer.assign", targetType: "member", targetId: userId });
     return { ok: true, message: "Officer assigned." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to assign officer.").message;
@@ -85,6 +92,8 @@ async function removeOfficerAction(
   try {
     await removeOfficer({ userId });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "officer.remove", targetType: "member", targetId: userId });
     return { ok: true, message: "Officer removed." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to remove officer.").message;
@@ -100,6 +109,8 @@ async function removeMemberAction(
   try {
     await removeMember({ userId });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "member.remove", targetType: "member", targetId: userId });
     return { ok: true, message: "Member removed." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to remove member.").message;
@@ -115,6 +126,8 @@ async function approveMemberAction(
   try {
     await approveMember({ userId });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "member.approve", targetType: "member", targetId: userId });
     return { ok: true, message: "Member approved." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to approve member.").message;
@@ -130,6 +143,8 @@ async function declineMemberAction(
   try {
     await declineMember({ userId });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "member.decline", targetType: "member", targetId: userId });
     return { ok: true, message: "Member request declined." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to decline member.").message;

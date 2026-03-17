@@ -2,6 +2,8 @@ import { revalidatePath } from "next/cache";
 
 import { CountedInput } from "@/components/admin/CountedField";
 import { ToastForm } from "@/components/ui/ToastForm";
+import { writeAdminAudit } from "@/services/adminAudit";
+import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
   adminListChapters,
@@ -36,6 +38,8 @@ async function createChapterAction(
       published,
     });
     revalidatePath("/admin/chapters");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "chapter.create", targetType: "chapter", targetLabel: name });
     return { ok: true, message: "Chapter created." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to create chapter").message;
@@ -74,6 +78,8 @@ async function updateChapterAction(
       published,
     });
     revalidatePath("/admin/chapters");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "chapter.update", targetType: "chapter", targetId: id, targetLabel: name });
     return { ok: true, message: "Chapter updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update chapter").message;
@@ -89,6 +95,8 @@ async function deleteChapterAction(
   try {
     await deleteChapter(id);
     revalidatePath("/admin/chapters");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "chapter.delete", targetType: "chapter", targetId: id });
     return { ok: true, message: "Chapter deleted." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to delete chapter").message;

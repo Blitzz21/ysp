@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache";
 import { CountedInput, CountedTextarea } from "@/components/admin/CountedField";
 import { SdgMultiSelect } from "@/components/ui/SdgMultiSelect";
 import { ToastForm } from "@/components/ui/ToastForm";
+import { writeAdminAudit } from "@/services/adminAudit";
+import { getSession } from "@/services/auth";
 import { adminListChapters } from "@/services/chapters";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
@@ -97,6 +99,8 @@ async function createOpportunityAction(
       imageFiles: imageFiles.length ? imageFiles : undefined,
     });
     revalidatePath("/admin/opportunities");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "opportunity.create", targetType: "opportunity", targetLabel: title });
     return { ok: true, message: "Opportunity created." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to create opportunity").message;
@@ -154,6 +158,8 @@ async function updateOpportunityAction(
       existingImageFileIds,
     });
     revalidatePath("/admin/opportunities");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "opportunity.update", targetType: "opportunity", targetId: id, targetLabel: title });
     return { ok: true, message: "Opportunity updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update opportunity").message;
@@ -169,6 +175,8 @@ async function deleteOpportunityAction(
   try {
     await deleteOpportunity(id);
     revalidatePath("/admin/opportunities");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "opportunity.delete", targetType: "opportunity", targetId: id });
     return { ok: true, message: "Opportunity deleted." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to delete opportunity").message;

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
+import { writeAdminAudit } from "@/services/adminAudit";
 import { getSession } from "@/services/auth";
 import { listPublicChapters } from "@/services/chapters";
 import { joinChapter, leaveChapter, listMyMemberships } from "@/services/memberships";
@@ -26,6 +27,8 @@ async function joinChapterAction(
     try {
         await joinChapter(chapterId);
         revalidatePath("/dashboard/member/chapters");
+        const session = await getSession();
+        if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "member", action: "chapter.join", targetType: "chapter", targetId: chapterId });
         return { ok: true, message: "Chapter join request submitted." };
     } catch (error) {
         const message = toPublicDomainError(error, "Unable to join chapter.").message;
@@ -42,6 +45,8 @@ async function leaveChapterAction(
     try {
         await leaveChapter(chapterId);
         revalidatePath("/dashboard/member/chapters");
+        const session = await getSession();
+        if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "member", action: "chapter.leave", targetType: "chapter", targetId: chapterId });
         return { ok: true, message: "Membership updated." };
     } catch (error) {
         const message = toPublicDomainError(error, "Unable to update membership.").message;

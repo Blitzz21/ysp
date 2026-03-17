@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
+import { writeAdminAudit } from "@/services/adminAudit";
 import { getSession } from "@/services/auth";
 import {
     listPublishedOpportunities,
@@ -34,6 +35,8 @@ async function joinOpportunityAction(formData: FormData): Promise<void> {
         throw new Error(message);
     }
     revalidatePath("/dashboard/member/opportunities");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "member", action: "opportunity.join", targetType: "opportunity", targetId: opportunityId });
 }
 
 export default async function MemberOpportunitiesPage() {

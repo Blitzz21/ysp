@@ -2,6 +2,8 @@ import { revalidatePath } from "next/cache";
 
 import { CountedInput } from "@/components/admin/CountedField";
 import { ToastForm } from "@/components/ui/ToastForm";
+import { writeAdminAudit } from "@/services/adminAudit";
+import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import { getSiteSettings, updateSiteSettings } from "@/services/settings";
 import { getSiteStats, updateSiteStats } from "@/services/stats";
@@ -36,6 +38,8 @@ async function updateSettingsAction(
     revalidatePath("/admin/settings");
     revalidatePath("/contact");
     revalidatePath("/membership");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "settings.update", targetType: "settings" });
     return { ok: true, message: "Site settings updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update site settings").message;
@@ -56,6 +60,8 @@ async function updateStatsAction(
     });
     revalidatePath("/admin/settings");
     revalidatePath("/");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "stats.update", targetType: "stats" });
     return { ok: true, message: "Site stats updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update site stats").message;

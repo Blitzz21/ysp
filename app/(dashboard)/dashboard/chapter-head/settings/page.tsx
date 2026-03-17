@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { PageHeader } from "@/components/dashboard/PageHeader";
+import { writeAdminAudit } from "@/services/adminAudit";
 import { getSession } from "@/services/auth";
 import { getMyChapter, transferChapterOwnership, updateMyChapterContact } from "@/services/chapters";
 import { toPublicDomainError } from "@/services/errorContract";
@@ -30,6 +31,8 @@ async function updateContactAction(
       facebookUrl: facebookUrl.length ? facebookUrl : undefined,
     });
     revalidatePath(REVALIDATE_PATH);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "chapter.contact.update", targetType: "chapter" });
     return { ok: true, message: "Contact details updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to update contact details.").message;
@@ -48,6 +51,8 @@ async function transferOwnershipAction(
 
   try {
     await transferChapterOwnership(newOwnerUserId);
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "chapter_head", action: "chapter.transfer", targetType: "chapter", targetId: newOwnerUserId });
   } catch (error) {
     const message = toPublicDomainError(error, "Failed to transfer ownership.").message;
     return { ok: false, message };
