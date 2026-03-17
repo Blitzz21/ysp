@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getSession } from "@/services/auth";
@@ -48,7 +48,7 @@ export default async function MemberDashboardPage() {
   const resolvedChapterId =
     profile.assignedChapterId ??
     activeMemberships.find((m) => m.status === "active")?.chapterId;
-  const resolvedChapterName = resolvedChapterId
+  const _resolvedChapterName = resolvedChapterId
     ? chapterNameById.get(resolvedChapterId) ?? "Assigned"
     : "None";
 

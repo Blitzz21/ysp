@@ -17,7 +17,7 @@ vi.mock("../appwriteClient", async (importOriginal) => {
 });
 
 import { getRow, updateRow, deleteRow } from "../appwriteClient";
-import type { AppwriteRow } from "../appwriteClient";
+import type { AppwriteRow as _AppwriteRow } from "../appwriteClient";
 
 const baseRow = {
     $id: "opp1",

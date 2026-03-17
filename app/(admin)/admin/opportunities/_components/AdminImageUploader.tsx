@@ -25,7 +25,6 @@ function getOpportunityImageUrl(fileId: string): string {
  * the server action.
  */
 export function AdminImageUploader({
-    opportunityId,
     existingFileIds,
 }: {
     opportunityId: string;
@@ -76,6 +75,7 @@ export function AdminImageUploader({
         if (e.target.files?.length) handleFiles(e.target.files);
         if (fileInputRef.current) fileInputRef.current.value = "";
     }
+
 
     function removeExisting(fileId: string) {
         setKeptIds((prev) => prev.filter((id) => id !== fileId));
@@ -179,6 +179,8 @@ export function AdminImageUploader({
             {error && (
                 <p className="text-xs text-red-600">{error}</p>
             )}
+
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={onFileChange} />
 
             {/* Hidden inputs for the server action */}
             <input

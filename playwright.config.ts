@@ -3,6 +3,9 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "tests",
   timeout: 60_000,
+  // Auto-create snapshot baselines when they don't exist yet (e.g. after a UI
+  // redesign deletes stale PNGs). Existing baselines are still compared normally.
+  updateSnapshots: "missing",
   retries: process.env.CI ? 1 : 0,
   expect: {
     toHaveScreenshot: {
