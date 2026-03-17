@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { Chapter, ChapterMembership } from "@/services/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useToast } from "@/components/ui/Toast";
@@ -75,7 +76,7 @@ export function ChapterModal({
         setPendingAction(null);
     };
 
-    return (
+    return createPortal(
         <>
             <div
                 className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
@@ -85,7 +86,7 @@ export function ChapterModal({
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="chapter-modal-title"
-                    className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200"
+                    className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header gradient */}
@@ -250,6 +251,7 @@ export function ChapterModal({
                     onCancel={() => setPendingAction(null)}
                 />
             )}
-        </>
+        </>,
+        document.body
     );
 }

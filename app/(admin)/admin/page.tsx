@@ -6,12 +6,27 @@ import { adminListPrograms } from "@/services/programs";
 import { getSiteStats } from "@/services/stats";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
+import type { Program, Chapter, VolunteerOpportunity } from "@/services/types";
+
+const MANILA_TIMEZONE = "Asia/Manila";
+
+function formatEventDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+  return new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+    timeZone: MANILA_TIMEZONE,
+  }).format(date);
+}
 
 export default async function AdminHomePage() {
   let programsCount = 0;
   let chaptersCount = 0;
   let opportunitiesCount = 0;
   let draftsCount = 0;
+  let programs: Program[] = [];
+  let chapters: Chapter[] = [];
+  let opportunities: VolunteerOpportunity[] = [];
   let stats = {
     projectsCount: 0,
     chaptersCount: 0,
@@ -21,12 +36,15 @@ export default async function AdminHomePage() {
   let hasDataIssue = false;
 
   try {
-    const [programs, chapters, opportunities, siteStats] = await Promise.all([
+    const [programsData, chaptersData, opportunitiesData, siteStats] = await Promise.all([
       adminListPrograms({ includeDrafts: true }),
       adminListChapters(),
       adminListOpportunities({ includeDrafts: true }),
       getSiteStats(),
     ]);
+    programs = programsData;
+    chapters = chaptersData;
+    opportunities = opportunitiesData;
     programsCount = programs.length;
     chaptersCount = chapters.length;
     opportunitiesCount = opportunities.length;
@@ -37,6 +55,10 @@ export default async function AdminHomePage() {
   } catch {
     hasDataIssue = true;
   }
+
+  const recentPrograms = programs.slice(0, 5);
+  const recentChapters = chapters.slice(0, 5);
+  const recentOpportunities = opportunities.slice(0, 5);
 
   return (
     <section className="space-y-8">
@@ -123,6 +145,109 @@ export default async function AdminHomePage() {
           Manage opportunities
         </Link>
       </div>
+
+      {!hasDataIssue ? (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Programs List */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-soft">
+            <div className="flex items-center justify-between">
+              <h3 className="font-manrope text-sm font-semibold text-ink">Programs</h3>
+              <Link href="/admin/programs" className="text-xs font-semibold text-orange-600 hover:text-orange-700">
+                View all
+              </Link>
+            </div>
+            {recentPrograms.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">No programs yet.</p>
+            ) : (
+              <ul className="mt-3 divide-y divide-gray-100">
+                {recentPrograms.map((program) => (
+                  <li key={program.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">{program.title}</p>
+                      <p className="truncate text-xs text-muted">{program.description}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        program.published
+                          ? "bg-emerald-50 text-emerald-600"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {program.published ? "Published" : "Draft"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Chapters List */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-soft">
+            <div className="flex items-center justify-between">
+              <h3 className="font-manrope text-sm font-semibold text-ink">Chapters</h3>
+              <Link href="/admin/chapters" className="text-xs font-semibold text-orange-600 hover:text-orange-700">
+                View all
+              </Link>
+            </div>
+            {recentChapters.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">No chapters yet.</p>
+            ) : (
+              <ul className="mt-3 divide-y divide-gray-100">
+                {recentChapters.map((chapter) => (
+                  <li key={chapter.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">{chapter.name}</p>
+                      <p className="truncate text-xs text-muted">{chapter.location ?? "Philippines"}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        chapter.published
+                          ? "bg-emerald-50 text-emerald-600"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {chapter.published ? "Active" : "Draft"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Opportunities List */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-soft">
+            <div className="flex items-center justify-between">
+              <h3 className="font-manrope text-sm font-semibold text-ink">Opportunities</h3>
+              <Link href="/admin/opportunities" className="text-xs font-semibold text-orange-600 hover:text-orange-700">
+                View all
+              </Link>
+            </div>
+            {recentOpportunities.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">No opportunities yet.</p>
+            ) : (
+              <ul className="mt-3 divide-y divide-gray-100">
+                {recentOpportunities.map((opp) => (
+                  <li key={opp.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">{opp.title}</p>
+                      <p className="truncate text-xs text-muted">{formatEventDate(opp.eventDate)}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        opp.published
+                          ? "bg-emerald-50 text-emerald-600"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {opp.published ? "Published" : "Draft"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

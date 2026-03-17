@@ -2,6 +2,24 @@
 
 import { useEffect } from "react";
 
+const streamImages = [
+  "/images/stream/014d3923-5e06-47d0-8a9a-efebe045c6e0.jfif",
+  "/images/stream/30e47b51-d75a-4005-ae46-4f37bacb72d5.jfif",
+  "/images/stream/43038641-a50e-4d46-95cd-12d0e185bb40.jfif",
+  "/images/stream/489fcb6f-d2e6-43dd-be4b-b76a540595f4.jfif",
+  "/images/stream/8d59f95f-787a-4cfa-88da-78a91ffa9ae1.jfif",
+  "/images/stream/a77a5681-1b99-49d1-8642-ad26ae8275ab.jfif",
+  "/images/stream/af1f29b2-64bc-4e69-b802-fad4f387c6e0.jfif",
+  "/images/stream/d570fdaf-bfc1-4b41-8b76-554c3d74b98d.jfif",
+  "/images/stream/f5509470-01b1-487f-908e-ff1580188a2c.jfif",
+  "/images/stream/f6cf0b93-6012-4930-adc9-3d3bafc2c6ea.jfif",
+];
+
+// Distribute 10 images across 3 rows of 5
+const row1Images = [streamImages[0], streamImages[1], streamImages[2], streamImages[3], streamImages[4]];
+const row2Images = [streamImages[5], streamImages[6], streamImages[7], streamImages[8], streamImages[9]];
+const row3Images = [streamImages[2], streamImages[0], streamImages[7], streamImages[5], streamImages[3]];
+
 export function OpportunityStreamSection() {
   useEffect(() => {
     const streamSection = document.querySelector<HTMLElement>(
@@ -122,52 +140,37 @@ export function OpportunityStreamSection() {
       </div>
 
       <div className="stream-rows mx-auto mt-12 space-y-6">
-          <div className="stream-row">
-            <div className="stream-track" data-stream-row data-direction="1" data-speed="1.1">
-            <div className="stream-card bg-[linear-gradient(135deg,#FFE1C2_0%,#FF7A1A_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F7F8FA_0%,#FFCF3D_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#D7F5F5_0%,#1FA2A5_90%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFE7D9_0%,#F24A00_90%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F1F6FF_0%,#1F2A33_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFF4D6_0%,#FF7A1A_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFE1C2_0%,#FF7A1A_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F7F8FA_0%,#FFCF3D_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#D7F5F5_0%,#1FA2A5_90%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFE7D9_0%,#F24A00_90%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F1F6FF_0%,#1F2A33_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFF4D6_0%,#FF7A1A_100%)]"></div>
+        <div className="stream-row">
+          <div className="stream-track" data-stream-row data-direction="1" data-speed="1.1">
+            {row1Images.map((src, i) => (
+              <div
+                key={i}
+                className="stream-card"
+                style={{ backgroundImage: `url(${src})` }}
+              />
+            ))}
           </div>
         </div>
-          <div className="stream-row">
-            <div className="stream-track" data-stream-row data-direction="-1" data-speed="1.35">
-            <div className="stream-card bg-[linear-gradient(135deg,#E4F0FF_0%,#0C1230_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFF0DE_0%,#FFCF3D_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFE3C6_0%,#FF7A1A_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#E9F7F2_0%,#1FA2A5_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFF7E8_0%,#F24A00_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F7F8FA_0%,#FFCF3D_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#E4F0FF_0%,#0C1230_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFF0DE_0%,#FFCF3D_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFE3C6_0%,#FF7A1A_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#E9F7F2_0%,#1FA2A5_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFF7E8_0%,#F24A00_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F7F8FA_0%,#FFCF3D_100%)]"></div>
+        <div className="stream-row">
+          <div className="stream-track" data-stream-row data-direction="-1" data-speed="1.35">
+            {row2Images.map((src, i) => (
+              <div
+                key={i}
+                className="stream-card"
+                style={{ backgroundImage: `url(${src})` }}
+              />
+            ))}
           </div>
         </div>
-          <div className="stream-row">
-            <div className="stream-track" data-stream-row data-direction="1" data-speed="1.15">
-            <div className="stream-card bg-[linear-gradient(135deg,#FFEFE1_0%,#FF7A1A_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F0FBFF_0%,#1FA2A5_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFF6DA_0%,#FFCF3D_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFE0C8_0%,#F24A00_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F1F6FF_0%,#0C1230_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F7F8FA_0%,#FF7A1A_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFEFE1_0%,#FF7A1A_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F0FBFF_0%,#1FA2A5_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFF6DA_0%,#FFCF3D_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#FFE0C8_0%,#F24A00_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F1F6FF_0%,#0C1230_100%)]"></div>
-            <div className="stream-card bg-[linear-gradient(135deg,#F7F8FA_0%,#FF7A1A_100%)]"></div>
+        <div className="stream-row">
+          <div className="stream-track" data-stream-row data-direction="1" data-speed="1.15">
+            {row3Images.map((src, i) => (
+              <div
+                key={i}
+                className="stream-card"
+                style={{ backgroundImage: `url(${src})` }}
+              />
+            ))}
           </div>
         </div>
       </div>

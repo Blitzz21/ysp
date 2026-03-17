@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { VolunteerOpportunity } from "@/services/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
@@ -91,7 +92,7 @@ export function OpportunityModal({
             ? Math.min((opportunity.currentVolunteers / opportunity.capacity) * 100, 100)
             : 0;
 
-    return (
+    return createPortal(
         <>
             <div
                 ref={overlayRef}
@@ -102,7 +103,7 @@ export function OpportunityModal({
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="opportunity-modal-title"
-                    className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200 md:p-8"
+                    className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200 md:p-8"
                 >
                     {/* Close button */}
                     <button
@@ -304,6 +305,7 @@ export function OpportunityModal({
                     onCancel={() => setShowConfirm(false)}
                 />
             )}
-        </>
+        </>,
+        document.body
     );
 }

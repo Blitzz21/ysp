@@ -14,7 +14,6 @@ export default async function ChaptersPage() {
     <main className="pb-20">
         <section className="relative overflow-hidden pb-14 pt-12">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#fff4da_0%,#ffffff_45%,#fdf6ef_100%)]"></div>
-          <div className="grid-pattern pointer-events-none absolute inset-0 opacity-40"></div>
           <div className="mx-auto w-[92%] max-w-6xl">
             <div className="reveal inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-orange-600 shadow-soft">
               Chapters

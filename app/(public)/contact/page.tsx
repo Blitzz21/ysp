@@ -32,7 +32,6 @@ export default async function ContactPage() {
     <main className="pb-20">
         <section className="relative overflow-hidden pb-14 pt-12">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#fff4da_0%,#ffffff_45%,#fdf6ef_100%)]"></div>
-          <div className="grid-pattern pointer-events-none absolute inset-0 opacity-40"></div>
           <div className="mx-auto w-[92%] max-w-6xl">
             <div className="reveal inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-orange-600 shadow-soft">
               Contact
@@ -61,7 +60,7 @@ export default async function ContactPage() {
           ) : null}
 
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
+            <article className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
               <h2 className="font-manrope text-lg font-semibold">Email</h2>
               {email ? (
                 <a
@@ -75,7 +74,7 @@ export default async function ContactPage() {
               )}
             </article>
 
-            <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
+            <article className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
               <h2 className="font-manrope text-lg font-semibold">Mobile</h2>
               {mobile ? (
                 <a
@@ -89,7 +88,7 @@ export default async function ContactPage() {
               )}
             </article>
 
-            <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
+            <article className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
               <h2 className="font-manrope text-lg font-semibold">Facebook</h2>
               {facebookUrl ? (
                 <a
@@ -105,7 +104,7 @@ export default async function ContactPage() {
               )}
             </article>
 
-            <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
+            <article className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
               <h2 className="font-manrope text-lg font-semibold">Membership form</h2>
               {membershipFormUrl ? (
                 <a
@@ -121,7 +120,7 @@ export default async function ContactPage() {
               )}
             </article>
 
-            <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
+            <article className="reveal rounded-3xl border border-gray-200 bg-white p-6 shadow-soft">
               <h2 className="font-manrope text-lg font-semibold">Create chapter form</h2>
               {createChapterFormUrl ? (
                 <a

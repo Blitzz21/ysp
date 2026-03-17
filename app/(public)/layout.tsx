@@ -1,5 +1,6 @@
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingHeader } from "@/components/landing/LandingHeader";
+import { RevealObserver } from "@/components/system/RevealObserver";
 
 export default function PublicLayout({
   children,
@@ -8,6 +9,7 @@ export default function PublicLayout({
 }) {
   return (
     <div className="text-ink">
+      <RevealObserver />
       <LandingHeader />
       {children}
       <LandingFooter />
