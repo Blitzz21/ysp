@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { listAdminAuditLog, type AdminAuditEntry } from "@/services/adminAudit";
 import { adminListChapters } from "@/services/chapters";
 import { adminListOpportunities } from "@/services/opportunities";
 import { adminListPrograms } from "@/services/programs";
@@ -33,14 +34,16 @@ export default async function AdminHomePage() {
     membersCount: 0,
     livesImpactedCount: 0,
   };
+  let recentActivity: AdminAuditEntry[] = [];
   let hasDataIssue = false;
 
   try {
-    const [programsData, chaptersData, opportunitiesData, siteStats] = await Promise.all([
+    const [programsData, chaptersData, opportunitiesData, siteStats, auditEntries] = await Promise.all([
       adminListPrograms({ includeDrafts: true }),
       adminListChapters(),
       adminListOpportunities({ includeDrafts: true }),
       getSiteStats(),
+      listAdminAuditLog({ limit: 15 }),
     ]);
     programs = programsData;
     chapters = chaptersData;
@@ -52,6 +55,7 @@ export default async function AdminHomePage() {
       programs.filter((item) => !item.published).length +
       opportunities.filter((item) => !item.published).length;
     stats = siteStats;
+    recentActivity = auditEntries;
   } catch {
     hasDataIssue = true;
   }
@@ -248,6 +252,38 @@ export default async function AdminHomePage() {
           </div>
         </div>
       ) : null}
+
+      {/* Recent Activity */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-soft">
+        <div className="flex items-center justify-between">
+          <h3 className="font-manrope text-sm font-semibold text-ink">Recent Activity</h3>
+          <Link href="/admin/logs" className="text-xs font-semibold text-orange-600 hover:text-orange-700">
+            View all
+          </Link>
+        </div>
+        {recentActivity.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">No activity recorded yet.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-gray-100">
+            {recentActivity.map((entry, i) => (
+              <li key={`${entry.createdAt}-${i}`} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-ink">
+                    <span className="font-medium">{entry.action.replace(".", " → ")}</span>
+                    {entry.targetLabel ? ` — ${entry.targetLabel}` : ""}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {entry.actorRole} · {entry.actorId.slice(0, 8)}...
+                  </p>
+                </div>
+                <span className="shrink-0 text-[11px] text-muted">
+                  {formatEventDate(entry.createdAt)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }

@@ -14,7 +14,8 @@ import {
   updateOpportunity,
 } from "@/services/opportunities";
 import type { Chapter, VolunteerOpportunity } from "@/services/types";
-import { AdminImageUploader, AdminCreateImageUploader } from "./_components/AdminImageUploader";
+import { AdminImageUploader } from "./_components/AdminImageUploader";
+import { AddOpportunityModal } from "./_components/AddOpportunityModal";
 
 function parseDateTime(value: string, fieldName: string): Date {
   const parsed = new Date(value);
@@ -397,148 +398,16 @@ export default async function AdminOpportunitiesPage() {
 
   return (
     <section>
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-600">Admin</p>
-        <h1 className="mt-2 font-manrope text-4xl font-bold text-navy">Opportunities</h1>
-        <p className="mt-2 max-w-2xl text-muted">
-          Create, publish, and manage volunteer opportunities across chapters.
-        </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-600">Admin</p>
+          <h1 className="font-manrope text-2xl font-semibold">Opportunities</h1>
+          <p className="mt-1 text-sm text-muted">
+            Create, publish, and manage volunteer opportunities across chapters.
+          </p>
+        </div>
+        <AddOpportunityModal action={createOpportunityAction} chapters={chapters} />
       </div>
-
-      <ToastForm
-        action={createOpportunityAction}
-        className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
-      >
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="font-manrope text-3xl font-semibold text-navy">New opportunity</h2>
-          <span className="rounded-full bg-orange-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
-            Required fields marked
-          </span>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-ink">
-            Title <span className="ml-1 text-orange-600">Required</span>
-            <CountedInput name="title" maxLength={128} hint="Max 128 characters." required />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Event date/time <span className="ml-1 text-orange-600">Required</span>
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="eventDate"
-              type="datetime-local"
-              required
-            />
-          </label>
-        </div>
-        <label className="mt-3 block text-xs font-semibold text-ink">
-          Description <span className="ml-1 text-orange-600">Required</span>
-          <CountedTextarea
-            name="description"
-            maxLength={1024}
-            rows={4}
-            hint="Describe goals, deliverables, and requirements."
-            required
-          />
-        </label>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <label className="text-xs font-semibold text-ink">
-            Chapter <span className="ml-1 text-orange-600">Required</span>
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="chapterId"
-              required
-              disabled={!chapters.length}
-            >
-              {chapters.length ? (
-                chapters.map((chapter) => (
-                  <option key={chapter.id} value={chapter.id}>
-                    {chapter.name}
-                  </option>
-                ))
-              ) : (
-                <option value="">No chapters available</option>
-              )}
-            </select>
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            SDG tags <span className="ml-1 text-orange-600">Required</span>
-            <CountedInput
-              name="sdgs"
-              maxLength={256}
-              hint="Comma-separated, e.g. Quality Education, Climate Action"
-              required
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Status
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="published"
-              defaultValue="false"
-            >
-              <option value="false">Draft</option>
-              <option value="true">Published</option>
-            </select>
-          </label>
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <label className="text-xs font-semibold text-ink">
-            Contact name
-            <CountedInput name="signupContactName" maxLength={128} />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Contact email
-            <CountedInput name="signupContactEmail" maxLength={256} type="email" />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Contact phone
-            <CountedInput name="signupContactPhone" maxLength={64} />
-          </label>
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <label className="text-xs font-semibold text-ink">
-            Capacity needed
-            <input
-              name="capacity"
-              type="number"
-              min={0}
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-            />
-            <div className="mt-1 text-[11px] text-muted">Total volunteers needed.</div>
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Current volunteers
-            <input
-              name="currentVolunteers"
-              type="number"
-              min={0}
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-            />
-            <div className="mt-1 text-[11px] text-muted">
-              Existing volunteers already committed.
-            </div>
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Waitlist
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              name="waitlistEnabled"
-              defaultValue="false"
-            >
-              <option value="false">Disabled</option>
-              <option value="true">Enabled</option>
-            </select>
-          </label>
-        </div>
-        <AdminCreateImageUploader />
-        <button
-          type="submit"
-          className="mt-4 rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-glow disabled:cursor-not-allowed disabled:opacity-70"
-          disabled={!chapters.length}
-        >
-          Create opportunity
-        </button>
-      </ToastForm>
 
       {hasLoadError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

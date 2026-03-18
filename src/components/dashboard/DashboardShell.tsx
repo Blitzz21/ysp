@@ -15,7 +15,8 @@ export type DashboardNavIcon =
   | "overview"
   | "programs"
   | "manage"
-  | "logs";
+  | "logs"
+  | "members";
 
 export type DashboardNavItem = {
   href: string;
@@ -103,17 +104,35 @@ function NavIcon({ icon }: { icon: DashboardNavIcon }) {
           <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
         </svg>
       );
+    case "overview":
+      return (
+        <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+        </svg>
+      );
     case "opportunities":
       return (
         <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
-          <path d="M6 12h12M12 6v12" stroke="currentColor" strokeWidth="1.7" />
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7" />
+          <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.7" />
+          <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M9 16l2 2 4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "members":
+      return (
+        <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.7" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
         </svg>
       );
     case "admin":
       return (
         <svg fill="none" viewBox="0 0 24 24" className="h-5 w-5">
-          <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" stroke="currentColor" strokeWidth="1.7" />
+          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
         </svg>
       );
     case "programs":

@@ -13,6 +13,7 @@ const adminNavItems: DashboardNavItem[] = [
   { href: "/admin/chapters", label: "Chapters", icon: "chapter" },
   { href: "/admin/opportunities", label: "Opportunities", icon: "opportunities" },
   { href: "/admin/settings", label: "Settings", icon: "settings" },
+  { href: "/admin/logs", label: "Activity Log", icon: "logs" },
 ];
 
 export default async function AdminLayout({

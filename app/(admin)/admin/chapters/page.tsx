@@ -1,17 +1,23 @@
 import { revalidatePath } from "next/cache";
 
+import { AddChapterModal } from "@/components/admin/AddChapterModal";
 import { CountedInput } from "@/components/admin/CountedField";
 import { ToastForm } from "@/components/ui/ToastForm";
 import { writeAdminAudit } from "@/services/adminAudit";
+import { buildEqualQuery, listRows, updateRow } from "@/services/appwriteClient";
 import { getSession } from "@/services/auth";
-import { toPublicDomainError } from "@/services/errorContract";
 import {
   adminListChapters,
   createChapter,
   deleteChapter,
   updateChapter,
 } from "@/services/chapters";
+import { toPublicDomainError } from "@/services/errorContract";
+import { resolveUserByEmail } from "@/services/profiles";
 import type { Chapter } from "@/services/types";
+
+const PROFILES_TABLE_ID = "user_profiles";
+type ProfileRoleRow = { userId: string; role: string; assignedChapterId?: string };
 
 async function createChapterAction(
   formData: FormData
@@ -24,19 +30,40 @@ async function createChapterAction(
     const contactEmail = String(formData.get("contactEmail") ?? "").trim();
     const contactPhone = String(formData.get("contactPhone") ?? "").trim();
     const facebookUrl = String(formData.get("facebookUrl") ?? "").trim();
-    const chapterHeadUserId = String(formData.get("chapterHeadUserId") ?? "").trim();
+    const chapterHeadEmail = String(formData.get("chapterHeadEmail") ?? "").trim();
     const published = String(formData.get("published") ?? "false") === "true";
 
-    await createChapter({
+    // Resolve email → userId if provided
+    let resolvedHeadUserId: string | undefined;
+    let resolvedHeadProfileRowId: string | undefined;
+    if (chapterHeadEmail.length) {
+      const resolved = await resolveUserByEmail(chapterHeadEmail);
+      if (!resolved) {
+        return { ok: false, message: "No account found with that email address." };
+      }
+      resolvedHeadUserId = resolved.userId;
+      resolvedHeadProfileRowId = resolved.profileRowId;
+    }
+
+    const chapter = await createChapter({
       name,
       slug: slug.length ? slug : undefined,
       location: location.length ? location : undefined,
       contactEmail: contactEmail.length ? contactEmail : undefined,
       contactPhone: contactPhone.length ? contactPhone : undefined,
       facebookUrl: facebookUrl.length ? facebookUrl : undefined,
-      chapterHeadUserId: chapterHeadUserId.length ? chapterHeadUserId : undefined,
+      chapterHeadUserId: resolvedHeadUserId,
       published,
     });
+
+    // Promote the new chapter head's profile
+    if (resolvedHeadUserId && resolvedHeadProfileRowId) {
+      await updateRow<ProfileRoleRow>(PROFILES_TABLE_ID, resolvedHeadProfileRowId, {
+        role: "chapter_head",
+        assignedChapterId: chapter.id,
+      });
+    }
+
     revalidatePath("/admin/chapters");
     const session = await getSession();
     if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "admin", action: "chapter.create", targetType: "chapter", targetLabel: name });
@@ -59,9 +86,56 @@ async function updateChapterAction(
     const contactEmail = String(formData.get("contactEmail") ?? "").trim();
     const contactPhone = String(formData.get("contactPhone") ?? "").trim();
     const facebookUrl = String(formData.get("facebookUrl") ?? "").trim();
-    const chapterHeadUserId = String(formData.get("chapterHeadUserId") ?? "").trim();
+    const chapterHeadEmail = String(formData.get("chapterHeadEmail") ?? "").trim();
     const removeChapterHead = formData.get("removeChapterHead") === "on";
     const published = String(formData.get("published") ?? "false") === "true";
+
+    // Fetch current chapter to capture existing chapterHeadUserId for downgrade logic
+    type ChapterHeadRow = { chapterHeadUserId?: string | null };
+    const currentRows = await listRows<ChapterHeadRow>("chapters", [
+      buildEqualQuery("$id", id),
+    ]);
+    const currentHeadUserId = currentRows[0]?.chapterHeadUserId ?? undefined;
+
+    // Helper: downgrade a user's profile to member
+    async function downgradeOldHead(userId: string) {
+      const profileRows = await listRows<ProfileRoleRow>(PROFILES_TABLE_ID, [
+        buildEqualQuery("userId", userId),
+      ]);
+      if (profileRows[0]) {
+        await updateRow<ProfileRoleRow>(PROFILES_TABLE_ID, profileRows[0].$id, {
+          role: "member",
+          assignedChapterId: "",
+        });
+      }
+    }
+
+    let nextChapterHeadUserId: string | null | undefined;
+
+    if (removeChapterHead) {
+      // Clear: downgrade old head, set null
+      if (currentHeadUserId) await downgradeOldHead(currentHeadUserId);
+      nextChapterHeadUserId = null;
+    } else if (chapterHeadEmail.length) {
+      // Reassign: resolve new email
+      const resolved = await resolveUserByEmail(chapterHeadEmail);
+      if (!resolved) {
+        return { ok: false, message: "No account found with that email address." };
+      }
+      // Downgrade old head if different user
+      if (currentHeadUserId && currentHeadUserId !== resolved.userId) {
+        await downgradeOldHead(currentHeadUserId);
+      }
+      // Promote new head
+      await updateRow<ProfileRoleRow>(PROFILES_TABLE_ID, resolved.profileRowId, {
+        role: "chapter_head",
+        assignedChapterId: id,
+      });
+      nextChapterHeadUserId = resolved.userId;
+    } else {
+      // No change to chapter head
+      nextChapterHeadUserId = undefined;
+    }
 
     await updateChapter(id, {
       name: name.length ? name : undefined,
@@ -70,11 +144,7 @@ async function updateChapterAction(
       contactEmail: contactEmail.length ? contactEmail : undefined,
       contactPhone: contactPhone.length ? contactPhone : undefined,
       facebookUrl: facebookUrl.length ? facebookUrl : undefined,
-      chapterHeadUserId: removeChapterHead
-        ? null
-        : chapterHeadUserId.length
-          ? chapterHeadUserId
-          : undefined,
+      chapterHeadUserId: nextChapterHeadUserId,
       published,
     });
     revalidatePath("/admin/chapters");
@@ -198,12 +268,12 @@ function ChapterCard({ chapter }: { chapter: Chapter }) {
                 />
               </label>
               <label className="text-xs font-semibold text-ink">
-                Chapter head user ID
+                Chapter head email
                 <CountedInput
-                  name="chapterHeadUserId"
-                  defaultValue={chapter.chapterHeadUserId}
-                  maxLength={128}
-                  hint="Appwrite user ID."
+                  name="chapterHeadEmail"
+                  type="email"
+                  maxLength={256}
+                  hint="Enter email to reassign. Leave blank to keep current head."
                 />
               </label>
             </div>
@@ -265,125 +335,18 @@ export default async function AdminChaptersPage() {
 
   return (
     <section>
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.32em] text-orange-600">
-          Admin
-        </p>
-        <h2 className="font-manrope text-2xl font-semibold">Chapters</h2>
-        <p className="mt-2 text-sm text-muted">
-          Manage chapter profiles, contact details, and chapter head assignments.
-        </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-orange-600">
+            Admin
+          </p>
+          <h2 className="font-manrope text-2xl font-semibold">Chapters</h2>
+          <p className="mt-1 text-sm text-muted">
+            Manage chapter profiles, contact details, and chapter head assignments.
+          </p>
+        </div>
+        <AddChapterModal action={createChapterAction} />
       </div>
-
-      <ToastForm
-        action={createChapterAction}
-        className="mb-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-soft"
-      >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="font-manrope text-lg font-semibold">New chapter</h3>
-            <p className="mt-1 text-xs text-muted">
-              Use a clear chapter name. Slug will auto-generate if left empty.
-            </p>
-          </div>
-          <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
-            Required fields marked
-          </span>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-ink">
-            Name{" "}
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600">
-              Required
-            </span>
-            <CountedInput
-              name="name"
-              required
-              placeholder="YSP Manila Chapter"
-              maxLength={256}
-              hint="Max 256 characters."
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Slug (optional)
-            <CountedInput
-              name="slug"
-              placeholder="ysp-manila"
-              maxLength={128}
-              hint="Leave empty to auto-generate."
-            />
-          </label>
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <label className="text-xs font-semibold text-ink">
-            Location
-            <CountedInput
-              name="location"
-              placeholder="Metro Manila"
-              maxLength={256}
-              hint="City or region."
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Contact email
-            <CountedInput
-              name="contactEmail"
-              placeholder="chapter@email.org"
-              type="email"
-              maxLength={256}
-              hint="Public email."
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Contact phone
-            <CountedInput
-              name="contactPhone"
-              placeholder="+63 9xx xxx xxxx"
-              maxLength={64}
-              hint="Include country code."
-            />
-          </label>
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-ink">
-            Facebook URL
-            <CountedInput
-              name="facebookUrl"
-              placeholder="https://facebook.com/..."
-              type="url"
-              maxLength={256}
-              hint="Paste full URL."
-            />
-          </label>
-          <label className="text-xs font-semibold text-ink">
-            Chapter head user ID
-            <CountedInput
-              name="chapterHeadUserId"
-              placeholder="appwrite-user-id"
-              maxLength={128}
-              hint="Appwrite user ID."
-            />
-          </label>
-        </div>
-        <label className="mt-3 block text-xs font-semibold text-ink">
-          Status
-          <select
-            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-            name="published"
-            defaultValue="false"
-          >
-            <option value="false">Draft</option>
-            <option value="true">Published</option>
-          </select>
-        </label>
-        <button
-          className="mt-4 rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-glow"
-          type="submit"
-        >
-          Create chapter
-        </button>
-      </ToastForm>
 
       {hasLoadError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
