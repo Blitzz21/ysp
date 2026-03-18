@@ -12,6 +12,7 @@ import {
 } from "@/services/opportunities";
 import { listPublicChapters } from "@/services/chapters";
 import { toPublicDomainError } from "@/services/errorContract";
+import { listMyMemberships } from "@/services/memberships";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { OpportunityCardGrid } from "./_components/OpportunityCardGrid";
 import type { VolunteerOpportunity, Chapter } from "@/services/types";
@@ -48,10 +49,20 @@ export default async function MemberOpportunitiesPage() {
     let joinedIds = new Set<string>();
     let avatarMap = new Map<string, SignupAvatar[]>();
     let loadError: string | null = null;
+    let memberChapterId: string | null = null;
 
     try {
+        // Find the member's active or pending chapter
+        const memberships = await listMyMemberships();
+        const activeMembership = memberships.find(
+            (m) => m.status === "active" || m.status === "pending"
+        );
+        memberChapterId = activeMembership?.chapterId ?? null;
+
         const [opRows, chapterRows, signups] = await Promise.all([
-            listPublishedOpportunities(),
+            memberChapterId
+                ? listPublishedOpportunities({ chapterId: memberChapterId })
+                : Promise.resolve([]),
             listPublicChapters(),
             getMyActiveSignups(),
         ]);
@@ -80,6 +91,22 @@ export default async function MemberOpportunitiesPage() {
             {loadError ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
                     {loadError}
+                </div>
+            ) : !memberChapterId ? (
+                <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center shadow-soft">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff2e1] text-2xl">
+                        🏠
+                    </div>
+                    <p className="text-sm font-medium text-ink">Join a chapter first</p>
+                    <p className="mt-1 text-xs text-muted">
+                        You need to be a member of a chapter before you can see and join volunteer opportunities.
+                    </p>
+                    <a
+                        href="/dashboard/member/chapters"
+                        className="mt-4 inline-block rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-glow transition hover:bg-orange-600"
+                    >
+                        Browse chapters
+                    </a>
                 </div>
             ) : (
                 <OpportunityCardGrid

@@ -14,6 +14,7 @@ type ChapterModalProps = {
     joinAction: ChapterAction;
     leaveAction: ChapterAction;
     onClose: () => void;
+    hasExistingMembership?: boolean;
 };
 
 type PendingAction = "join" | "rejoin" | "leave" | null;
@@ -43,6 +44,7 @@ export function ChapterModal({
     joinAction,
     leaveAction,
     onClose,
+    hasExistingMembership = false,
 }: ChapterModalProps) {
     const [pendingAction, setPendingAction] = useState<PendingAction>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -204,21 +206,33 @@ export function ChapterModal({
                         {/* Action buttons */}
                         <div className="mt-5 flex items-center gap-3">
                             {!membership ? (
-                                <button
-                                    type="button"
-                                    onClick={() => setPendingAction("join")}
-                                    className="flex-1 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600"
-                                >
-                                    Join Chapter
-                                </button>
+                                hasExistingMembership ? (
+                                    <p className="flex-1 text-center text-xs text-muted">
+                                        You already belong to a chapter
+                                    </p>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => setPendingAction("join")}
+                                        className="flex-1 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600"
+                                    >
+                                        Join Chapter
+                                    </button>
+                                )
                             ) : membership.status === "removed" ? (
-                                <button
-                                    type="button"
-                                    onClick={() => setPendingAction("rejoin")}
-                                    className="flex-1 rounded-xl border border-orange-200 bg-white px-5 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50"
-                                >
-                                    Rejoin Chapter
-                                </button>
+                                hasExistingMembership ? (
+                                    <p className="flex-1 text-center text-xs text-muted">
+                                        You already belong to a chapter
+                                    </p>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => setPendingAction("rejoin")}
+                                        className="flex-1 rounded-xl border border-orange-200 bg-white px-5 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50"
+                                    >
+                                        Rejoin Chapter
+                                    </button>
+                                )
                             ) : (
                                 <button
                                     type="button"

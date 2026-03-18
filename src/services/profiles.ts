@@ -147,6 +147,16 @@ export async function getProfileByUserId(userId: string): Promise<UserProfile | 
   return mapProfile(row);
 }
 
+export async function resolveUserByEmail(
+  email: string
+): Promise<{ userId: string; profileRowId: string } | null> {
+  const rows = await listRows<UserProfileRow>(TABLE_ID, [
+    buildEqualQuery("email", email),
+  ]);
+  if (!rows[0]) return null;
+  return { userId: rows[0].userId, profileRowId: rows[0].$id };
+}
+
 export async function getMyProfile(): Promise<UserProfile> {
   const session = requireSession(await getSession());
   if (process.env.E2E_ADMIN_BYPASS === "1") {

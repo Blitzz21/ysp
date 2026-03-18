@@ -65,6 +65,7 @@ export function ChapterCardGrid({
     leaveAction,
     chapterHeadNames,
     opportunityCounts,
+    hasExistingMembership = false,
 }: {
     chapters: Chapter[];
     membershipMap: Map<string, ChapterMembership>;
@@ -72,6 +73,7 @@ export function ChapterCardGrid({
     leaveAction: ChapterAction;
     chapterHeadNames?: Map<string, string>;
     opportunityCounts?: Map<string, number>;
+    hasExistingMembership?: boolean;
 }) {
     const [search, setSearch] = useState("");
     const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
@@ -224,21 +226,33 @@ export function ChapterCardGrid({
                                     {/* Action button */}
                                     <div className="mt-auto pt-4" onClick={(e) => e.stopPropagation()}>
                                         {!membership ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => setPendingAction({ type: "join", chapterId: ch.id, chapterName: ch.name })}
-                                                className="w-full rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"
-                                            >
-                                                Join Chapter
-                                            </button>
+                                            hasExistingMembership ? (
+                                                <p className="text-center text-[11px] text-muted">
+                                                    You already belong to a chapter
+                                                </p>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPendingAction({ type: "join", chapterId: ch.id, chapterName: ch.name })}
+                                                    className="w-full rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"
+                                                >
+                                                    Join Chapter
+                                                </button>
+                                            )
                                         ) : membership.status === "removed" ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => setPendingAction({ type: "rejoin", chapterId: ch.id, chapterName: ch.name })}
-                                                className="w-full rounded-xl border border-orange-200 bg-white px-4 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-50"
-                                            >
-                                                Rejoin Chapter
-                                            </button>
+                                            hasExistingMembership ? (
+                                                <p className="text-center text-[11px] text-muted">
+                                                    You already belong to a chapter
+                                                </p>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPendingAction({ type: "rejoin", chapterId: ch.id, chapterName: ch.name })}
+                                                    className="w-full rounded-xl border border-orange-200 bg-white px-4 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-50"
+                                                >
+                                                    Rejoin Chapter
+                                                </button>
+                                            )
                                         ) : (
                                             <button
                                                 type="button"
@@ -265,6 +279,7 @@ export function ChapterCardGrid({
                     joinAction={joinAction}
                     leaveAction={leaveAction}
                     onClose={() => setSelectedChapter(null)}
+                    hasExistingMembership={hasExistingMembership}
                 />
             )}
 

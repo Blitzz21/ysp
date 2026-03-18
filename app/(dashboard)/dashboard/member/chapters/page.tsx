@@ -78,6 +78,9 @@ export default async function MemberChaptersPage() {
     }
 
     const membershipMap = new Map(memberships.map((m) => [m.chapterId, m]));
+    const hasExistingMembership = memberships.some(
+        (m) => m.status === "active" || m.status === "pending"
+    );
 
     /* ── Fetch opportunity counts per chapter ── */
     const opportunityCounts = new Map<string, number>();
@@ -133,6 +136,7 @@ export default async function MemberChaptersPage() {
                     leaveAction={leaveChapterAction}
                     chapterHeadNames={chapterHeadNames}
                     opportunityCounts={opportunityCounts}
+                    hasExistingMembership={hasExistingMembership}
                 />
             )}
         </div>

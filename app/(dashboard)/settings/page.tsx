@@ -2,7 +2,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { ToastForm } from "@/components/ui/ToastForm";
-
+import { writeAdminAudit } from "@/services/adminAudit";
 import { getSession } from "@/services/auth";
 import { toPublicDomainError } from "@/services/errorContract";
 import {
@@ -69,6 +69,8 @@ async function updateProfileAction(
       gender,
     });
     revalidatePath("/settings");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "member", action: "profile.update", targetType: "profile" });
     return { ok: true, message: "Profile updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update profile.").message;
@@ -86,9 +88,12 @@ async function updateAvatarAction(formData: FormData): Promise<void> {
     await updateAvatar(file as File);
   } catch {
     // Avatar upload errors handled by the component
+    return;
   }
 
   revalidatePath("/settings");
+  const session = await getSession();
+  if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "member", action: "avatar.update", targetType: "profile" });
 }
 
 async function updateEmailAction(
@@ -101,6 +106,8 @@ async function updateEmailAction(
   try {
     await updateAccountEmail({ email, password });
     revalidatePath("/settings");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "member", action: "account.email.update", targetType: "account" });
     return { ok: true, message: "Account email updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update email.").message;
@@ -123,6 +130,8 @@ async function updatePasswordAction(
   try {
     await updateAccountPassword({ currentPassword, nextPassword });
     revalidatePath("/settings");
+    const session = await getSession();
+    if (session) writeAdminAudit({ actorId: session.userId, actorRole: session.role ?? "member", action: "account.password.update", targetType: "account" });
     return { ok: true, message: "Password updated." };
   } catch (error) {
     const message = toPublicDomainError(error, "Unable to update password.").message;

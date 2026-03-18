@@ -125,10 +125,24 @@ export async function joinChapter(chapterId: string): Promise<ChapterMembership>
     throw new ValidationError("Invalid chapter join request");
   }
 
-  const existing = await listRows<MembershipRow>(TABLE_ID, [
+  // Prevent joining multiple chapters — check ALL memberships for this user
+  const allMemberships = await listRows<MembershipRow>(TABLE_ID, [
     buildEqualQuery("userId", session.userId),
-    buildEqualQuery("chapterId", parsed.data.chapterId),
   ]);
+  const activeOrPending = allMemberships.find(
+    (m) =>
+      (m.status === "active" || m.status === "pending") &&
+      m.chapterId !== parsed.data.chapterId
+  );
+  if (activeOrPending) {
+    throw new ValidationError(
+      "You already have an active or pending chapter membership. Leave your current chapter first."
+    );
+  }
+
+  const existing = allMemberships.filter(
+    (m) => m.chapterId === parsed.data.chapterId
+  );
 
   const current = existing[0];
   if (current && current.status !== "removed") {
