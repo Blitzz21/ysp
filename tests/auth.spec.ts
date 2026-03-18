@@ -301,12 +301,12 @@ test("admin overview route is usable", async ({ page }) => {
 
 test("admin opportunities route is usable", async ({ page }) => {
   await page.goto("/admin/opportunities");
-  await expectAdminPageOrLoginRedirect(page, "Opportunities", "Create opportunity");
+  await expectAdminPageOrLoginRedirect(page, "Opportunities", "+ Add opportunity");
 });
 
 test("admin chapters route is usable", async ({ page }) => {
   await page.goto("/admin/chapters");
-  await expectAdminPageOrLoginRedirect(page, "Chapters", "Create chapter");
+  await expectAdminPageOrLoginRedirect(page, "Chapters", "+ Add chapter");
 });
 
 test("admin settings route is usable", async ({ page }) => {
