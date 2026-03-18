@@ -115,29 +115,26 @@ test.describe("P0: Admin Program Lifecycle + Visual Regression", () => {
         // Open the create-program modal
         await page.getByRole("button", { name: "+ Add program" }).click();
 
-        await page
-          .getByPlaceholder("Youth Action Labs")
-          .fill(PROGRAM_TITLE);
-        await page
+        // Scope all interactions to the modal dialog to avoid matching
+        // collapsed program-card selects that share the same field names.
+        const modal = page.getByRole("dialog", { name: "New program" });
+        await expect(modal).toBeVisible();
+
+        await modal.getByPlaceholder("Youth Action Labs").fill(PROGRAM_TITLE);
+        await modal
           .getByPlaceholder(
             "Describe the program objectives, cadence, and outcomes."
           )
           .fill(PROGRAM_DESC);
 
-        // Select "Published" in the status dropdown (first select on page).
-        await page
-          .locator('select[name="published"]')
-          .first()
-          .selectOption("true");
+        // Select "Published" in the status dropdown inside the modal.
+        await modal.locator('select[name="published"]').selectOption("true");
 
-        // Attach the mock image via the file input.
-        await page
-          .locator('input[name="imageFile"]')
-          .first()
-          .setInputFiles(tmpImg);
+        // Attach the mock image via the file input inside the modal.
+        await modal.locator('input[name="imageFile"]').setInputFiles(tmpImg);
 
         // Submit the form. ToastForm shows a toast notification on success.
-        await page.getByRole("button", { name: "Create program" }).click();
+        await modal.getByRole("button", { name: "Create program" }).click();
 
         await expect(page.getByRole("alert").getByText("Program created.")).toBeVisible();
       });
