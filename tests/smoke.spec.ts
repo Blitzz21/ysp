@@ -1,10 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 test("home page renders", async ({ page }) => {
+  // .reveal elements start at opacity:0; reduced-motion bypasses the IntersectionObserver animation.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(
     page.getByRole("heading", {
-      name: "Real youth. Real communities. Real change across the Philippines.",
+      name: /Real youth\.\s+Real communities\.\s+Real change across the Philippines\./,
     })
   ).toBeVisible();
 });
@@ -66,12 +68,14 @@ test("programs list page renders", async ({ page }) => {
 });
 
 test("home opportunities CTA routes to public opportunities page", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const cta = page.getByRole("link", { name: "See all opportunities" });
   await expect(cta).toHaveAttribute("href", "/volunteer-opportunities");
 });
 
 test("home opportunities copy has no encoding artifacts", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const opportunitiesSection = page.locator("#opportunities");
   await expect(opportunitiesSection).toBeVisible();
@@ -114,6 +118,7 @@ test("contact page renders", async ({ page }) => {
 });
 
 test("home contact methods are actionable links", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const contactSection = page.locator("#contact");
   await expect(contactSection).toBeVisible();
