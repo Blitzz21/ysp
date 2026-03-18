@@ -112,7 +112,9 @@ test.describe("P0: Admin Program Lifecycle + Visual Regression", () => {
         const tmpImg = path.join(os.tmpdir(), "ysp-e2e-mock.png");
         fs.writeFileSync(tmpImg, Buffer.from(PNG_1X1_B64, "base64"));
 
-        // The create form is the first (topmost) form on the page.
+        // Open the create-program modal
+        await page.getByRole("button", { name: "+ Add program" }).click();
+
         await page
           .getByPlaceholder("Youth Action Labs")
           .fill(PROGRAM_TITLE);
